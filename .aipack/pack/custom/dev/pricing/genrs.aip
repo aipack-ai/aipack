@@ -5,7 +5,7 @@ model = "flash"
 
 # Description
 
-This assume the `aip run dev@pricing` was ran and create thed `.ai-pricing/pricing-all.json`
+This assume the `aip run dev@pricing` was ran and create then `.ai-pricing/pricing-all.json`
 
 Then, we can rust this one as `aip run dev@pricing/genrs`
 
@@ -42,7 +42,7 @@ Here is the `data.rs` file to update
 
 Important, we have to keep the `data.rs` types as is, just update/add the values that need to be added. Keep the whitepsaces too. 
 
-Some very IMPORTANT rules when updateding `data.rs`, 
+Some very IMPORTANT rules when updating `data.rs`, 
 
 - for openai model, when the name is prefix `openai-` you can remove it from the model name. 
 - Ignore "preview" models except the `gemini-2.5-pro-preview` and `gemini-2.5-preview`
