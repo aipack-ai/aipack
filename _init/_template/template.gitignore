@@ -19,6 +19,7 @@ out/
 
 # -- Nodejs
 node_modules/
+package-lock.json
 !.mocharc.yaml
 report.*.json
 
@@ -79,6 +80,7 @@ cdk.out/
 *.jpg
 *.png
 *.bmp
+*.eps
 
 # -- others
 # Allows .env (make sure only dev info)
