@@ -120,77 +120,7 @@
       {
         "input": {
           "cache_write": null,
-          "cached": null,
-          "normal": 0.56
-        },
-        "name": "deepseek-v3p1-terminus",
-        "output": 1.68,
-        "recent": false
-      },
-      {
-        "input": {
-          "cache_write": null,
-          "cached": null,
-          "normal": 0.55
-        },
-        "name": "glm-4p6",
-        "output": 2.19,
-        "recent": true
-      },
-      {
-        "input": {
-          "cache_write": null,
-          "cached": null,
-          "normal": 0.6
-        },
-        "name": "kimi-k2-instruct",
-        "output": 2.5,
-        "recent": true
-      },
-      {
-        "input": {
-          "cache_write": null,
-          "cached": null,
-          "normal": 0.56
-        },
-        "name": "deepseek-v3p1",
-        "output": 1.68,
-        "recent": false
-      },
-      {
-        "input": {
-          "cache_write": null,
-          "cached": null,
-          "normal": 0.15
-        },
-        "name": "gpt-oss-120b",
-        "output": 0.6,
-        "recent": true
-      },
-      {
-        "input": {
-          "cache_write": null,
-          "cached": null,
-          "normal": 0.07
-        },
-        "name": "gpt-oss-20b",
-        "output": 0.3,
-        "recent": true
-      },
-      {
-        "input": {
-          "cache_write": null,
-          "cached": null,
-          "normal": 0.22
-        },
-        "name": "qwen3-235b-a22b-thinking",
-        "output": 0.88,
-        "recent": true
-      },
-      {
-        "input": {
-          "cache_write": null,
-          "cached": null,
+          "cached": 0.225,
           "normal": 0.45
         },
         "name": "qwen3-coder-480b-a35b-instruct",
@@ -200,161 +130,461 @@
       {
         "input": {
           "cache_write": null,
-          "cached": null,
-          "normal": 0.22
+          "cached": 0.035,
+          "normal": 0.07
         },
-        "name": "qwen3-235b-a22b-instruct",
-        "output": 0.88,
+        "name": "gpt-oss-20b",
+        "output": 0.3,
         "recent": true
       },
       {
         "input": {
           "cache_write": null,
-          "cached": null,
+          "cached": 0.075,
+          "normal": 0.15
+        },
+        "name": "gpt-oss-120b",
+        "output": 0.6,
+        "recent": true
+      },
+      {
+        "input": {
+          "cache_write": null,
+          "cached": 0.275,
           "normal": 0.55
         },
-        "name": "glm-4p5",
+        "name": "glm-4p6",
         "output": 2.19,
         "recent": true
       },
       {
         "input": {
           "cache_write": null,
-          "cached": null,
+          "cached": 0.3,
+          "normal": 0.6
+        },
+        "name": "kimi-k2-instruct",
+        "output": 2.5,
+        "recent": true
+      },
+      {
+        "input": {
+          "cache_write": null,
+          "cached": 0.1,
+          "normal": 0.2
+        },
+        "name": "chronos-hermes-13b-v2",
+        "output": 0.2,
+        "recent": false
+      },
+      {
+        "input": {
+          "cache_write": null,
+          "cached": 0.1,
+          "normal": 0.2
+        },
+        "name": "code-llama-13b",
+        "output": 0.2,
+        "recent": false
+      },
+      {
+        "input": {
+          "cache_write": null,
+          "cached": 0.1,
+          "normal": 0.2
+        },
+        "name": "code-llama-13b-instruct",
+        "output": 0.2,
+        "recent": false
+      },
+      {
+        "input": {
+          "cache_write": null,
+          "cached": 0.1,
+          "normal": 0.2
+        },
+        "name": "code-llama-13b-python",
+        "output": 0.2,
+        "recent": false
+      },
+      {
+        "input": {
+          "cache_write": null,
+          "cached": 0.45,
+          "normal": 0.9
+        },
+        "name": "code-llama-34b",
+        "output": 0.9,
+        "recent": false
+      },
+      {
+        "input": {
+          "cache_write": null,
+          "cached": 0.45,
+          "normal": 0.9
+        },
+        "name": "code-llama-34b-instruct",
+        "output": 0.9,
+        "recent": false
+      },
+      {
+        "input": {
+          "cache_write": null,
+          "cached": 0.45,
+          "normal": 0.9
+        },
+        "name": "code-llama-34b-python",
+        "output": 0.9,
+        "recent": false
+      },
+      {
+        "input": {
+          "cache_write": null,
+          "cached": 0.45,
+          "normal": 0.9
+        },
+        "name": "code-llama-70b",
+        "output": 0.9,
+        "recent": false
+      },
+      {
+        "input": {
+          "cache_write": null,
+          "cached": 0.45,
+          "normal": 0.9
+        },
+        "name": "code-llama-70b-instruct",
+        "output": 0.9,
+        "recent": false
+      },
+      {
+        "input": {
+          "cache_write": null,
+          "cached": 0.45,
+          "normal": 0.9
+        },
+        "name": "code-llama-70b-python",
+        "output": 0.9,
+        "recent": false
+      },
+      {
+        "input": {
+          "cache_write": null,
+          "cached": 0.1,
+          "normal": 0.2
+        },
+        "name": "code-llama-7b",
+        "output": 0.2,
+        "recent": false
+      },
+      {
+        "input": {
+          "cache_write": null,
+          "cached": 0.1,
+          "normal": 0.2
+        },
+        "name": "code-llama-7b-instruct",
+        "output": 0.2,
+        "recent": false
+      },
+      {
+        "input": {
+          "cache_write": null,
+          "cached": 0.1,
+          "normal": 0.2
+        },
+        "name": "code-llama-7b-python",
+        "output": 0.2,
+        "recent": false
+      },
+      {
+        "input": {
+          "cache_write": null,
+          "cached": 0.1,
+          "normal": 0.2
+        },
+        "name": "codeqwen-1.5-7b",
+        "output": 0.2,
+        "recent": false
+      },
+      {
+        "input": {
+          "cache_write": null,
+          "cached": 0.05,
+          "normal": 0.1
+        },
+        "name": "codegemma-2b",
+        "output": 0.1,
+        "recent": false
+      },
+      {
+        "input": {
+          "cache_write": null,
+          "cached": 0.1,
+          "normal": 0.2
+        },
+        "name": "codegemma-7b",
+        "output": 0.2,
+        "recent": false
+      },
+      {
+        "input": {
+          "cache_write": null,
+          "cached": 0.6,
+          "normal": 1.2
+        },
+        "name": "cogito-671b-v2.1",
+        "output": 1.2,
+        "recent": false
+      },
+      {
+        "input": {
+          "cache_write": null,
+          "cached": 0.05,
+          "normal": 0.1
+        },
+        "name": "cogito-v1-preview-llama-3b",
+        "output": 0.1,
+        "recent": false
+      },
+      {
+        "input": {
+          "cache_write": null,
+          "cached": 0.45,
+          "normal": 0.9
+        },
+        "name": "cogito-v1-preview-llama-70b",
+        "output": 0.9,
+        "recent": false
+      },
+      {
+        "input": {
+          "cache_write": null,
+          "cached": 0.1,
+          "normal": 0.2
+        },
+        "name": "cogito-v1-preview-llama-8b",
+        "output": 0.2,
+        "recent": false
+      },
+      {
+        "input": {
+          "cache_write": null,
+          "cached": 0.1,
+          "normal": 0.2
+        },
+        "name": "cogito-v1-preview-qwen-14b",
+        "output": 0.2,
+        "recent": false
+      },
+      {
+        "input": {
+          "cache_write": null,
+          "cached": 0.45,
+          "normal": 0.9
+        },
+        "name": "cogito-v1-preview-qwen-32b",
+        "output": 0.9,
+        "recent": false
+      },
+      {
+        "input": {
+          "cache_write": null,
+          "cached": 0.6,
+          "normal": 1.2
+        },
+        "name": "dbrx-instruct",
+        "output": 1.2,
+        "recent": false
+      },
+      {
+        "input": {
+          "cache_write": null,
+          "cached": 0.05,
+          "normal": 0.1
+        },
+        "name": "deepseek-coder-1.3b-base",
+        "output": 0.1,
+        "recent": false
+      },
+      {
+        "input": {
+          "cache_write": null,
+          "cached": 0.45,
+          "normal": 0.9
+        },
+        "name": "deepseek-coder-33b-instruct",
+        "output": 0.9,
+        "recent": false
+      },
+      {
+        "input": {
+          "cache_write": null,
+          "cached": 0.1,
+          "normal": 0.2
+        },
+        "name": "deepseek-coder-7b-base",
+        "output": 0.2,
+        "recent": false
+      },
+      {
+        "input": {
+          "cache_write": null,
+          "cached": 0.1,
+          "normal": 0.2
+        },
+        "name": "deepseek-coder-7b-base-v1.5",
+        "output": 0.2,
+        "recent": false
+      },
+      {
+        "input": {
+          "cache_write": null,
+          "cached": 0.1,
+          "normal": 0.2
+        },
+        "name": "deepseek-coder-7b-instruct-v1.5",
+        "output": 0.2,
+        "recent": false
+      },
+      {
+        "input": {
+          "cache_write": null,
+          "cached": 0.675,
           "normal": 1.35
         },
-        "name": "deepseek-r1",
+        "name": "deepseek-r1-(fast)",
         "output": 5.4,
         "recent": false
       },
       {
         "input": {
           "cache_write": null,
-          "cached": null,
-          "normal": 0.22
-        },
-        "name": "qwen3-235b-a22b",
-        "output": 0.88,
-        "recent": true
-      },
-      {
-        "input": {
-          "cache_write": null,
-          "cached": null,
-          "normal": 0.9
-        },
-        "name": "qwen2p5-vl-32b-instruct",
-        "output": 0.9,
-        "recent": false
-      },
-      {
-        "input": {
-          "cache_write": null,
-          "cached": null,
-          "normal": 0.9
-        },
-        "name": "deepseek-v3",
-        "output": 0.9,
-        "recent": false
-      },
-      {
-        "input": {
-          "cache_write": null,
-          "cached": null,
-          "normal": 0.9
-        },
-        "name": "llama-v3p3-70b-instruct",
-        "output": 0.9,
-        "recent": true
-      },
-      {
-        "input": {
-          "cache_write": null,
-          "cached": null,
-          "normal": 1.2
-        },
-        "name": "kimi-k2-thinking",
-        "output": 1.2,
-        "recent": true
-      },
-      {
-        "input": {
-          "cache_write": null,
-          "cached": null,
-          "normal": 0.3
-        },
-        "name": "minimax-m2",
-        "output": 1.2,
-        "recent": false
-      },
-      {
-        "input": {
-          "cache_write": null,
-          "cached": null,
-          "normal": 0.15
-        },
-        "name": "qwen3-vl-30b-a3b-thinking",
-        "output": 0.6,
-        "recent": true
-      },
-      {
-        "input": {
-          "cache_write": null,
-          "cached": null,
-          "normal": 0.15
-        },
-        "name": "qwen3-vl-30b-a3b-instruct",
-        "output": 0.6,
-        "recent": true
-      },
-      {
-        "input": {
-          "cache_write": null,
-          "cached": null,
+          "cached": 0.1,
           "normal": 0.2
         },
-        "name": "qwen3-reranker-8b",
+        "name": "llama-2-13b",
         "output": 0.2,
-        "recent": true
+        "recent": false
       },
       {
         "input": {
           "cache_write": null,
-          "cached": null,
-          "normal": 0.22
+          "cached": 0.1,
+          "normal": 0.2
         },
-        "name": "qwen3-vl-235b-a22b-thinking",
-        "output": 0.88,
-        "recent": true
+        "name": "llama-2-13b-chat",
+        "output": 0.2,
+        "recent": false
       },
       {
         "input": {
           "cache_write": null,
-          "cached": null,
-          "normal": 0.22
-        },
-        "name": "qwen3-vl-235b-a22b-instruct",
-        "output": 0.88,
-        "recent": true
-      },
-      {
-        "input": {
-          "cache_write": null,
-          "cached": null,
+          "cached": 0.05,
           "normal": 0.1
         },
-        "name": "qwen3-embedding-8b",
+        "name": "llama-2-70b",
         "output": 0.1,
-        "recent": true
+        "recent": false
       },
       {
         "input": {
           "cache_write": null,
-          "cached": null,
+          "cached": 0.45,
+          "normal": 0.9
+        },
+        "name": "llama-2-70b-chat",
+        "output": 0.9,
+        "recent": false
+      },
+      {
+        "input": {
+          "cache_write": null,
+          "cached": 0.1,
           "normal": 0.2
         },
-        "name": "qwen3-8b",
+        "name": "llama-2-7b",
         "output": 0.2,
+        "recent": false
+      },
+      {
+        "input": {
+          "cache_write": null,
+          "cached": 0.1,
+          "normal": 0.2
+        },
+        "name": "llama-2-7b-chat",
+        "output": 0.2,
+        "recent": false
+      },
+      {
+        "input": {
+          "cache_write": null,
+          "cached": 0.1,
+          "normal": 0.2
+        },
+        "name": "llama-3-8b",
+        "output": 0.2,
+        "recent": false
+      },
+      {
+        "input": {
+          "cache_write": null,
+          "cached": 0.1,
+          "normal": 0.2
+        },
+        "name": "llama-3-8b-instruct",
+        "output": 0.2,
+        "recent": false
+      },
+      {
+        "input": {
+          "cache_write": null,
+          "cached": 0.45,
+          "normal": 0.9
+        },
+        "name": "llama-3-70b-instruct",
+        "output": 0.9,
+        "recent": false
+      },
+      {
+        "input": {
+          "cache_write": null,
+          "cached": 1.5,
+          "normal": 3
+        },
+        "name": "llama-3.1-405b-instruct",
+        "output": 3,
+        "recent": false
+      },
+      {
+        "input": {
+          "cache_write": null,
+          "cached": 0.1,
+          "normal": 0.2
+        },
+        "name": "mistral-7b",
+        "output": 0.2,
+        "recent": false
+      },
+      {
+        "input": {
+          "cache_write": null,
+          "cached": 0.25,
+          "normal": 0.5
+        },
+        "name": "mixtral-8x7b",
+        "output": 0.5,
+        "recent": false
+      },
+      {
+        "input": {
+          "cache_write": null,
+          "cached": 0.5,
+          "normal": 1
+        },
+        "name": "glm-5",
+        "output": 3.2,
         "recent": true
       }
     ]
@@ -1485,6 +1715,210 @@
         },
         "name": "grok-2-image-1212",
         "output": 0.07
+      }
+    ]
+  },
+  "zai": {
+    "models": [
+      {
+        "input": {
+          "cache_write": null,
+          "cached": 0.2,
+          "normal": 1
+        },
+        "name": "glm-5",
+        "output": 3.2,
+        "recent": true
+      },
+      {
+        "input": {
+          "cache_write": null,
+          "cached": 0.3,
+          "normal": 1.2
+        },
+        "name": "glm-5-code",
+        "output": 5,
+        "recent": true
+      },
+      {
+        "input": {
+          "cache_write": null,
+          "cached": 0.11,
+          "normal": 0.6
+        },
+        "name": "glm-4.7",
+        "output": 2.2,
+        "recent": false
+      },
+      {
+        "input": {
+          "cache_write": null,
+          "cached": 0.01,
+          "normal": 0.07
+        },
+        "name": "glm-4.7-flashx",
+        "output": 0.4,
+        "recent": false
+      },
+      {
+        "input": {
+          "cache_write": null,
+          "cached": 0.11,
+          "normal": 0.6
+        },
+        "name": "glm-4.6",
+        "output": 2.2,
+        "recent": false
+      },
+      {
+        "input": {
+          "cache_write": null,
+          "cached": 0.11,
+          "normal": 0.6
+        },
+        "name": "glm-4.5",
+        "output": 2.2,
+        "recent": false
+      },
+      {
+        "input": {
+          "cache_write": null,
+          "cached": 0.45,
+          "normal": 2.2
+        },
+        "name": "glm-4.5-x",
+        "output": 8.9,
+        "recent": false
+      },
+      {
+        "input": {
+          "cache_write": null,
+          "cached": 0.03,
+          "normal": 0.2
+        },
+        "name": "glm-4.5-air",
+        "output": 1.1,
+        "recent": false
+      },
+      {
+        "input": {
+          "cache_write": null,
+          "cached": 0.22,
+          "normal": 1.1
+        },
+        "name": "glm-4.5-airx",
+        "output": 4.5,
+        "recent": false
+      },
+      {
+        "input": {
+          "cache_write": null,
+          "cached": null,
+          "normal": 0.1
+        },
+        "name": "glm-4-32b-0414-128k",
+        "output": 0.1,
+        "recent": false
+      },
+      {
+        "input": {
+          "cache_write": null,
+          "cached": 0,
+          "normal": 0
+        },
+        "name": "glm-4.7-flash",
+        "output": 0,
+        "recent": false
+      },
+      {
+        "input": {
+          "cache_write": null,
+          "cached": 0,
+          "normal": 0
+        },
+        "name": "glm-4.5-flash",
+        "output": 0,
+        "recent": false
+      },
+      {
+        "input": {
+          "cache_write": null,
+          "cached": 0.05,
+          "normal": 0.3
+        },
+        "name": "glm-4.6v",
+        "output": 0.9,
+        "recent": false
+      },
+      {
+        "input": {
+          "cache_write": null,
+          "cached": null,
+          "normal": 0.03
+        },
+        "name": "glm-ocr",
+        "output": 0.03,
+        "recent": false
+      },
+      {
+        "input": {
+          "cache_write": null,
+          "cached": 0.004,
+          "normal": 0.04
+        },
+        "name": "glm-4.6v-flashx",
+        "output": 0.4,
+        "recent": false
+      },
+      {
+        "input": {
+          "cache_write": null,
+          "cached": 0.11,
+          "normal": 0.6
+        },
+        "name": "glm-4.5v",
+        "output": 1.8,
+        "recent": false
+      },
+      {
+        "input": {
+          "cache_write": null,
+          "cached": 0,
+          "normal": 0
+        },
+        "name": "glm-4.6v-flash",
+        "output": 0,
+        "recent": false
+      },
+      {
+        "input": {
+          "cache_write": null,
+          "cached": null,
+          "normal": 0.03
+        },
+        "name": "glm-asr-2512",
+        "output": 0.03,
+        "recent": false
+      },
+      {
+        "input": {
+          "cache_write": null,
+          "cached": null,
+          "normal": 0.7
+        },
+        "name": "glm slide/poster agent(beta)",
+        "output": 0.7,
+        "recent": false
+      },
+      {
+        "input": {
+          "cache_write": null,
+          "cached": null,
+          "normal": 3
+        },
+        "name": "general-purpose translation",
+        "output": 3,
+        "recent": false
       }
     ]
   }

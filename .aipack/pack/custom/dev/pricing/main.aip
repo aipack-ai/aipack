@@ -25,16 +25,18 @@ local base_dir = p_utils.base_dir
 --             Static https://fireworks.ai/pricing#serverless-pricing
 -- TOGETHER  - login models price: https://api.together.ai/models
 --             names In the browser window: console.log($$('td[id]').map(td => td.id).join('\n'));
+-- ZAI       - https://docs.z.ai/guides/overview/pricing (take the md)
 local inputs = {
    -- This openai link does not work with puppeteer, needs to copy/paste conine in the pricing-openai.md
    {name = "openai",    do_json = false,  url = ""},
    {name = "gemini",    do_json = false,  url = ""},
    {name = "deepseek",  do_json = false,  url = "https://api-docs.deepseek.com/quick_start/pricing"},
-   {name = "anthropic", do_json = true,   url = ""},
+   {name = "anthropic", do_json = false,  url = ""},
    {name = "xai",       do_json = false,  url = ""}, 
    {name = "groq",      do_json = false,  url = ""},
-   {name = "fireworks", do_json = false,  url = ""},
-   {name = "together",  do_json = false,  url = ""}
+   {name = "fireworks", do_json = true,   url = ""},
+   {name = "together",  do_json = false,  url = ""},
+   {name = "zai",       do_json = false,  url = ""}
 }
 
 -- Agument inputs
@@ -158,6 +160,8 @@ Create a pricing JSON for this provider, following the following rules (pick the
 - For Groq models, 
     - For Groq models there are two sections in the markdown, the pricing and the name. Make sure to take the name from the name section, and infer the "display name" to get the pricing. 
     - For Groq models, the models that are both section name and price, mark them as `recent: true`, if they are not in the model names, then `recent: false`    
+- For ZAI models
+  - only `glm-5..` are `recent: true` everything else is false. 
 - Do not put in code block, just the raw json, pretty formatted.
 - If caching price not available, set to `null`
 - If price has text and audio, take the text price
