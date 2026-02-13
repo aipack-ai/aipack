@@ -38,7 +38,7 @@ impl Error {
 
 	/// Same as custom_and_cause (just a "cute" shorcut)
 	pub fn cc(context: impl Into<String>, cause: impl std::fmt::Display) -> Self {
-		Self::Custom(format!("{}.\nCause: {}", context.into(), cause.to_string()))
+		Self::Custom(format!("{}.\nCause: {}", context.into(), cause))
 	}
 }
 

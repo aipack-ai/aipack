@@ -196,7 +196,7 @@ impl AppState {
 
 			if let Some(price) = task.pricing_input {
 				if !msg.is_empty() {
-					msg.push_str(" ");
+					msg.push(' ');
 				}
 				msg.push_str(&format!("${price}/MTk"));
 			} else {
@@ -225,10 +225,9 @@ impl AppState {
 
 		if let Some(tk_cached) = task.tk_prompt_cached
 			&& tk_cached > 0
+			&& let Some(cache_saving) = task.cost_cache_saving
 		{
-			if let Some(cache_saving) = task.cost_cache_saving {
-				buf.push_str(&format!("-${cache_saving} saving"));
-			}
+			buf.push_str(&format!("-${cache_saving} saving"));
 		}
 
 		if let Some(tk_cache_creation) = task.tk_prompt_cache_creation

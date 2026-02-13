@@ -146,11 +146,10 @@ fn render_body(area: Rect, buf: &mut Buffer, state: &mut AppState) {
 			&& zone
 				.is_mouse_over(area, scroll, state.last_mouse_evt(), &mut line.spans)
 				.is_some()
+			&& zone.span_count < min_span_count
 		{
-			if zone.span_count < min_span_count {
-				min_span_count = zone.span_count;
-				hovered_idx = Some(i);
-			}
+			min_span_count = zone.span_count;
+			hovered_idx = Some(i);
 		}
 	}
 

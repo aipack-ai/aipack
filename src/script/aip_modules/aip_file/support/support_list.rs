@@ -97,16 +97,12 @@ pub fn list_files_with_options(
 		.map(|f| {
 			let smeta = f.meta().ok();
 			let spath = if absolute {
-				SPath::from(f)
+				f
 			} else {
 				//
 				let diff = f.try_diff(&base_path)?;
 				// if the diff goes back from base_path, then, we put the absolute path
-				if diff.as_str().starts_with("..") {
-					SPath::from(f)
-				} else {
-					diff
-				}
+				if diff.as_str().starts_with("..") { f } else { diff }
 			};
 
 			Ok(FileRef { spath, smeta })

@@ -15,6 +15,9 @@ unsafe_code = "forbid"
 # unused = { level = "allow", priority = -1 } # For exploratory dev.
 # deprecated = { level = "allow", priority = -1 } # For exploratory dev.
 
+[lints.clippy]
+redundant_closure_call = "allow"
+
 [[bin]]
 name = "aip"
 path = "src/main.rs"

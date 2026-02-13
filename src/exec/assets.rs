@@ -5,7 +5,6 @@ use std::fs::write;
 pub const ASSETS_ZIP: &[u8] = include_bytes!(env!("INIT_ASSETS_ZIP"));
 
 use crate::hub::get_hub;
-use blake3;
 use simple_fs::{SPath, ensure_dir, list_files};
 use std::collections::HashSet;
 use std::io::{Cursor, Read};

@@ -94,12 +94,10 @@ fn render_no_tasks(area: Rect, buf: &mut Buffer, state: &mut AppState) {
 			if let Some(line) = lines.get_mut(zone.line_idx)
 				&& zone
 					.is_mouse_over(area, scroll, state.last_mouse_evt(), &mut line.spans)
-					.is_some()
+					.is_some() && zone.span_count < min_span_count
 			{
-				if zone.span_count < min_span_count {
-					min_span_count = zone.span_count;
-					hovered_idx = Some(i);
-				}
+				min_span_count = zone.span_count;
+				hovered_idx = Some(i);
 			}
 		}
 

@@ -627,7 +627,7 @@ pub(super) fn file_first(
 	let absolute_path = SPath::from(&sfile);
 
 	let spath = if absolute {
-		sfile.into()
+		sfile
 	} else {
 		sfile
 			.try_diff(&base_path)

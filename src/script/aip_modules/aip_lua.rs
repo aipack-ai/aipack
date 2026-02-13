@@ -9,8 +9,8 @@
 //!
 //! - `aip.lua.dump(value: any) -> string`
 
+use crate::Result;
 use crate::runtime::Runtime;
-use crate::{Error, Result};
 use mlua::{Lua, Table, Value};
 
 pub fn init_module(lua: &Lua, _runtime: &Runtime) -> Result<Table> {
@@ -93,18 +93,12 @@ fn merge_deep(_lua: &Lua, (target, objs): (Table, mlua::Variadic<Value>)) -> mlu
 /// Extract the value if table, if nil/null return None, otherwise error
 fn extract_table(obj: Value) -> Result<Option<Table>> {
 	if obj == Value::NULL {
-		return Ok(None);
+		Ok(None)
 	} else {
 		match obj {
 			Value::Nil => Ok(None),
 			Value::Table(table) => Ok(Some(table)),
-			other => {
-				return Err(Error::Custom(format!(
-					"Cannot merge a non table type. Actual type: {}",
-					other.type_name()
-				))
-				.into());
-			}
+			other => Err(format!("Cannot merge a non table type. Actual type: {}", other.type_name()).into()),
 		}
 	}
 }

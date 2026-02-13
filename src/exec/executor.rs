@@ -247,10 +247,10 @@ impl Executor {
 
 			ExecActionEvent::OpenAgent => {
 				//
-				if let Some(agent_file_path) = self.get_agent_file_path().await {
-					if let Err(err) = editor::open_file_auto(&agent_file_path) {
-						hub.publish(Error::cc("Fail to open agent file in editor", err)).await;
-					}
+				if let Some(agent_file_path) = self.get_agent_file_path().await
+					&& let Err(err) = editor::open_file_auto(&agent_file_path)
+				{
+					hub.publish(Error::cc("Fail to open agent file in editor", err)).await;
 				}
 			}
 

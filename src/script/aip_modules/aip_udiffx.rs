@@ -95,9 +95,7 @@ fn apply_file_changes(
 
 	// -- 3) Resolve base_dir
 	let base_dir_str = base_dir.unwrap_or_default();
-	let abs_base_dir = runtime
-		.resolve_path_default(base_dir_str.into(), None)
-		.map_err(crate::Error::from)?;
+	let abs_base_dir = runtime.resolve_path_default(base_dir_str.into(), None)?;
 
 	// -- 4) Apply changes
 	let status = udiffx::apply_file_changes(&abs_base_dir, file_changes).map_err(crate::Error::from)?;

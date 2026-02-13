@@ -101,21 +101,19 @@ fn render_installing(area: Rect, buf: &mut Buffer, state: &mut AppState) {
 	let work_id = state.current_work_id();
 
 	let mut detail_msg = String::new();
-	if let Some(work_id) = work_id {
-		if let Ok(work) = WorkBmc::get(state.mm(), work_id) {
-			if let Some(msg) = work.message {
-				detail_msg = msg;
-			}
-		}
+	if let Some(work_id) = work_id
+		&& let Ok(work) = WorkBmc::get(state.mm(), work_id)
+		&& let Some(msg) = work.message
+	{
+		detail_msg = msg;
 	}
 
 	let mut log_msg = String::new();
-	if let Ok(logs) = LogBmc::list_for_run_only(state.mm(), 0.into()) {
-		if let Some(last_log) = logs.last() {
-			if let Some(msg) = &last_log.message {
-				log_msg = msg.clone();
-			}
-		}
+	if let Ok(logs) = LogBmc::list_for_run_only(state.mm(), 0.into())
+		&& let Some(last_log) = logs.last()
+		&& let Some(msg) = &last_log.message
+	{
+		log_msg = msg.clone();
 	}
 
 	// Indicator animation
@@ -149,12 +147,11 @@ fn render_installed(area: Rect, buf: &mut Buffer, state: &mut AppState) {
 	let work_id = state.current_work_id();
 	let mut pack_info = "Unknown pack".to_string();
 
-	if let Some(work_id) = work_id {
-		if let Ok(work) = WorkBmc::get(state.mm(), work_id) {
-			if let Some(msg) = work.message {
-				pack_info = msg;
-			}
-		}
+	if let Some(work_id) = work_id
+		&& let Ok(work) = WorkBmc::get(state.mm(), work_id)
+		&& let Some(msg) = work.message
+	{
+		pack_info = msg;
 	}
 
 	let lines = vec![

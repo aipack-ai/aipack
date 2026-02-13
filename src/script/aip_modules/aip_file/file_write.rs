@@ -800,8 +800,8 @@ mod tests {
 		.await?;
 
 		// -- Check
-		assert_eq!(res.x_get_bool("exists_src")?, false);
-		assert_eq!(res.x_get_bool("exists_dest")?, true);
+		assert!(!res.x_get_bool("exists_src")?);
+		assert!(res.x_get_bool("exists_dest")?);
 		assert_contains(res.x_get_str("dest_path")?, fx_dest);
 
 		Ok(())
