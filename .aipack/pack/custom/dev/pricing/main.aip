@@ -26,7 +26,11 @@ local base_dir = p_utils.base_dir
 -- TOGETHER  - login models price: https://api.together.ai/models
 --             names In the browser window: console.log($$('td[id]').map(td => td.id).join('\n'));
 -- ZAI       - https://docs.z.ai/guides/overview/pricing (take the md)
-local inputs = {
+
+-- Config
+local config = {}
+
+config.providers = {
    -- This openai link does not work with puppeteer, needs to copy/paste conine in the pricing-openai.md
    {name = "openai",    do_json = false,  url = ""},
    {name = "gemini",    do_json = false,  url = ""},
@@ -34,17 +38,20 @@ local inputs = {
    {name = "anthropic", do_json = false,  url = ""},
    {name = "xai",       do_json = false,  url = ""}, 
    {name = "groq",      do_json = false,  url = ""},
-   {name = "fireworks", do_json = true,   url = ""},
+   {name = "fireworks", do_json = false,   url = ""},
    {name = "together",  do_json = false,  url = ""},
    {name = "zai",       do_json = false,  url = ""}
 }
 
--- Agument inputs
-for _, input in ipairs(inputs) do
-    input._display  = input.name
+-- Compute inputs
+local inputs = {}
+for _, provider in ipairs(config.providers) do
+	  local input     = aip.lua.merge({}, provider)
+		input._display  = input.name
     input.md_path   = base_dir .. "/.data/pricing-" .. input.name .. ".md"
     input.html_path = base_dir .. "/.data/pricing-" .. input.name .. ".html"
     input.json_path = base_dir .. "/.data/pricing-" .. input.name .. ".json"
+    table.insert(inputs, input)
 end
 
 return aip.flow.before_all_response({
