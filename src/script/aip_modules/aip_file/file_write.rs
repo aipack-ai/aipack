@@ -20,7 +20,7 @@ use crate::Error;
 use crate::dir_context::PathResolver;
 use crate::hub::get_hub;
 use crate::runtime::Runtime;
-use crate::script::aip_modules::aip_file::support::{check_access_delete, check_access_write, process_path_reference};
+use crate::script::aip_modules::support::{check_access_delete, check_access_write, process_path_reference};
 use crate::support::files::safer_trash_file;
 use crate::support::text::{ensure_single_trailing_newline, trim_end_if_needed, trim_start_if_needed};
 use crate::types::{FileInfo, FileOverOptions, SaveOptions};

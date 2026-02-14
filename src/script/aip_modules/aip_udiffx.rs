@@ -3,10 +3,12 @@
 //! This module provides functionality to apply multi-file changes (New, Patch, Rename, Delete)
 //! encoded in the `<FILE_CHANGES>` envelope format, using the `udiffx` crate.
 
-use crate::Result;
 use crate::runtime::Runtime;
-use crate::support::W;
+use crate::script::LuaValueExt;
+use crate::script::aip_modules::support::{base_dir_and_globs, list_files_with_options};
+use crate::support::{AsStrsExt, W};
 use crate::types::Extrude;
+use crate::{Error, Result};
 use mlua::{IntoLua, Lua, MultiValue, Table, Value};
 use udiffx::ApplyChangesStatus;
 
@@ -17,8 +19,13 @@ pub fn init_module(lua: &Lua, runtime: &Runtime) -> Result<Table> {
 
 	let runtime_inner = runtime.clone();
 	let apply_file_changes_fn = lua.create_function(move |lua, args| apply_file_changes(lua, &runtime_inner, args))?;
+	let runtime_inner = runtime.clone();
+	let load_files_context_fn = lua.create_function(move |lua, args| load_files_context(lua, &runtime_inner, args))?;
+	let file_changes_instruction_fn = lua.create_function(file_changes_instruction)?;
 
 	table.set("apply_file_changes", apply_file_changes_fn)?;
+	table.set("load_files_context", load_files_context_fn)?;
+	table.set("file_changes_instruction", file_changes_instruction_fn)?;
 
 	Ok(table)
 }
@@ -110,6 +117,82 @@ fn apply_file_changes(
 	}
 
 	Ok(values)
+}
+
+/// ## Lua Documentation
+///
+/// Loads file context blocks for matched files, using the `<FILE_CONTENT>` format.
+///
+/// ```lua
+/// -- API Signatures
+/// aip.udiffx.load_files_context(include_globs: string | list<string>, options?: {base_dir?: string, absolute?: boolean}): string | nil
+/// ```
+/// Finds files matching `include_globs` and returns their content wrapped in `<FILE_CONTENT>` tags.
+/// This format is used to provide file context to LLMs.
+///
+/// Returns `nil` when no files match the globs.
+fn load_files_context(
+	lua: &Lua,
+	runtime: &Runtime,
+	(include_globs, options): (Value, Option<Value>),
+) -> mlua::Result<Value> {
+	let (base_path, include_globs) = base_dir_and_globs(runtime, include_globs, options.as_ref())?;
+	let absolute = options.x_get_bool("absolute").unwrap_or(false);
+
+	let file_refs = list_files_with_options(runtime, base_path.as_ref(), &include_globs.x_as_strs(), absolute, true)?;
+
+	if file_refs.is_empty() {
+		return Ok(Value::Nil);
+	}
+
+	let base_path = match base_path {
+		Some(bp) => bp,
+		None => runtime
+			.dir_context()
+			.wks_dir()
+			.ok_or_else(|| Error::custom("Workspace dir is missing"))?
+			.clone(),
+	};
+
+	let mut context = String::new();
+	for file_ref in file_refs {
+		let full_path = if absolute {
+			file_ref.spath.clone()
+		} else {
+			base_path.join(&file_ref.spath)
+		};
+
+		let content = std::fs::read_to_string(full_path).map_err(Error::from)?;
+
+		if !context.is_empty() {
+			context.push('\n');
+		}
+
+		context.push_str(&format!(r#"<FILE_CONTENT path="{}">"#, file_ref.spath));
+		context.push('\n');
+		context.push_str(&content);
+		if !content.ends_with('\n') {
+			context.push('\n');
+		}
+		context.push_str("</FILE_CONTENT>\n");
+	}
+
+	match context.is_empty() {
+		false => Ok(Value::String(lua.create_string(&context)?)),
+		true => Ok(Value::Nil),
+	}
+}
+
+/// ## Lua Documentation
+///
+/// Returns the instruction text describing the `<FILE_CHANGES>` format.
+///
+/// ```lua
+/// -- API Signatures
+/// aip.udiffx.file_changes_instruction(): string
+/// ```
+fn file_changes_instruction(lua: &Lua, (): ()) -> mlua::Result<Value> {
+	Ok(Value::String(lua.create_string(udiffx::prompt_file_changes())?))
 }
 
 // region:    --- IntoLua Implementations

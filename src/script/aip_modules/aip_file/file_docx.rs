@@ -15,6 +15,7 @@
 use crate::Error;
 use crate::dir_context::PathResolver;
 use crate::runtime::Runtime;
+use crate::script::aip_modules;
 use crate::types::FileInfo;
 use mlua::{IntoLua, Lua, Value};
 use simple_fs::SPath;
@@ -93,7 +94,7 @@ pub(super) fn file_save_docx_to_md(
 	})?;
 
 	// -- determine destination paths using the helper
-	let (rel_md, full_md) = super::support::resolve_dest_path(lua, runtime, &rel_docx, dest, "md", None)?;
+	let (rel_md, full_md) = aip_modules::support::resolve_dest_path(lua, runtime, &rel_docx, dest, "md", None)?;
 
 	// -- write out and return metadata
 	simple_fs::ensure_file_dir(&full_md).map_err(Error::from)?;

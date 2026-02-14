@@ -7,7 +7,7 @@
 //!
 //! ### Functions
 //!
-//! - `aip.file.save_changes(rel_path: string, changes: string): FileInfo, ChangesInfo`  
+//! - `aip.file.save_changes(rel_path: string, changes: string): FileInfo, ChangesInfo`
 //!
 //! The helper applies an *aip change-block* to a file, saves it, and returns
 //! the resulting [`FileInfo`].
@@ -16,7 +16,7 @@ use crate::Error;
 use crate::dir_context::PathResolver;
 use crate::hub::get_hub;
 use crate::runtime::Runtime;
-use crate::script::aip_modules::aip_file::support::check_access_write;
+use crate::script::aip_modules::support::check_access_write;
 use crate::support::text;
 use crate::types::{ChangesInfo, FileInfo};
 use mlua::{IntoLua, Lua, Value};

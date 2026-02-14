@@ -366,7 +366,7 @@ mod tests {
 
 	use crate::_test_support::assert_contains;
 	use crate::runtime::Runtime;
-	use crate::script::aip_modules::aip_file::support::{process_path_reference, process_path_references};
+	use crate::script::aip_modules::support::{process_path_reference, process_path_references};
 	use crate::support::AsStrsExt;
 
 	#[tokio::test]

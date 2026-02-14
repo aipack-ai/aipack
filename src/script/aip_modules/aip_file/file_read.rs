@@ -1,7 +1,7 @@
 use crate::dir_context::PathResolver;
 use crate::runtime::Runtime;
 use crate::script::LuaValueExt;
-use crate::script::aip_modules::aip_file::support::{
+use crate::script::aip_modules::support::{
 	base_dir_and_globs, compute_base_dir, create_file_records, list_files_with_options,
 };
 use crate::script::support::into_option_string;
