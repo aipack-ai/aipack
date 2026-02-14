@@ -16,6 +16,7 @@ local base_dir = p_utils.base_dir
 
 -- GROQ      - https://console.groq.com/docs/models pricing: https://groq.com/pricing/
 -- OPENAI    - https://platform.openai.com/docs/pricing/
+--             https://developers.openai.com/api/docs/pricing.md (unfortunately, does not have the dat)
 -- ANTHROPIC - https://platform.claude.com/docs/en/about-claude/pricing
 --             https://claude.com/pricing#api
 --             Overview https://docs.anthropic.com/en/docs/about-claude/models/overview
@@ -32,13 +33,13 @@ local config = {}
 
 config.providers = {
    -- This openai link does not work with puppeteer, needs to copy/paste conine in the pricing-openai.md
-   {name = "openai",    do_json = false,  url = ""},
+   {name = "openai",    do_json = true ,  url = ""},
    {name = "gemini",    do_json = false,  url = ""},
    {name = "deepseek",  do_json = false,  url = "https://api-docs.deepseek.com/quick_start/pricing"},
    {name = "anthropic", do_json = false,  url = ""},
    {name = "xai",       do_json = false,  url = ""}, 
    {name = "groq",      do_json = false,  url = ""},
-   {name = "fireworks", do_json = false,   url = ""},
+   {name = "fireworks", do_json = false,  url = ""},
    {name = "together",  do_json = false,  url = ""},
    {name = "zai",       do_json = false,  url = ""}
 }
@@ -70,15 +71,11 @@ if not input.do_json  then
     return aip.flow.skip("" .. input.name .. " marked as do_json = false, so skipping")
 end
 
-if aip.path.exists(html_path) then 
-    local slim_html = aip.file.save_html_to_slim(html_path)
-    aip.file.save_html_to_md(slim_html.path, md_path)
+
+if input.url and input.url:find("%S") then
+	local res = aip.web.get(input.url)
+	aip.file.save(input.html_path, res.content)
 end 
-
-if not aip.path.exists(md_path) then
-    return aip.flow.skip("" .. input.name .. " no md " .. md_path .. " so skipping")
-end
-
 -- local rem_url = input.url
 -- if not aip.path.exists(md_path) then 
 --     local req = {
@@ -95,8 +92,14 @@ end
 --     aip.file.save(md_path, content)
 -- end
 
+if aip.path.exists(html_path) then 
+    local slim_html = aip.file.save_html_to_slim(html_path)
+    aip.file.save_html_to_md(slim_html.path, md_path)
+end 
 
-
+if not aip.path.exists(md_path) then
+    return aip.flow.skip("" .. input.name .. " no md " .. md_path .. " so skipping")
+end
 
 local file = aip.file.load(md_path)
 
