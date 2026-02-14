@@ -6,7 +6,7 @@
 //!
 //! The `aip.json` module exposes functions to parse and stringify JSON content.
 //!
-//! IMPORTANT: By default, this suppor the parsing of jsonc content, meaning json with optional comments
+//! IMPORTANT: By default, this support the parsing of jsonc content, meaning json with optional comments
 //!
 //! - Parse function will return nil if content is nil
 //! - stringify return a single line

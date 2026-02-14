@@ -1,0 +1,49 @@
+{
+  "providers": [
+    {
+      "name": "openai",
+      "do_json": false,
+      "url": ""
+    },
+    {
+      "name": "gemini",
+      "do_json": false,
+      "url": ""
+    },
+    {
+      "name": "deepseek",
+      "do_json": false,
+      "url": "https://api-docs.deepseek.com/quick_start/pricing"
+    },
+    {
+      "name": "anthropic",
+      "do_json": false,
+      "url": ""
+    },
+    {
+      "name": "xai",
+      "do_json": false,
+      "url": ""
+    },
+    {
+      "name": "groq",
+      "do_json": false,
+      "url": ""
+    },
+    {
+      "name": "fireworks",
+      "do_json": false,
+      "url": ""
+    },
+    {
+      "name": "together",
+      "do_json": false,
+      "url": ""
+    },
+    {
+      "name": "zai",
+      "do_json": false,
+      "url": ""
+    }
+  ]
+}

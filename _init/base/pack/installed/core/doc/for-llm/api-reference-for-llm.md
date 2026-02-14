@@ -304,7 +304,7 @@ aip.file.list_load(include_globs: string | string[], options?: {base_dir?: strin
 aip.file.first(include_globs: string | string[], options?: {base_dir?: string, absolute?: boolean}): FileInfo | nil
 aip.file.info(path: string): FileInfo | nil
 aip.file.stats(include_globs: string | string[] | nil, options?: {base_dir?: string, absolute?: boolean}): FileStats | nil // Returns nil if globs is nil, otherwise stats (0s if no matches).
-aip.file.load_json(path: string | nil): table | value | nil
+aip.file.load_json(path: string | nil): table | value | nil // support jsonc (and trailing comma)
 aip.file.load_ndjson(path: string | nil): object[] | nil
 aip.file.load_toml(path: string): table | value
 aip.file.load_yaml(path: string): list
@@ -409,7 +409,7 @@ aip.md.extract_refs(md_content: string | nil): MdRef[] // Returns empty list if 
 ### aip.json - JSON Helpers
 
 ```typescript
-aip.json.parse(content: string | nil): table | value | nil
+aip.json.parse(content: string | nil): table | value | nil // supports jsonc
 aip.json.parse_ndjson(content: string | nil): object[] | nil
 aip.json.stringify(content: table): string
 aip.json.stringify_pretty(content: table): string

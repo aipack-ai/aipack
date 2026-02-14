@@ -78,7 +78,7 @@ pub(super) fn file_load_json(lua: &Lua, runtime: &Runtime, path: String) -> mlua
 			.dir_context()
 			.resolve_path(runtime.session(), path.clone().into(), PathResolver::WksDir, None)?;
 
-	let json_value = jsons::load_jsons_to_serde_value(&full_path).map_err(|e| {
+	let json_value = jsons::load_json_to_serde_value(&full_path).map_err(|e| {
 		Error::from(format!(
 			"aip.file.load_json - Failed to read json file '{path}'.\nCause: {e}",
 		))

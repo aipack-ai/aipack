@@ -32,7 +32,7 @@ pub fn parse_jsonc_to_serde_value(content: &str) -> Result<Option<serde_json::Va
 }
 
 /// Read & parse a json or jsonc/trailing-commas
-pub fn load_jsons_to_serde_value(file: &SPath) -> Result<Option<serde_json::Value>> {
+pub fn load_json_to_serde_value(file: &SPath) -> Result<Option<serde_json::Value>> {
 	let content = simple_fs::read_to_string(file)?;
 
 	let value = parse_jsonc_to_serde_value(&content)?;
