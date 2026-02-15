@@ -31,7 +31,7 @@ flume = "0.12"
 futures-timer = "3.0.3"
 futures = "0.3.31"
 # -- AI
-genai = { version = "0.6.0-alpha.2" }
+genai = { version = "=0.6.0-beta.1" }
 udiffx = { version = "0.1.12", features = ["prompt"]}
 # -- Json & Data Files
 serde = { version = "1", features = ["derive"] }
