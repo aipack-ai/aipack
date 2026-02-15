@@ -1,3 +1,19 @@
+//! Defines the `stats`, `load`, `exists`, `info`, `list`, `list_load`, and `first` functions for the `aip.file` Lua module.
+//!
+//! ---
+//!
+//! ## Lua documentation for `aip.file` read functions
+//!
+//! ### Functions
+//!
+//! - `aip.file.stats(include_globs: string | string[] | nil, options?: {base_dir?: string, absolute?: boolean}): FileStats | nil`
+//! - `aip.file.load(rel_path: string, options?: {base_dir: string}): FileRecord`
+//! - `aip.file.exists(path: string): boolean`
+//! - `aip.file.info(path: string): FileInfo | nil`
+//! - `aip.file.list(include_globs: string | string[], options?: {base_dir?: string, absolute?: boolean, with_meta?: boolean}): FileInfo[]`
+//! - `aip.file.list_load(include_globs: string | string[], options?: {base_dir?: string, absolute?: boolean}): FileRecord[]`
+//! - `aip.file.first(include_globs: string | string[], options?: {base_dir?: string, absolute?: boolean}): FileInfo | nil`
+
 use crate::dir_context::PathResolver;
 use crate::runtime::Runtime;
 use crate::script::LuaValueExt;

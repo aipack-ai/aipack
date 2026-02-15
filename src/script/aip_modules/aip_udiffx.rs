@@ -2,6 +2,16 @@
 //!
 //! This module provides functionality to apply multi-file changes (New, Patch, Rename, Delete)
 //! encoded in the `<FILE_CHANGES>` envelope format, using the `udiffx` crate.
+//!
+//! ---
+//!
+//! ## Lua documentation for `aip.udiffx` functions
+//!
+//! ### Functions
+//!
+//! - `aip.udiffx.apply_file_changes(content: string, base_dir?: string, options?: {extrude?: "content"}): status, remaining`
+//! - `aip.udiffx.load_files_context(include_globs: string | string[], options?: {base_dir?: string, absolute?: boolean}): string | nil`
+//! - `aip.udiffx.file_changes_instruction(): string`
 
 use crate::runtime::Runtime;
 use crate::script::LuaValueExt;
