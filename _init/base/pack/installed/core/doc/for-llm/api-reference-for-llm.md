@@ -474,7 +474,9 @@ aip.hash.blake3_b64u(input: string): string
 ### aip.udiffx - Multi-File Changes
 
 ```typescript
-aip.udiffx.apply_file_changes(content: string, base_dir?: string, options?: {extrude?: "content"}): FileChangesStatus | (FileChangesStatus, string) // If options provided, base_dir must be provided (can be nil).
+aip.udiffx.apply_file_changes(content: string, base_dir?: string, options?: {extrude?: "content"}): ChangesInfo | (ChangesInfo, string) // If options provided, base_dir must be provided (can be nil).
+aip.udiffx.load_files_context(include_globs: string | string[], options?: {base_dir?: string, absolute?: boolean}): string | nil
+aip.udiffx.file_changes_instruction(): string
 ```
 
 ### aip.time - Time Utilities
