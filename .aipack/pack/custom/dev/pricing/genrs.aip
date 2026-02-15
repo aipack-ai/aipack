@@ -3,69 +3,113 @@
 model = "flash"
 ```
 
-# Description
-
-This assumes that `aip run dev@pricing` was run and created the `.ai-pricing/pricing-all.json` file.
-
-Then, we can run this one as `aip run dev@pricing/genrs`.
-
-# Data
+# Before All
 
 ```lua
 local p_utils = require("pricing_utils")
 
-local json_content = aip.file.load(p_utils.json_all_path).content
+local inputs = p_utils.load_inputs()
 
-local data_rs = aip.file.load("src/run/pricing/data.rs")
+for _, input in ipairs(inputs) do
+  input.rust_file_path = "src/run/pricing/data/data_" .. input.name .. ".rs"
+end
+
+return aip.flow.before_all_response({
+  inputs = inputs
+})
+```
+
+# Data
+
+```lua
+
+if not aip.path.exists(input.json_path) then
+  return aip.flow.skip("No JSON found for " .. input.name .. " at " .. input.json_path)
+end
+
+if not input.do_json then
+	return aip.flow.skip("do_json false")
+end
+
+
+local json_file = aip.file.load(input.json_path)
+
+local rust_context = aip.udiffx.load_files_context(input.rust_file_path)
+local udiffx_instr = aip.udiffx.file_changes_instruction()
 
 return {
-    json_content = json_content,
-    data_rs      = data_rs,
+  json_content   = json_file.content,
+  rust_context   = rust_context,
+  rust_file_path = input.rust_file_path,
+  provider_name  = input.name,
+  udiffx_instr   = udiffx_instr,
 }
-
 ```
 
 # Instruction
 
-Below is the JSON file that we need to translate into a Rust file and use to update the `data.rs` file, following its existing format.
+{{{data.udiffx_instr}}}
+
+Below is the source-of-truth JSON data for the provider `{{data.provider_name}}`. 
+You must use this data to update (or create) the Rust pricing file `{{data.rust_file_path}}`.
+
+### Source JSON
 
 ```json
 {{data.json_content}}
 ```
 
-Here is the `data.rs` file to update:
+### Current Rust File Context
+{{#if data.rust_context}}
+{{{data.rust_context}}}
+{{else}}
+(The file `{{data.rust_file_path}}` does not exist yet. You must create it using `FILE_NEW` following the template below.)
 
-```rs
-{{data.data_rs.content}}
+### Rust File Template
+```rust
+use crate::run::pricing::{ModelPricing, ProviderPricing};
+
+pub const [PROVIDER_UPPER]: ProviderPricing = ProviderPricing {
+	name: "{{data.provider_name}}",
+	models: [PROVIDER_UPPER]_MODELS,
+};
+
+const [PROVIDER_UPPER]_MODELS: &[ModelPricing] = &[
+    // Entries from JSON go here
+];
 ```
+*(Note: Replace `[PROVIDER_UPPER]` with the uppercase version of `{{data.provider_name}}`. For example, if provider is `openai`, use `OPENAI` and `OPENAI_MODELS`)*
+{{/if}}
 
-Importantly, we must keep the `data.rs` types as they are, updating or adding only the necessary values. Also, keep the whitespace.
+### Important Update Rules
 
-Here are some crucial rules for updating `data.rs`:
-
-- For OpenAI models, when the name is prefixed with `openai-`, you can remove the prefix from the model name.
-- For Gemini models, ignore the "preview" suffix (for example, `gemini-2.5-pro-preview` becomes `gemini-2.5-pro`).
-- For Gemini pricing, make sure the cache price is defined.
-- For the Google provider, ignore `gemma-3-27b-it` and `text-embedding-004`.
-- Only make necessary changes.
-- For OpenAI pricing, ignore the "flex..." models.
-- For OpenAI pricing, ignore the audio models.
-- Do not remove existing entries that are present in the JSON.
-- Do not add any comments. Comments are not needed in this file.
-- Do not remove comments, and do not add comments.
-
-Just return the `data.rs` file content in a Rust markdown code block.
-
-Also, importantly, do not use code comments to explain what you did. Code comments should be used to document the code, not to explain why a specific update was made.
+1. Use `FILE_PATCH` to update the existing file or `FILE_NEW` to create it if it's missing.
+2. The JSON data is the authoritative source for pricing values.
+3. For each model in the JSON:
+   - Map `name` to `ModelPricing.name`.
+   - Map `input.cached` to `ModelPricing.input_cached` (use `Some(f64)` or `None`).
+   - Map `input.normal` to `ModelPricing.input_normal`.
+   - Map `output` to `ModelPricing.output_normal`.
+   - Set `output_reasoning` to `None` unless it's already specified in the Rust file context with a value.
+4. **Naming Conversions**:
+   - For OpenAI: Remove the `openai-` prefix from the model name (e.g., `openai-gpt-4o` becomes `gpt-4o`).
+   - For Gemini: Remove the `-preview` suffix (e.g., `gemini-2.5-pro-preview` becomes `gemini-2.5-pro`).
+5. **Preserve exact formatting and all comments** present in the existing file.
+6. Only update the model entries. Do not remove existing entries unless they are duplicate or clearly replaced by the JSON data.
+7. Only return the `<FILE_CHANGES>` container.
 
 # Output
 
 ```lua
-local content = ai_response.content
-content = aip.md.outer_block_content_or_raw(content)
+local res = aip.udiffx.apply_file_changes(ai_response.content)
 
-aip.file.save("src/run/pricing/data.rs", content)
+if res.changed_count == 0 then
+  if res.failed_changes and #res.failed_changes > 0 then
+    return { error = "Failed to apply changes for " .. input.name .. ": " .. aip.json.stringify(res.failed_changes) }
+  else
+    return "No changes needed for " .. input.name
+  end
+end
 
-return "Data saved to src/pricing/data.rs"
-
+return "Updated " .. input.name
 ```

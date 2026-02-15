@@ -1,6 +1,11 @@
 use crate::run::pricing::{ModelPricing, ProviderPricing};
 
-pub const TOGETHER_MODELS: &[ModelPricing] = &[
+pub const TOGETHER: ProviderPricing = ProviderPricing {
+	name: "together",
+	models: TOGETHER_MODELS,
+};
+
+const TOGETHER_MODELS: &[ModelPricing] = &[
 	ModelPricing {
 		name: "deepcogito/cogito-v2-preview-deepseek-671b",
 		input_cached: None,
@@ -289,8 +294,3 @@ pub const TOGETHER_MODELS: &[ModelPricing] = &[
 		output_reasoning: None,
 	},
 ];
-
-pub const TOGETHER: ProviderPricing = ProviderPricing {
-	name: "together",
-	models: TOGETHER_MODELS,
-};

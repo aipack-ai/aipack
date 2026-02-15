@@ -1,5 +1,10 @@
 use crate::run::pricing::{ModelPricing, ProviderPricing};
 
+pub const ANTHROPIC: ProviderPricing = ProviderPricing {
+	name: "anthropic",
+	models: ANTHROPIC_MODELS,
+};
+
 pub const ANTHROPIC_MODELS: &[ModelPricing] = &[
 	ModelPricing {
 		name: "claude-opus-4-6",
@@ -65,8 +70,3 @@ pub const ANTHROPIC_MODELS: &[ModelPricing] = &[
 		output_reasoning: None,
 	},
 ];
-
-pub const ANTHROPIC: ProviderPricing = ProviderPricing {
-	name: "anthropic",
-	models: ANTHROPIC_MODELS,
-};

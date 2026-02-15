@@ -1,6 +1,11 @@
 use crate::run::pricing::{ModelPricing, ProviderPricing};
 
-pub const OPENAI_MODELS: &[ModelPricing] = &[
+pub const OPENAI: ProviderPricing = ProviderPricing {
+	name: "openai",
+	models: OPENAI_MODELS,
+};
+
+const OPENAI_MODELS: &[ModelPricing] = &[
 	ModelPricing {
 		name: "gpt-5.2",
 		input_cached: Some(0.175),
@@ -55,6 +60,13 @@ pub const OPENAI_MODELS: &[ModelPricing] = &[
 		input_cached: Some(0.125),
 		input_normal: 1.25,
 		output_normal: 10.0,
+		output_reasoning: None,
+	},
+	ModelPricing {
+		name: "gpt-5.2-codex",
+		input_cached: Some(0.175),
+		input_normal: 1.75,
+		output_normal: 14.0,
 		output_reasoning: None,
 	},
 	ModelPricing {
@@ -125,6 +137,34 @@ pub const OPENAI_MODELS: &[ModelPricing] = &[
 		input_cached: Some(0.075),
 		input_normal: 0.15,
 		output_normal: 0.6,
+		output_reasoning: None,
+	},
+	ModelPricing {
+		name: "gpt-realtime",
+		input_cached: Some(0.4),
+		input_normal: 4.0,
+		output_normal: 16.0,
+		output_reasoning: None,
+	},
+	ModelPricing {
+		name: "gpt-realtime-mini",
+		input_cached: Some(0.06),
+		input_normal: 0.6,
+		output_normal: 2.4,
+		output_reasoning: None,
+	},
+	ModelPricing {
+		name: "gpt-4o-realtime-preview",
+		input_cached: Some(2.5),
+		input_normal: 5.0,
+		output_normal: 20.0,
+		output_reasoning: None,
+	},
+	ModelPricing {
+		name: "gpt-4o-mini-realtime-preview",
+		input_cached: Some(0.3),
+		input_normal: 0.6,
+		output_normal: 2.4,
 		output_reasoning: None,
 	},
 	ModelPricing {
@@ -212,6 +252,20 @@ pub const OPENAI_MODELS: &[ModelPricing] = &[
 		output_reasoning: None,
 	},
 	ModelPricing {
+		name: "gpt-4o-mini-search-preview",
+		input_cached: None,
+		input_normal: 0.15,
+		output_normal: 0.6,
+		output_reasoning: None,
+	},
+	ModelPricing {
+		name: "gpt-4o-search-preview",
+		input_cached: None,
+		input_normal: 2.5,
+		output_normal: 10.0,
+		output_reasoning: None,
+	},
+	ModelPricing {
 		name: "computer-use-preview",
 		input_cached: None,
 		input_normal: 3.0,
@@ -219,8 +273,3 @@ pub const OPENAI_MODELS: &[ModelPricing] = &[
 		output_reasoning: None,
 	},
 ];
-
-pub const OPENAI: ProviderPricing = ProviderPricing {
-	name: "openai",
-	models: OPENAI_MODELS,
-};

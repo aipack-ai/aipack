@@ -1,6 +1,11 @@
 use crate::run::pricing::{ModelPricing, ProviderPricing};
 
-pub const ZAI_MODELS: &[ModelPricing] = &[
+pub const ZAI: ProviderPricing = ProviderPricing {
+	name: "zai",
+	models: ZAI_MODELS,
+};
+
+const ZAI_MODELS: &[ModelPricing] = &[
 	ModelPricing {
 		name: "glm-5",
 		input_cached: Some(0.2),
@@ -142,8 +147,3 @@ pub const ZAI_MODELS: &[ModelPricing] = &[
 		output_reasoning: None,
 	},
 ];
-
-pub const ZAI: ProviderPricing = ProviderPricing {
-	name: "zai",
-	models: ZAI_MODELS,
-};

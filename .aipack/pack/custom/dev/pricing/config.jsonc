@@ -2,7 +2,7 @@
   "providers": [
     {
       "name": "openai",
-      "do_json": false,
+      "do_json": true,
       "url": ""
     },
     {

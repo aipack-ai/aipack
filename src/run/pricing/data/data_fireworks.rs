@@ -1,6 +1,11 @@
 use crate::run::pricing::{ModelPricing, ProviderPricing};
 
-pub const FIREWORKS_MODELS: &[ModelPricing] = &[
+pub const FIREWORKS: ProviderPricing = ProviderPricing {
+	name: "fireworks",
+	models: FIREWORKS_MODELS,
+};
+
+const FIREWORKS_MODELS: &[ModelPricing] = &[
 	ModelPricing {
 		name: "qwen3-coder-480b-a35b-instruct",
 		input_cached: Some(0.225),
@@ -331,8 +336,3 @@ pub const FIREWORKS_MODELS: &[ModelPricing] = &[
 		output_reasoning: None,
 	},
 ];
-
-pub const FIREWORKS: ProviderPricing = ProviderPricing {
-	name: "fireworks",
-	models: FIREWORKS_MODELS,
-};

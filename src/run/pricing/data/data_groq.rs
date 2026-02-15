@@ -1,6 +1,11 @@
 use crate::run::pricing::{ModelPricing, ProviderPricing};
 
-pub const GROQ_MODELS: &[ModelPricing] = &[
+pub const GROQ: ProviderPricing = ProviderPricing {
+	name: "groq",
+	models: GROQ_MODELS,
+};
+
+const GROQ_MODELS: &[ModelPricing] = &[
 	ModelPricing {
 		name: "openai/gpt-oss-20b",
 		input_cached: None,
@@ -107,8 +112,3 @@ pub const GROQ_MODELS: &[ModelPricing] = &[
 		output_reasoning: None,
 	},
 ];
-
-pub const GROQ: ProviderPricing = ProviderPricing {
-	name: "groq",
-	models: GROQ_MODELS,
-};

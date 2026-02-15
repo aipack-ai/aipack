@@ -1,6 +1,11 @@
 use crate::run::pricing::{ModelPricing, ProviderPricing};
 
-pub const GEMINI_MODELS: &[ModelPricing] = &[
+pub const GEMINI: ProviderPricing = ProviderPricing {
+	name: "gemini",
+	models: GEMINI_MODELS,
+};
+
+const GEMINI_MODELS: &[ModelPricing] = &[
 	ModelPricing {
 		name: "gemini-3-pro",
 		input_cached: Some(0.2),
@@ -100,8 +105,3 @@ pub const GEMINI_MODELS: &[ModelPricing] = &[
 		output_reasoning: None,
 	},
 ];
-
-pub const GEMINI: ProviderPricing = ProviderPricing {
-	name: "gemini",
-	models: GEMINI_MODELS,
-};

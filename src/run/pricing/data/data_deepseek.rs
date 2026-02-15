@@ -1,6 +1,11 @@
 use crate::run::pricing::{ModelPricing, ProviderPricing};
 
-pub const DEEPSEEK_MODELS: &[ModelPricing] = &[
+pub const DEEPSEEK: ProviderPricing = ProviderPricing {
+	name: "deepseek",
+	models: DEEPSEEK_MODELS,
+};
+
+const DEEPSEEK_MODELS: &[ModelPricing] = &[
 	ModelPricing {
 		name: "deepseek-chat",
 		input_cached: Some(0.07),
@@ -16,8 +21,3 @@ pub const DEEPSEEK_MODELS: &[ModelPricing] = &[
 		output_reasoning: None,
 	},
 ];
-
-pub const DEEPSEEK: ProviderPricing = ProviderPricing {
-	name: "deepseek",
-	models: DEEPSEEK_MODELS,
-};
