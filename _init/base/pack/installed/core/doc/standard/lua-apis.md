@@ -71,7 +71,7 @@ Important notes:
 - [`MdBlock`](#mdblock) (for `aip.md..`)
 - [`MdRef`](#mdref) (for `aip.md..`)
 - [`TagElem`](#tagelem) (for `aip.tag..`)
-- [`ChangesInfo`](#changesinfo) (for `aip.udiffx..`)
+- [`ApplyChangesStatus`](#applychangesstatus) (for `aip.udiffx..`)
 - [`CmdResponse`](#cmdresponse) (for `aip.cmd..`)
 - [`DestOptions`](#destoptions) (for `aip.file.save_...to_...(src_path, dest))`)
 - [`SaveOptions`](#saveoptions) (for `aip.file.save(...)`)
@@ -3224,7 +3224,7 @@ Functions for applying multi-file changes (New, Patch, Rename, Delete) encoded i
 ### Functions Summary
 
 ```lua
-aip.udiffx.apply_file_changes(content: string, base_dir?: string, options?: {extrude?: "content"}): status, remaining
+aip.udiffx.apply_file_changes(content: string, base_dir?: string, options?: {extrude?: "content"}): ApplyChangesStatus, remaining
 
 aip.udiffx.load_files_context(include_globs: string | string[], options?: {base_dir?: string, absolute?: boolean}): string | nil
 
@@ -3237,7 +3237,7 @@ Applies multi-file changes from a `<FILE_CHANGES>` envelope.
 
 ```lua
 -- API Signatures
-aip.udiffx.apply_file_changes(content: string, base_dir?: string, options?: {extrude?: "content"}): FileChangesStatus, remaining
+aip.udiffx.apply_file_changes(content: string, base_dir?: string, options?: {extrude?: "content"}): ApplyChangesStatus, remaining
 ```
 
 Scans `content` for a `<FILE_CHANGES>` block and applies the directives within it.
@@ -3255,7 +3255,7 @@ All paths in the envelope are resolved relative to `base_dir`.
 
 #### Returns
 
-1. `status: ChangesInfo`: A [`ChangesInfo`](#changesinfo) table indicating the result of the operation.
+1. `status: ApplyChangesStatus`: An [`ApplyChangesStatus`](#applychangesstatus) table indicating the result of the operation.
 2. `remaining: string | nil`: The content without the extracted block (only if `options.extrude == "content"`).
 
 #### Example
@@ -6304,26 +6304,30 @@ Represents a block defined by start and end tags, like `<TAG>content</TAG>`. Ret
 }
 ```
 
-### ChangesInfo
+### ApplyChangesStatus
 
 Represents the overall result of applying multi-file changes. Returned by `aip.udiffx.apply_file_changes`.
 
 ```ts
 {
-  changed_count: number,     // Number of successful change count
-  failed_changes?: FailChange[] // List of failed changes, if any
+  success: boolean,        // true if all directives were applied successfully
+  total_count: number,     // Total number of directives found
+  success_count: number,   // Number of successful directives
+  fail_count: number,      // Number of failed directives
+  items: ApplyChangesItem[] // List of results for each directive
 }
 ```
 
-### FailChange
+### ApplyChangesItem
 
-Represents a failed change within a file changes operation.
+Represents the result for a single directive in a multi-file change operation.
 
 ```ts
 {
-  search: string,
-  replace: string,
-  reason: string
+  file_path: string,       // Path of the affected file
+  kind: string,            // One of "New", "Patch", "Rename", "Delete", or "Fail"
+  success: boolean,        // true if this directive succeeded
+  error_msg?: string       // Error details if success is false
 }
 ```
 

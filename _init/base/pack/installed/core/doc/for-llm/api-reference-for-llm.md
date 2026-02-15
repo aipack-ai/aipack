@@ -121,15 +121,19 @@ type SaveOptions = {
   single_trailing_newline?: boolean
 }
 
-type ChangesInfo = {
-  changed_count: number,     // Number of successful change count
-  failed_changes?: FailChange[] // List of failed changes, if any
+type ApplyChangesStatus = {
+  success: boolean,        // true if all directives were applied successfully
+  total_count: number,     // Total number of directives found
+  success_count: number,   // Number of successful directives
+  fail_count: number,      // Number of failed directives
+  items: ApplyChangesItem[] // List of results for each directive
 }
 
-type FailChange = {
-  search: string,
-  replace: string,
-  reason: string
+type ApplyChangesItem = {
+  file_path: string,       // Path of the affected file
+  kind: string,            // One of "New", "Patch", "Rename", "Delete", or "Fail"
+  success: boolean,        // true if this directive succeeded
+  error_msg?: string       // Error details if success is false
 }
 
 type DestOptions = {
@@ -474,7 +478,7 @@ aip.hash.blake3_b64u(input: string): string
 ### aip.udiffx - Multi-File Changes
 
 ```typescript
-aip.udiffx.apply_file_changes(content: string, base_dir?: string, options?: {extrude?: "content"}): ChangesInfo | (ChangesInfo, string) // Applies <FILE_CHANGES> envelope. base_dir defaults to workspace. If options provided, base_dir MUST be explicitly passed (can be nil).
+aip.udiffx.apply_file_changes(content: string, base_dir?: string, options?: {extrude?: "content"}): ApplyChangesStatus | (ApplyChangesStatus, string) // Applies <FILE_CHANGES> envelope. base_dir defaults to workspace. If options provided, base_dir MUST be explicitly passed (can be nil).
 aip.udiffx.load_files_context(include_globs: string | string[], options?: {base_dir?: string, absolute?: boolean}): string | nil
 aip.udiffx.file_changes_instruction(): string
 ```
