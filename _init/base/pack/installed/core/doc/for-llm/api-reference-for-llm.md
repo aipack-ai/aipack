@@ -291,55 +291,55 @@ AIPack introduces a global `null` sentinel to bridge the gap between Lua's `nil`
 ### aip.file - File System Operations
 
 ```typescript
-aip.file.load(rel_path: string, options?: {base_dir: string}): FileRecord
-aip.file.save(rel_path: string, content: string, options?: SaveOptions): FileInfo
-aip.file.copy(src_path: string, dest_path: string, options?: {overwrite?: boolean}): FileInfo // (since 0.8.15) Workspace restricted. Default overwrite: false.
-aip.file.move(src_path: string, dest_path: string, options?: {overwrite?: boolean}): FileInfo // (since 0.8.15) Workspace restricted. Default overwrite: false.
-aip.file.append(rel_path: string, content: string): FileInfo
-aip.file.delete(path: string): boolean // Only allowed within workspace (not base dir).
-aip.file.ensure_exists(path: string, content?: string, options?: {content_when_empty?: boolean}): FileInfo // If file is empty or whitespace-only, and content_when_empty is true, it writes the content.
-aip.file.exists(path: string): boolean
-aip.file.list(include_globs: string | string[], options?: {base_dir?: string, absolute?: boolean, with_meta?: boolean}): FileInfo[] // Excludes heavy directories (target/, node_modules/, .git/, etc.) unless explicitly matched.
-aip.file.list_load(include_globs: string | string[], options?: {base_dir?: string, absolute?: boolean}): FileRecord[] // Excludes heavy directories unless explicitly matched.
-aip.file.first(include_globs: string | string[], options?: {base_dir?: string, absolute?: boolean}): FileInfo | nil
-aip.file.info(path: string): FileInfo | nil
-aip.file.stats(include_globs: string | string[] | nil, options?: {base_dir?: string, absolute?: boolean}): FileStats | nil // Returns nil if globs is nil, otherwise stats (0s if no matches).
-aip.file.load_json(path: string | nil): table | value | nil // support jsonc (and trailing comma)
-aip.file.load_ndjson(path: string | nil): object[] | nil
-aip.file.load_toml(path: string): table | value
-aip.file.load_yaml(path: string): list
-aip.file.append_json_line(path: string, data: value): FileInfo
-aip.file.append_json_lines(path: string, data: list): FileInfo
-aip.file.save_changes(path: string, changes: string): FileInfo
-aip.file.load_md_sections(path: string, headings?: string | string[]): MdSection[]
-aip.file.load_md_split_first(path: string): {before: string, first: MdSection, after: string}
-aip.file.load_csv_headers(path: string): string[]
-aip.file.load_csv(path: string, options?: CsvOptions): CsvContent
-aip.file.save_as_csv(path: string, data: any[][] | {headers?: string[], rows?: any[][]}, options?: CsvOptions): FileInfo
-aip.file.save_records_as_csv(path: string, records: table[], header_keys: string[], options?: CsvOptions): FileInfo
-aip.file.append_csv_rows(path: string, value_lists: any[][], options?: CsvOptions): FileInfo
-aip.file.append_csv_row(path: string, values: any[], options?: CsvOptions): FileInfo
-aip.file.save_html_to_md(html_path: string, dest?: string | table): FileInfo
-aip.file.save_html_to_slim(html_path: string, dest?: string | table): FileInfo // dest default: [stem]-slim.html in source dir.
-aip.file.load_html_as_slim(html_path: string): string
-aip.file.load_html_as_md(html_path: string, options?: { trim?: boolean }): string // options.trim defaults to true (slims before conversion).
-aip.file.save_docx_to_md(docx_path: string, dest?: string | table): FileInfo
-aip.file.load_docx_as_md(docx_path: string): string
-aip.file.line_spans(path: string): [start: number, end: number][]
-aip.file.csv_row_spans(path: string): [start: number, end: number][]
-aip.file.read_span(path: string, start: number, end: number): string
-aip.file.hash_sha256(path: string): string
-aip.file.hash_sha256_b64(path: string): string
-aip.file.hash_sha256_b64u(path: string): string
-aip.file.hash_sha256_b58u(path: string): string
-aip.file.hash_sha512(path: string): string
-aip.file.hash_sha512_b64(path: string): string
-aip.file.hash_sha512_b64u(path: string): string
-aip.file.hash_sha512_b58u(path: string): string
-aip.file.hash_blake3(path: string): string
-aip.file.hash_blake3_b64(path: string): string
-aip.file.hash_blake3_b64u(path: string): string
-aip.file.hash_blake3_b58u(path: string): string
+aip.file.load(rel_path: string, options?: {base_dir: string}): FileRecord // base_dir can use pack references (ns@pack/).
+aip.file.save(rel_path: string, content: string, options?: SaveOptions): FileInfo // SaveOptions: trim_start, trim_end, single_trailing_newline.
+aip.file.copy(src_path: string, dest_path: string, options?: {overwrite?: boolean}): FileInfo // Workspace restricted. Default overwrite: false.
+aip.file.move(src_path: string, dest_path: string, options?: {overwrite?: boolean}): FileInfo // Workspace restricted. Default overwrite: false.
+aip.file.append(rel_path: string, content: string): FileInfo // Creates file/dirs if missing.
+aip.file.delete(path: string): boolean // Allowed ONLY within workspace; forbidden in .aipack-base/.
+aip.file.ensure_exists(path: string, content?: string, options?: {content_when_empty?: boolean}): FileInfo // content_when_empty: writes content if file exists but is whitespace-only.
+aip.file.exists(path: string): boolean // Supports pack refs and relative/absolute paths.
+aip.file.list(include_globs: string | string[], options?: {base_dir?: string, absolute?: boolean, with_meta?: boolean}): FileInfo[] // absolute: paths in result will be absolute (default false, but absolute if outside base_dir). with_meta: includes ctime, mtime, size (default true). Heavy dirs (target/, node_modules/) excluded unless explicitly matched.
+aip.file.list_load(include_globs: string | string[], options?: {base_dir?: string, absolute?: boolean}): FileRecord[] // Loads content for all matching files.
+aip.file.first(include_globs: string | string[], options?: {base_dir?: string, absolute?: boolean}): FileInfo | nil // Returns first matching file metadata.
+aip.file.info(path: string): FileInfo | nil // Returns metadata or nil if not found.
+aip.file.stats(include_globs: string | string[] | nil, options?: {base_dir?: string, absolute?: boolean}): FileStats | nil // Returns nil if globs is nil.
+aip.file.load_json(path: string | nil): table | value | nil // Supports jsonc (comments and trailing commas).
+aip.file.load_ndjson(path: string | nil): object[] | nil // Parses newline-delimited JSON.
+aip.file.load_toml(path: string): table | value // Parses TOML file.
+aip.file.load_yaml(path: string): list // Returns a list of documents.
+aip.file.append_json_line(path: string, data: value): FileInfo // Serializes to JSON line.
+aip.file.append_json_lines(path: string, data: list): FileInfo // Appends list as multiple JSON lines.
+aip.file.save_changes(path: string, changes: string): FileInfo // Saves udiff-style changes.
+aip.file.load_md_sections(path: string, headings?: string | string[]): MdSection[] // Filter by heading name(s).
+aip.file.load_md_split_first(path: string): {before: string, first: MdSection, after: string} // Splits by first '#' heading.
+aip.file.load_csv_headers(path: string): string[] // Returns header row only.
+aip.file.load_csv(path: string, options?: CsvOptions): CsvContent // has_header default: true.
+aip.file.save_as_csv(path: string, data: any[][] | {headers?: string[], rows?: any[][]}, options?: CsvOptions): FileInfo // Overwrites as CSV.
+aip.file.save_records_as_csv(path: string, records: table[], header_keys: string[], options?: CsvOptions): FileInfo // record field selection via header_keys.
+aip.file.append_csv_rows(path: string, value_lists: any[][], options?: CsvOptions): FileInfo // Simple data append (ignores has_header option).
+aip.file.append_csv_row(path: string, values: any[], options?: CsvOptions): FileInfo // Single row append.
+aip.file.save_html_to_md(html_path: string, dest?: string | table): FileInfo // Converts and saves HTML as Markdown.
+aip.file.save_html_to_slim(html_path: string, dest?: string | table): FileInfo // Removes non-content tags. dest default: [stem]-slim.html.
+aip.file.load_html_as_slim(html_path: string): string // Returns slimmed HTML string.
+aip.file.load_html_as_md(html_path: string, options?: { trim?: boolean }): string // trim default: true (slims before conversion).
+aip.file.save_docx_to_md(docx_path: string, dest?: string | table): FileInfo // Converts .docx to Markdown.
+aip.file.load_docx_as_md(docx_path: string): string // Returns content as Markdown.
+aip.file.line_spans(path: string): [start: number, end: number][] // Byte offsets for lines.
+aip.file.csv_row_spans(path: string): [start: number, end: number][] // Byte offsets for CSV records.
+aip.file.read_span(path: string, start: number, end: number): string // Reads file substring by byte offsets.
+aip.file.hash_sha256(path: string): string // Hex encoding.
+aip.file.hash_sha256_b64(path: string): string // Base64 encoding.
+aip.file.hash_sha256_b64u(path: string): string // URL-safe Base64 (no padding).
+aip.file.hash_sha256_b58u(path: string): string // Base58 encoding.
+aip.file.hash_sha512(path: string): string // Hex encoding.
+aip.file.hash_sha512_b64(path: string): string // Base64 encoding.
+aip.file.hash_sha512_b64u(path: string): string // URL-safe Base64 (no padding).
+aip.file.hash_sha512_b58u(path: string): string // Base58 encoding.
+aip.file.hash_blake3(path: string): string // Hex encoding.
+aip.file.hash_blake3_b64(path: string): string // Base64 encoding.
+aip.file.hash_blake3_b64u(path: string): string // URL-safe Base64 (no padding).
+aip.file.hash_blake3_b58u(path: string): string // Base58 encoding.
 ```
 
 ### aip.editor - Editor Integration
@@ -351,15 +351,15 @@ aip.editor.open_file(path: string): { editor: string } | nil
 ### aip.path - Path Manipulation
 
 ```typescript
-aip.path.split(path: string): (parent: string, filename: string)
-aip.path.resolve(path: string): string
-aip.path.exists(path: string): boolean
-aip.path.is_file(path: string): boolean
-aip.path.is_dir(path: string): boolean
-aip.path.diff(file_path: string, base_path: string): string
-aip.path.parent(path: string): string | nil
+aip.path.split(path: string): (parent: string, filename: string) // Splits into dir and file parts.
+aip.path.resolve(path: string): string // Normalizes relative paths, pack refs, and home tildes.
+aip.path.exists(path: string): boolean // Check file/dir existence.
+aip.path.is_file(path: string): boolean // True if existing file.
+aip.path.is_dir(path: string): boolean // True if existing directory.
+aip.path.diff(file_path: string, base_path: string): string // Relative path from base to file.
+aip.path.parent(path: string): string | nil // Returns parent dir or nil.
 aip.path.matches_glob(path: string | nil, globs: string | string[]): boolean | nil // Returns nil if path is nil.
-aip.path.join(base: string, ...parts: string | string[]): string // Note: All parts are concatenated into one path before joining with base.
+aip.path.join(base: string, ...parts: string | string[]): string // Parts are concatenated into one string first, then joined to base with separator. Use table for path separation.
 aip.path.parse(path: string | nil): FileInfo | nil
 ```
 
@@ -379,7 +379,7 @@ aip.text.trim_start(content: string | nil): string | nil
 aip.text.trim_end(content: string | nil): string | nil
 aip.text.truncate(content: string | nil, max_len: number, ellipsis?: string): string | nil
 aip.text.replace_markers(content: string | nil, new_sections: list): string | nil
-aip.text.ensure(content: string | nil, {prefix?: string, suffix?: string}): string | nil
+aip.text.ensure(content: string | nil, {prefix?: string, suffix?: string}): string | nil // Adds prefix/suffix only if missing.
 aip.text.ensure_single_trailing_newline(content: string | nil): string | nil
 aip.text.format_size(bytes: integer | nil, lowest_size_unit?: "B" | "KB" | "MB" | "GB"): string | nil // lowest_size_unit defaults to "B".
 aip.text.extract_line_blocks(content: string | nil, options: {starts_with: string, extrude?: "content", first?: number}): (string[] | nil, string | nil)
@@ -398,9 +398,9 @@ aip.tag.extract_as_multi_map(content: string, tag_names: string | string[], opti
 ### aip.md - Markdown Processing
 
 ```typescript
-aip.md.extract_blocks(md_content: string): MdBlock[]
+aip.md.extract_blocks(md_content: string): MdBlock[] // Extracts all fenced code blocks.
 aip.md.extract_blocks(md_content: string, lang: string): MdBlock[]
-aip.md.extract_blocks(md_content: string, {lang?: string, extrude: "content"}): (MdBlock[], string)
+aip.md.extract_blocks(md_content: string, {lang?: string, extrude: "content"}): (MdBlock[], string) // extrude: returns content outside blocks as 2nd value.
 aip.md.extract_meta(md_content: string | nil): (table | nil, string | nil) // Returns (nil, nil) if md_content is nil.
 aip.md.outer_block_content_or_raw(md_content: string): string
 aip.md.extract_refs(md_content: string | nil): MdRef[] // Returns empty list if md_content is nil.
@@ -409,10 +409,10 @@ aip.md.extract_refs(md_content: string | nil): MdRef[] // Returns empty list if 
 ### aip.json - JSON Helpers
 
 ```typescript
-aip.json.parse(content: string | nil): table | value | nil // supports jsonc
-aip.json.parse_ndjson(content: string | nil): object[] | nil
-aip.json.stringify(content: table): string
-aip.json.stringify_pretty(content: table): string
+aip.json.parse(content: string | nil): table | value | nil // Supports jsonc (comments and trailing commas).
+aip.json.parse_ndjson(content: string | nil): object[] | nil // Parses newline-delimited JSON.
+aip.json.stringify(content: table): string // Compact single-line JSON.
+aip.json.stringify_pretty(content: table): string // Pretty-printed (2 spaces).
 ```
 
 ### aip.toml - TOML Helpers
@@ -442,7 +442,7 @@ aip.web.resolve_href(href: string | nil, base_url: string): string | nil
 ### aip.uuid - UUID Generation
 
 ```typescript
-aip.uuid.new(): string
+aip.uuid.new(): string // Alias for new_v4().
 aip.uuid.new_v4(): string
 aip.uuid.new_v7(): string
 aip.uuid.new_v4_b64(): string
@@ -474,7 +474,7 @@ aip.hash.blake3_b64u(input: string): string
 ### aip.udiffx - Multi-File Changes
 
 ```typescript
-aip.udiffx.apply_file_changes(content: string, base_dir?: string, options?: {extrude?: "content"}): ChangesInfo | (ChangesInfo, string) // If options provided, base_dir must be provided (can be nil).
+aip.udiffx.apply_file_changes(content: string, base_dir?: string, options?: {extrude?: "content"}): ChangesInfo | (ChangesInfo, string) // Applies <FILE_CHANGES> envelope. base_dir defaults to workspace. If options provided, base_dir MUST be explicitly passed (can be nil).
 aip.udiffx.load_files_context(include_globs: string | string[], options?: {base_dir?: string, absolute?: boolean}): string | nil
 aip.udiffx.file_changes_instruction(): string
 ```
@@ -499,8 +499,8 @@ aip.time.local_tz_id(): string
 ### aip.lua - Lua Helpers
 
 ```typescript
-aip.lua.dump(value: any): string
-aip.lua.merge(target: table, ...objs: table | nil): table // Shallow merge into target (mutates target in-place, return targets as well). nil/null are ignored. target cannot be nil/null.
+aip.lua.dump(value: any): string // Stringifies Lua value for debugging.
+aip.lua.merge(target: table, ...objs: table | nil): table // Shallow merge into target (mutates target in-place, returns target). nil/null are ignored. target cannot be nil/null.
 aip.lua.merge_deep(target: table, ...objs: table | nil): table // Deep merge into target (mutates target in-place, return targets as well). nil/null are ignored. target cannot be nil/null.
 ```
 
@@ -514,16 +514,16 @@ aip.pdf.split_pages(path: string, dest_dir?: string): FileInfo[] // dest_dir def
 ### aip.csv - CSV Parsing and Formatting
 
 ```typescript
-aip.csv.parse_row(row: string, options?: CsvOptions): string[]
-aip.csv.parse(content: string, options?: CsvOptions): CsvContent
-aip.csv.values_to_row(values: any[], options?: CsvOptions): string
-aip.csv.value_lists_to_rows(value_lists: any[][], options?: CsvOptions): string[]
+aip.csv.parse_row(row: string, options?: CsvOptions): string[] // Parses single CSV line.
+aip.csv.parse(content: string, options?: CsvOptions): CsvContent // Parses full CSV string.
+aip.csv.values_to_row(values: any[], options?: CsvOptions): string // Encodes list of values to CSV line.
+aip.csv.value_lists_to_rows(value_lists: any[][], options?: CsvOptions): string[] // Encodes matrix to CSV lines.
 ```
 
 ### aip.hbs - Handlebars Rendering
 
 ```typescript
-aip.hbs.render(content: string, data: any): string | {error: string}
+aip.hbs.render(content: string, data: any): string | {error: string} // Renders Handlebars template with Lua data.
 ```
 
 ### aip.agent - Agent Chaining
@@ -536,12 +536,12 @@ aip.agent.extract_options(value: any): table | nil
 ### aip.run & aip.task - Metadata/Pinning
 
 ```typescript
-// aip.run (Requires CTX.RUN_UID)
+// aip.run (Requires CTX.RUN_UID). Global for the entire agent run.
 aip.run.set_label(label: string)
 aip.run.pin(iden: string, content: string | {label?: string, content: string})
 aip.run.pin(iden: string, priority: number, content: string | {label?: string, content: string})
 
-// aip.task (Requires CTX.RUN_UID and CTX.TASK_UID)
+// aip.task (Requires CTX.RUN_UID and CTX.TASK_UID). Specific to current input task.
 aip.task.set_label(label: string)
 aip.task.pin(iden: string, content: string | {label?: string, content: string})
 aip.task.pin(iden: string, priority: number, content: string | {label?: string, content: string})
@@ -550,7 +550,7 @@ aip.task.pin(iden: string, priority: number, content: string | {label?: string, 
 ### aip.cmd - System Commands
 
 ```typescript
-aip.cmd.exec(cmd_name: string, args?: string | string[]): CmdResponse | {error: string, stdout?: string, stderr?: string, exit?: number}
+aip.cmd.exec(cmd_name: string, args?: string | string[]): CmdResponse | {error: string, stdout?: string, stderr?: string, exit?: number} // args can be single string or list of strings.
 ```
 
 ### aip.semver - Semantic Versioning
@@ -565,7 +565,7 @@ aip.semver.valid(version: string): boolean
 ### aip.rust - Rust Code Processing
 
 ```typescript
-aip.rust.prune_to_declarations(code: string): string | {error: string}
+aip.rust.prune_to_declarations(code: string): string | {error: string} // Removes function bodies (replacing with { ... }).
 ```
 
 ### aip.html - HTML Processing
@@ -573,13 +573,13 @@ aip.rust.prune_to_declarations(code: string): string | {error: string}
 ```typescript
 aip.html.slim(html_content: string): string | {error: string}
 aip.html.select(html_content: string, selectors: string | string[]): Elem[]
-aip.html.to_md(html_content: string): string | {error: string}
+aip.html.to_md(html_content: string): string | {error: string} // HTML to Markdown conversion.
 ```
 
 ### aip.git - Git Operations
 
 ```typescript
-aip.git.restore(path: string): string | {error: string, stdout?: string, stderr?: string, exit?: number}
+aip.git.restore(path: string): string | {error: string, stdout?: string, stderr?: string, exit?: number} // git restore <path>.
 ```
 
 ### aip.code - Code Utilities
@@ -591,12 +591,12 @@ aip.code.comment_line(lang_ext: string, comment_content: string): string | {erro
 ### aip.shape - Record Shaping Utilities
 
 ```typescript
-aip.shape.to_record(names: string[], values: any[]): table
-aip.shape.to_records(names: string[], rows: any[][]): object[]
-aip.shape.record_to_values(record: table, names?: string[]): any[] // Alpha-sorts keys if names omitted. Uses NA sentinel for missing keys.
-aip.shape.records_to_value_lists(records: object[], names: string[]): any[][] // Uses null sentinel for missing keys.
-aip.shape.columnar_to_records(cols: { [string]: any[] }): object[]
-aip.shape.records_to_columnar(recs: object[]): { [string]: any[] } // Includes only keys present in all records (intersection).
+aip.shape.to_record(names: string[], values: any[]): table // Map names to values.
+aip.shape.to_records(names: string[], rows: any[][]): object[] // Matrix to list of records.
+aip.shape.record_to_values(record: table, names?: string[]): any[] // If names omitted, sorted alphabetically. Missing keys become NA.
+aip.shape.records_to_value_lists(records: object[], names: string[]): any[][] // Records to matrix. Uses null sentinel for missing keys.
+aip.shape.columnar_to_records(cols: { [string]: any[] }): object[] // Column-oriented to row-oriented.
+aip.shape.records_to_columnar(recs: object[]): { [string]: any[] } // Row-oriented to column-oriented. Intersection of keys only.
 aip.shape.select_keys(rec: table, keys: string[]): table
 aip.shape.omit_keys(rec: table, keys: string[]): table
 aip.shape.remove_keys(rec: table, keys: string[]): integer
