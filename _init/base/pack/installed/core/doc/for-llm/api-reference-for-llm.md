@@ -12,8 +12,8 @@ An AIPack agent is a multi-stage Markdown file where stages define pre-processin
 | `# Before All`  | **Lua (Markdown block)**  | Once            | `aip`, `CTX`, `inputs`                                          | **Stage 1**: Global setup, filtering `inputs`.                       |
 | `# Data`        | **Lua (Markdown block)**  | Per Input       | `aip`, `CTX`, `input`, `before_all`                             | **Stage 2**: Per-input data gathering and flow control.              |
 | `# System`      | **Handlebars** | Per Input       | `input`, `data`, `before_all`                                   | **Stage 3**: System prompt template.                                 |
-| `# Instruction` | **Handlebars** | Per Input       | `input`, `data`, `before_all`                                   | **Stage 3**: User instruction prompt template.                       |
-| `# Assistant`   | **Handlebars** | Per Input       | `input`, `data`, `before_all`                                   | **Stage 3**: Optional specialized prompt priming.                    |
+| `# Instruction` | **Handlebars** | Per Input       | `input`, `data`, `before_all`                                   | **Stage 3**: User instruction prompt template. (Aliases: # User, # Inst) |
+| `# Assistant`   | **Handlebars** | Per Input       | `input`, `data`, `before_all`                                   | **Stage 3**: Optional specialized prompt priming. (Aliases: # Model, # Mind Trick, # Jedi Trick) |
 | `# Output`      | **Lua (Markdown block)**  | Per Processed Input | `aip`, `CTX`, `input`, `data`, `before_all`, `ai_response`      | **Stage 4**: Process AI response and perform side effects.           |
 | `# After All`   | **Lua (Markdown block)**  | Once            | `aip`, `CTX`, `inputs`, `outputs`, `before_all`                 | **Stage 5**: Final cleanup and aggregation.                          |
 
@@ -437,6 +437,8 @@ aip.yaml.stringify_multi_docs(content: table): string
 ### aip.web - HTTP Requests & URL
 
 ```typescript
+aip.web.UA_AIPACK: string // Default aipack User Agent ('aipack').
+aip.web.UA_BROWSER: string // Default browser User Agent.
 aip.web.get(url: string, options?: WebOptions): WebResponse // Default User-Agent is 'aipack'.
 aip.web.post(url: string, data: string | table, options?: WebOptions): WebResponse // Default User-Agent is 'aipack'.
 aip.web.parse_url(url: string | nil): table | nil
@@ -614,10 +616,13 @@ Injected into all Lua stages, providing execution environment information. All p
 | Key                            | Description                                                               |
 |--------------------------------|---------------------------------------------------------------------------|
 | CTX.WORKSPACE_DIR              | Absolute path to the workspace directory (parent of `.aipack/`).          |
+| CTX.WORKSPACE_AIPack_DIR       | Absolute path to the `.aipack/` directory in the workspace.               |
 | CTX.BASE_AIPACK_DIR            | Absolute path to the user's base AIPack directory (`~/.aipack-base`).     |
 | CTX.AGENT_NAME                 | Name or path used to invoke the agent (e.g., `my_pack/my-agent`).         |
 | CTX.AGENT_FILE_PATH            | Absolute path to the resolved agent `.aip` file.                          |
 | CTX.AGENT_FILE_DIR             | Absolute path to the directory containing the agent file.                 |
+| CTX.AGENT_FILE_NAME            | The base name of the agent file (e.g., `my-agent.aip`).                   |
+| CTX.AGENT_FILE_STEM            | The base name of the agent file without extension.                        |
 | CTX.TMP_DIR                    | Temporary directory for this session (`.aipack/.sessions/_uid_/tmp`).     |
 | CTX.SESSION_UID                | The Session Unique ID.                                                    |
 | CTX.RUN_UID                    | The Run Unique ID.                                                        |
@@ -625,5 +630,8 @@ Injected into all Lua stages, providing execution environment information. All p
 | CTX.TASK_UID                   | The Task Unique ID (only available during per-input stages: `# Data`, `# Output`). |
 | CTX.TASK_NUM                   | 1-based sequence number of the current task in the run.                   |
 | CTX.PACK_IDENTITY              | Pack identity (`namespace@name`) (nil if not run via pack reference).     |
+| CTX.PACK_NAMESPACE             | Namespace of the pack (nil if not run via pack reference).                |
+| CTX.PACK_NAME                  | Name of the pack (nil if not run via pack reference).                     |
+| CTX.PACK_REF                   | Full pack reference used (nil if not run via pack reference).             |
 | CTX.PACK_WORKSPACE_SUPPORT_DIR | Workspace support directory for the pack (if applicable).                 |
 | CTX.PACK_BASE_SUPPORT_DIR      | Base support directory for the pack (if applicable).                      |
