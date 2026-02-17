@@ -130,7 +130,6 @@ Create a pricing JSON for this provider, following the following rules (pick the
     - For Anthropic Models (Claude), when caching write value, put it in `.cache_write`, and then, the cache value goes in `.cached`
     - For Anthropic Models, cache write price, take the `5m` price
     - For Anthropic models (Claude), make sure you get the model names from the model is, and remove the `-2025...`
-    - For Anthropic models (Claude), only sonnet/haiku 4.5 and opus 4.1 are recent: true, all others are recent: false
 - For gemini models,
     - For gemini models there is no `caching write`, so cache value is for the `.cached` property. 
     - For Gemini models, do not add the audio or tts model.
