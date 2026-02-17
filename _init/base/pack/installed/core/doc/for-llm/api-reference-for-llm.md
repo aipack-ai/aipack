@@ -6,28 +6,28 @@ This document summarizes the structure, execution flow, and complete Lua API of 
 
 An AIPack agent is a multi-stage Markdown file where stages define pre-processing, prompt templating (Handlebars), AI interaction, and post-processing (Lua).
 
-| Stage           | Language       | Runs Per        | Injected Variables (Scope)                                      | Purpose                                                              |
-|-----------------|----------------|-----------------|-----------------------------------------------------------------|----------------------------------------------------------------------|
-| `# Options`     | **TOML (Markdown block)** | Once            | N/A                                                             | **Stage 0 (Config Step)**: Agent-specific configuration.             |
-| `# Before All`  | **Lua (Markdown block)**  | Once            | `aip`, `CTX`, `inputs`                                          | **Stage 1**: Global setup, filtering `inputs`.                       |
-| `# Data`        | **Lua (Markdown block)**  | Per Input       | `aip`, `CTX`, `input`, `before_all`                             | **Stage 2**: Per-input data gathering and flow control.              |
-| `# System`      | **Handlebars** | Per Input       | `input`, `data`, `before_all`                                   | **Stage 3**: System prompt template.                                 |
-| `# Instruction` | **Handlebars** | Per Input       | `input`, `data`, `before_all`                                   | **Stage 3**: User instruction prompt template. (Aliases: # User, # Inst) |
-| `# Assistant`   | **Handlebars** | Per Input       | `input`, `data`, `before_all`                                   | **Stage 3**: Optional specialized prompt priming. (Aliases: # Model, # Mind Trick, # Jedi Trick) |
-| `# Output`      | **Lua (Markdown block)**  | Per Processed Input | `aip`, `CTX`, `input`, `data`, `before_all`, `ai_response`      | **Stage 4**: Process AI response and perform side effects.           |
-| `# After All`   | **Lua (Markdown block)**  | Once            | `aip`, `CTX`, `inputs`, `outputs`, `before_all`                 | **Stage 5**: Final cleanup and aggregation.                          |
+| Stage           | Language                  | Runs Per            | Injected Variables (Scope)                                 | Purpose                                                                                          |
+| --------------- | ------------------------- | ------------------- | ---------------------------------------------------------- | ------------------------------------------------------------------------------------------------ |
+| `# Options`     | **TOML (Markdown block)** | Once                | N/A                                                        | **Stage 0 (Config Step)**: Agent-specific configuration.                                         |
+| `# Before All`  | **Lua (Markdown block)**  | Once                | `aip`, `CTX`, `inputs`                                     | **Stage 1**: Global setup, filtering `inputs`.                                                   |
+| `# Data`        | **Lua (Markdown block)**  | Per Input           | `aip`, `CTX`, `input`, `before_all`                        | **Stage 2**: Per-input data gathering and flow control.                                          |
+| `# System`      | **Handlebars**            | Per Input           | `input`, `data`, `before_all`                              | **Stage 3**: System prompt template.                                                             |
+| `# Instruction` | **Handlebars**            | Per Input           | `input`, `data`, `before_all`                              | **Stage 3**: User instruction prompt template. (Aliases: # User, # Inst)                         |
+| `# Assistant`   | **Handlebars**            | Per Input           | `input`, `data`, `before_all`                              | **Stage 3**: Optional specialized prompt priming. (Aliases: # Model, # Mind Trick, # Jedi Trick) |
+| `# Output`      | **Lua (Markdown block)**  | Per Processed Input | `aip`, `CTX`, `input`, `data`, `before_all`, `ai_response` | **Stage 4**: Process AI response and perform side effects.                                       |
+| `# After All`   | **Lua (Markdown block)**  | Once                | `aip`, `CTX`, `inputs`, `outputs`, `before_all`            | **Stage 5**: Final cleanup and aggregation.                                                      |
 
 **Injected Variables Detail:**
 
-| Variable      | Type            | Description                                                                 |
-|---------------|-----------------|-----------------------------------------------------------------------------|
-| `aip`         | `AipModule`     | The AIPack API module, containing utility functions (see section 4).         |
-| `CTX`         | `Context`       | Contextual constants (paths, session UIDs). See section 5.                   |
-| `inputs`      | `any[]`         | List of initial or modified inputs (`# Before All`, `# After All`).           |
-| `input`       | `any`           | Current input item (e.g., `string` or `FileInfo`).                          |
-| `before_all`  | `any`           | Data returned from `# Before All`.                                          |
-| `data`        | `any`           | Data returned from `# Data`.                                                |
-| `ai_response` | `AiResponse`    | AI result object (`# Output` only). See section 3.                          |
+| Variable      | Type         | Description                                                          |
+| ------------- | ------------ | -------------------------------------------------------------------- |
+| `aip`         | `AipModule`  | The AIPack API module, containing utility functions (see section 4). |
+| `CTX`         | `Context`    | Contextual constants (paths, session UIDs). See section 5.           |
+| `inputs`      | `any[]`      | List of initial or modified inputs (`# Before All`, `# After All`).  |
+| `input`       | `any`        | Current input item (e.g., `string` or `FileInfo`).                   |
+| `before_all`  | `any`        | Data returned from `# Before All`.                                   |
+| `data`        | `any`        | Data returned from `# Data`.                                         |
+| `ai_response` | `AiResponse` | AI result object (`# Output` only). See section 3.                   |
 
 ## 2. Flow Control (`aip.flow`)
 
@@ -67,18 +67,18 @@ The result object available in the `# Output` stage.
 
 ```typescript
 type AiResponse = {
-  content?: string,          // The final text response from the AI.
-  info: string,             // Formatted string capturing usage, price, model, duration.
-  model_name: string,       // e.g., `gpt-5-mini`
-  adapter_kind: string,     // e.g., `openai`
+  content?: string; // The final text response from the AI.
+  info: string; // Formatted string capturing usage, price, model, duration.
+  model_name: string; // e.g., `gpt-5-mini`
+  adapter_kind: string; // e.g., `openai`
   usage: {
-    prompt_tokens: number,
-    completion_tokens: number
-  },
-  price_usd?: number,       // Approximate price in USD, if available.
-  duration_sec: number,     // Duration in seconds (with millisecond precision).
-  reasoning_content?: string, // Reasoning content, if available.
-}
+    prompt_tokens: number;
+    completion_tokens: number;
+  };
+  price_usd?: number; // Approximate price in USD, if available.
+  duration_sec: number; // Duration in seconds (with millisecond precision).
+  reasoning_content?: string; // Reasoning content, if available.
+};
 ```
 
 ### FileInfo & FileRecord
@@ -87,69 +87,69 @@ File metadata and content structures.
 
 ```typescript
 type FileInfo = {
-  path: string,    // Relative or absolute path
-  dir: string,     // Parent directory of the path
-  name: string,    // File name with extension
-  stem: string,    // File name without extension
-  ext: string,     // File extension
-  ctime?: number,  // Creation timestamp (microseconds since epoch)
-  mtime?: number,  // Modification timestamp (microseconds)
-  size?: number    // File size in bytes
-}
+  path: string; // Relative or absolute path
+  dir: string; // Parent directory of the path
+  name: string; // File name with extension
+  stem: string; // File name without extension
+  ext: string; // File extension
+  ctime?: number; // Creation timestamp (microseconds since epoch)
+  mtime?: number; // Modification timestamp (microseconds)
+  size?: number; // File size in bytes
+};
 
 type FileRecord = FileInfo & {
-  content: string  // The text content of the file
-}
+  content: string; // The text content of the file
+};
 
 type FileStats = {
-  _type: "FileStats",
-  total_size: number,      // Total size of all matched files in bytes
-  number_of_files: number, // Number of files matched
-  ctime_first: number,     // Oldest creation time (epoch microseconds)
-  ctime_last: number,      // Newest creation time (epoch microseconds)
-  mtime_first: number,     // Oldest modification time (epoch microseconds)
-  mtime_last: number       // Newest modification time (epoch microseconds)
-}
+  _type: "FileStats";
+  total_size: number; // Total size of all matched files in bytes
+  number_of_files: number; // Number of files matched
+  ctime_first: number; // Oldest creation time (epoch microseconds)
+  ctime_last: number; // Newest creation time (epoch microseconds)
+  mtime_first: number; // Oldest modification time (epoch microseconds)
+  mtime_last: number; // Newest modification time (epoch microseconds)
+};
 ```
 
 ### Options Types
 
 ```typescript
 type SaveOptions = {
-  trim_start?: boolean,
-  trim_end?: boolean,
-  single_trailing_newline?: boolean
-}
+  trim_start?: boolean;
+  trim_end?: boolean;
+  single_trailing_newline?: boolean;
+};
 
 type ApplyChangesStatus = {
-  success: boolean,        // true if all directives were applied successfully
-  total_count: number,     // Total number of directives found
-  success_count: number,   // Number of successful directives
-  fail_count: number,      // Number of failed directives
-  items: ApplyChangesItem[] // List of results for each directive
-}
+  success: boolean; // true if all directives were applied successfully
+  total_count: number; // Total number of directives found
+  success_count: number; // Number of successful directives
+  fail_count: number; // Number of failed directives
+  items: ApplyChangesItem[]; // List of results for each directive
+};
 
 type ApplyChangesItem = {
-  file_path: string,       // Path of the affected file
-  kind: string,            // One of "New", "Patch", "Rename", "Delete", or "Fail"
-  success: boolean,        // true if this directive succeeded
-  error_msg?: string       // Error details if success is false
-}
+  file_path: string; // Path of the affected file
+  kind: string; // One of "New", "Patch", "Rename", "Delete", or "Fail"
+  success: boolean; // true if this directive succeeded
+  error_msg?: string; // Error details if success is false
+};
 
 type DestOptions = {
-  base_dir?: string,
-  file_name?: string,
-  suffix?: string,
-  slim?: boolean
-}
+  base_dir?: string;
+  file_name?: string;
+  suffix?: string;
+  slim?: boolean;
+};
 
 type AgentOptions = {
-  model?: string,
-  temperature?: number,
-  top_p?: number,
-  input_concurrency?: number,
-  model_aliases?: { [key: string]: string }
-}
+  model?: string;
+  temperature?: number;
+  top_p?: number;
+  input_concurrency?: number;
+  model_aliases?: { [key: string]: string };
+};
 ```
 
 ### Attachments
@@ -158,12 +158,12 @@ Used in `DataData` to attach files for multimodal models.
 
 ```typescript
 type Attachment = {
-  file_source: string,   // Local file path to the attachment
-  file_name?: string,    // Optional custom file name for display
-  title?: string         // Optional title/description for the attachment
-}
+  file_source: string; // Local file path to the attachment
+  file_name?: string; // Optional custom file name for display
+  title?: string; // Optional title/description for the attachment
+};
 
-type Attachments = Attachment | Attachment[] // List or single attachment
+type Attachments = Attachment | Attachment[]; // List or single attachment
 ```
 
 ### WebResponse
@@ -172,98 +172,98 @@ Result structure from `aip.web.get`/`post`.
 
 ```typescript
 type WebResponse = {
-  success: boolean,        // true if HTTP status code is 2xx
-  status: number,          // HTTP status code
-  url: string,             // The final URL requested
-  content: string | table, // Response body (table if JSON and parse=true)
-  content_type?: string,
-  headers?: { [key: string]: string | string[] },
-  error?: string           // Error message if request failed or non-2xx status
-}
+  success: boolean; // true if HTTP status code is 2xx
+  status: number; // HTTP status code
+  url: string; // The final URL requested
+  content: string | table; // Response body (table if JSON and parse=true)
+  content_type?: string;
+  headers?: { [key: string]: string | string[] };
+  error?: string; // Error message if request failed or non-2xx status
+};
 
 type WebOptions = {
-  user_agent?: string | boolean,
-  headers?: table,
-  redirect_limit?: number,
-  parse?: boolean          // Attempt JSON parsing if Content-Type is 'application/json' (default false)
-}
+  user_agent?: string | boolean;
+  headers?: table;
+  redirect_limit?: number;
+  parse?: boolean; // Attempt JSON parsing if Content-Type is 'application/json' (default false)
+};
 ```
 
 ### CSV/Data Types
 
 ```typescript
 type CsvContent = {
-  _type: "CsvContent",
-  headers: string[],
-  rows: string[][]
-}
+  _type: "CsvContent";
+  headers: string[];
+  rows: string[][];
+};
 
 type CsvOptions = {
-  delimiter?: string,
-  quote?: string,
-  escape?: string,
-  trim_fields?: boolean,
-  has_header?: boolean,
-  header_labels?: { [string]: string },
-  skip_empty_lines?: boolean,
-  comment?: string,
-  skip_header_row?: boolean
-}
+  delimiter?: string;
+  quote?: string;
+  escape?: string;
+  trim_fields?: boolean;
+  has_header?: boolean;
+  header_labels?: { [string]: string };
+  skip_empty_lines?: boolean;
+  comment?: string;
+  skip_header_row?: boolean;
+};
 
-type YamlDocs = any[] // List of parsed YAML documents
+type YamlDocs = any[]; // List of parsed YAML documents
 
 type Marker = {
-  label: string,
-  content: string
-}
+  label: string;
+  content: string;
+};
 ```
 
 ### Markdown Types
 
 ```typescript
 type MdSection = {
-  content: string,    // Full content of the section
-  heading_raw: string,      // The raw heading line with trailing newline (empty string if no heading)
-  heading_content: string,  // The raw heading line without trailing newline (empty string if no heading)
-  heading_level: number,    // Heading level (1-6), or 0 if no heading
-  heading_name: string      // Extracted and trimmed heading name (empty string if no heading)
-}
+  content: string; // Full content of the section
+  heading_raw: string; // The raw heading line with trailing newline (empty string if no heading)
+  heading_content: string; // The raw heading line without trailing newline (empty string if no heading)
+  heading_level: number; // Heading level (1-6), or 0 if no heading
+  heading_name: string; // Extracted and trimmed heading name (empty string if no heading)
+};
 
 type MdBlock = {
-  content: string,     // Content inside the block (excluding fence lines)
-  lang?: string,        // Language identifier (e.g., "rust")
-}
+  content: string; // Content inside the block (excluding fence lines)
+  lang?: string; // Language identifier (e.g., "rust")
+};
 
 type MdRef = {
-  _type: "MdRef",
-  target: string,       // URL, file path, or anchor
-  text: string | nil,
-  inline: boolean,      // True if prefixed with '![' (image)
-  kind: string          // "Anchor" | "File" | "Url"
-}
+  _type: "MdRef";
+  target: string; // URL, file path, or anchor
+  text: string | nil;
+  inline: boolean; // True if prefixed with '![' (image)
+  kind: string; // "Anchor" | "File" | "Url"
+};
 ```
 
 ### RunAgentResponse & Other Utility Types
 
 ```typescript
 type RunAgentResponse = {
-  outputs: any[],   // List of values returned by each # Output stage for each input.
-  after_all: any    // The value returned by the # After All stage (or nil).
-}
+  outputs: any[]; // List of values returned by each # Output stage for each input.
+  after_all: any; // The value returned by the # After All stage (or nil).
+};
 ```
 
 ```typescript
 type TagElem = {
-  tag: string,       // The tag name (e.g., "FILE")
-  attrs?: table,     // Key/value map of attributes from the opening tag
-  content: string    // The content between the tags
-}
+  tag: string; // The tag name (e.g., "FILE")
+  attrs?: table; // Key/value map of attributes from the opening tag
+  content: string; // The content between the tags
+};
 
 type CmdResponse = {
-  stdout: string,  // Standard output
-  stderr: string,  // Standard error
-  exit:   number   // Exit code (0 usually success)
-}
+  stdout: string; // Standard output
+  stderr: string; // Standard error
+  exit: number; // Exit code (0 usually success)
+};
 ```
 
 ## 4. Lua Semantics & API Reference
@@ -286,11 +286,12 @@ AIPack introduces a global `null` sentinel to bridge the gap between Lua's `nil`
 ### 4.2 API (`aip.*`) Reference
 
 **General Rules:**
+
 - All functions return an error table `{ error: string }` on failure, unless otherwise specified (like `aip.path.parent` returning `nil`).
 - Paths starting with `~` are user home. `ns@pack/` are pack references. Relative paths resolve to workspace root.
 - `null` is a global sentinel for missing values (behaves like JSON null). Native Lua `nil` erases properties and stops `ipairs`.
 - Build/dependency folders (e.g., `target/`, `node_modules/`) are excluded from file lists by default.
-- **Stage Content Formatting:** Content for code-based stages (Lua and TOML) must be enclosed within triple-backtick Markdown code blocks. For example, use ```lua ... ``` for script stages and ```toml ... ``` for the options stage.
+- **Stage Content Formatting:** Content for code-based stages (Lua and TOML) must be enclosed within triple-backtick Markdown code blocks. For example, use `lua ... ` for script stages and `toml ... ` for the options stage.
 
 ### aip.file - File System Operations
 
@@ -613,25 +614,25 @@ aip.shape.extract_keys(rec: table, keys: string[]): table
 
 Injected into all Lua stages, providing execution environment information. All paths are absolute.
 
-| Key                            | Description                                                               |
-|--------------------------------|---------------------------------------------------------------------------|
-| CTX.WORKSPACE_DIR              | Absolute path to the workspace directory (parent of `.aipack/`).          |
-| CTX.WORKSPACE_AIPack_DIR       | Absolute path to the `.aipack/` directory in the workspace.               |
-| CTX.BASE_AIPACK_DIR            | Absolute path to the user's base AIPack directory (`~/.aipack-base`).     |
-| CTX.AGENT_NAME                 | Name or path used to invoke the agent (e.g., `my_pack/my-agent`).         |
-| CTX.AGENT_FILE_PATH            | Absolute path to the resolved agent `.aip` file.                          |
-| CTX.AGENT_FILE_DIR             | Absolute path to the directory containing the agent file.                 |
-| CTX.AGENT_FILE_NAME            | The base name of the agent file (e.g., `my-agent.aip`).                   |
-| CTX.AGENT_FILE_STEM            | The base name of the agent file without extension.                        |
-| CTX.TMP_DIR                    | Temporary directory for this session (`.aipack/.sessions/_uid_/tmp`).     |
-| CTX.SESSION_UID                | The Session Unique ID.                                                    |
-| CTX.RUN_UID                    | The Run Unique ID.                                                        |
-| CTX.RUN_NUM                    | 1-based sequence number of the current agent run in the session.          |
+| Key                            | Description                                                                        |
+| ------------------------------ | ---------------------------------------------------------------------------------- |
+| CTX.WORKSPACE_DIR              | Absolute path to the workspace directory (parent of `.aipack/`).                   |
+| CTX.WORKSPACE_AIPack_DIR       | Absolute path to the `.aipack/` directory in the workspace.                        |
+| CTX.BASE_AIPACK_DIR            | Absolute path to the user's base AIPack directory (`~/.aipack-base`).              |
+| CTX.AGENT_NAME                 | Name or path used to invoke the agent (e.g., `my_pack/my-agent`).                  |
+| CTX.AGENT_FILE_PATH            | Absolute path to the resolved agent `.aip` file.                                   |
+| CTX.AGENT_FILE_DIR             | Absolute path to the directory containing the agent file.                          |
+| CTX.AGENT_FILE_NAME            | The base name of the agent file (e.g., `my-agent.aip`).                            |
+| CTX.AGENT_FILE_STEM            | The base name of the agent file without extension.                                 |
+| CTX.TMP_DIR                    | Temporary directory for this session (`.aipack/.sessions/_uid_/tmp`).              |
+| CTX.SESSION_UID                | The Session Unique ID.                                                             |
+| CTX.RUN_UID                    | The Run Unique ID.                                                                 |
+| CTX.RUN_NUM                    | 1-based sequence number of the current agent run in the session.                   |
 | CTX.TASK_UID                   | The Task Unique ID (only available during per-input stages: `# Data`, `# Output`). |
-| CTX.TASK_NUM                   | 1-based sequence number of the current task in the run.                   |
-| CTX.PACK_IDENTITY              | Pack identity (`namespace@name`) (nil if not run via pack reference).     |
-| CTX.PACK_NAMESPACE             | Namespace of the pack (nil if not run via pack reference).                |
-| CTX.PACK_NAME                  | Name of the pack (nil if not run via pack reference).                     |
-| CTX.PACK_REF                   | Full pack reference used (nil if not run via pack reference).             |
-| CTX.PACK_WORKSPACE_SUPPORT_DIR | Workspace support directory for the pack (if applicable).                 |
-| CTX.PACK_BASE_SUPPORT_DIR      | Base support directory for the pack (if applicable).                      |
+| CTX.TASK_NUM                   | 1-based sequence number of the current task in the run.                            |
+| CTX.PACK_IDENTITY              | Pack identity (`namespace@name`) (nil if not run via pack reference).              |
+| CTX.PACK_NAMESPACE             | Namespace of the pack (nil if not run via pack reference).                         |
+| CTX.PACK_NAME                  | Name of the pack (nil if not run via pack reference).                              |
+| CTX.PACK_REF                   | Full pack reference used (nil if not run via pack reference).                      |
+| CTX.PACK_WORKSPACE_SUPPORT_DIR | Workspace support directory for the pack (if applicable).                          |
+| CTX.PACK_BASE_SUPPORT_DIR      | Base support directory for the pack (if applicable).                               |
