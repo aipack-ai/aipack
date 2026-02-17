@@ -11,6 +11,7 @@ pub enum AppStage {
     Normal,     // Main run view
     Installing, // Dialog-style installation progress overlay
     Installed,  // Success dialog overlay (auto-dismisses after 4s)
+    PromptInstall(Id), // Interactive installation confirmation
 }
 
 pub enum RunTab { Overview, Tasks }
@@ -23,13 +24,19 @@ pub enum AppEvent {
     DoRedraw,
     Term(crossterm::event::Event),
     Action(AppActionEvent),
+    Data(DataEvent),
     Hub(HubEvent),
     Tick(i64),
 }
 
 pub enum AppActionEvent {
-    Quit, Redo, CancelRun,
+    Quit, 
+    Redo, 
+    CancelRun,
     Scroll(ScrollDir), ScrollPage(ScrollDir), ScrollToEnd(ScrollDir),
+    WorkConfirm(Id),
+    WorkCancel(Id),
+    Run(RunArgs),
 }
 ```
 
@@ -41,8 +48,13 @@ pub enum UiAction {
     ToggleRunsNav,
     CycleTasksOverviewMode,
     GoToTask { task_id: Id },
+    WorkConfirm(Id),
+    WorkCancel(Id),
+    WorkRun(Id),
+    WorkClose(Id),
     ToClipboardCopy(String),
     OpenFile(String), // Opens file at path using auto-editor
+    ShowText,
 }
 ```
 
@@ -68,8 +80,9 @@ AIPack distinguishes between **UI Intents** and **System Commands** to maintain 
 `AppState` is the primary interface for views.
 
 ### Main Accessors
-- `mm()`, `stage()`, `show_runs()`, `run_tab()`.
+- `mm()`, `stage()`, `show_runs()`, `run_tab()`, `last_app_event()`.
 - `installing_pack_ref()`, `current_work_id()`.
+- `should_redraw()`, `trigger_redraw()`, `should_be_pinged()`.
 
 ### Run & Task Data
 - `run_items()`, `current_run_item()`.
@@ -78,12 +91,14 @@ AIPack distinguishes between **UI Intents** and **System Commands** to maintain 
 
 ### Formatting & UI Getters (impl_fmt.rs)
 - `current_run_duration_txt()`, `current_run_cost_fmt()`.
+- `current_run_concurrency_txt()`.
 - `current_run_agent_name()`, `current_run_model_name()`.
 - `tasks_cummulative_duration()`: Cumulative time across parallel tasks.
 - `tasks_cummulative_models(max_width)`: Summary of models used.
 - `current_task_model_name()`, `current_task_cost_fmt()`, `current_task_duration_txt()`.
 - `current_task_prompt_tokens_fmt()`, `current_task_completion_tokens_fmt()`.
 - `current_task_cache_info_fmt()`.
+- `memory_fmt()`, `db_memory_fmt()`: System and database metrics.
 
 ### Interaction
 - `mouse_evt()`, `last_mouse_evt()`, `is_mouse_up_only()`.
@@ -107,6 +122,7 @@ Time-based state transitions and expirations are primarily managed in `src/tui/c
 
 ### LinkZones (src/tui/core/types/link_zone.rs)
 Used to handle hover/click on specific text regions.
+- `set_current_line(usize)`, `inc_current_line_by(usize)`: Manages relative anchoring for multi-line sections.
 - `start_group() -> u32`: For multi-line section-wide hover.
 - `push_group_zone(...)`: Registers a zone belonging to a group.
 - `is_mouse_over(area, scroll, mouse_evt, spans) -> Option<&mut [Span]>`.
