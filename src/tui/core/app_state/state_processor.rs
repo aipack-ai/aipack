@@ -142,6 +142,25 @@ pub fn process_app_state(state: &mut AppState) {
 		state.core_mut().show_runs = show_runs;
 	}
 
+	// -- Show config popup
+	if let Some(KeyCode::Char('c')) = state.last_app_event().as_key_code() {
+		state.set_action(UiAction::ShowConfig);
+	}
+
+	// -- Config specific keys
+	if let AppStage::Config(current_tab) = state.stage() {
+		if let Some(key_event) = state.last_app_event().as_key_event() {
+			match key_event.code {
+				KeyCode::Esc | KeyCode::Char('x') => state.set_action(UiAction::CloseConfig),
+				KeyCode::Char('1') => state.set_action(UiAction::SwitchConfigTab(ConfigTab::ApiKeys)),
+				KeyCode::Char('2') => state.set_action(UiAction::SwitchConfigTab(ConfigTab::ModelAliases)),
+				KeyCode::Char('3') => state.set_action(UiAction::SwitchConfigTab(ConfigTab::Help)),
+				KeyCode::Tab => state.set_action(UiAction::SwitchConfigTab(current_tab.next())),
+				_ => (),
+			}
+		}
+	}
+
 	// -- Cycle tasks overview mode
 	if let Some(KeyCode::Char('t')) = state.last_app_event().as_key_code() {
 		state.core_mut().next_overview_tasks_mode();
@@ -403,6 +422,19 @@ fn process_actions(state: &mut AppState) {
 			UiAction::ToggleRunsNav => {
 				let show_runs = !state.core().show_runs;
 				state.core_mut().show_runs = show_runs;
+				state.clear_action();
+			}
+			UiAction::ShowConfig => {
+				state.set_stage(AppStage::Config(state.config_tab()));
+				state.clear_action();
+			}
+			UiAction::CloseConfig => {
+				state.set_stage(AppStage::Normal);
+				state.clear_action();
+			}
+			UiAction::SwitchConfigTab(tab) => {
+				state.set_config_tab(tab);
+				state.set_stage(AppStage::Config(tab));
 				state.clear_action();
 			}
 			UiAction::CycleTasksOverviewMode => {
