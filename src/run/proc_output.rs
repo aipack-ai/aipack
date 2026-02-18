@@ -4,6 +4,7 @@ use crate::model::{RuntimeCtx, Stage};
 use crate::run::run_agent_task::RunAgentInputResponse;
 use crate::run::{AiResponse, Literals};
 use crate::runtime::Runtime;
+use crate::script::{AipackCustom, FromValue};
 use serde_json::Value;
 
 #[allow(clippy::too_many_arguments)]
@@ -31,6 +32,10 @@ pub async fn process_output(
 
 		let lua_value = lua_engine.eval(output_script, Some(lua_scope), Some(&[agent.file_dir()?.as_str()]))?;
 		let output_response = serde_json::to_value(lua_value)?;
+
+		if let Ok(FromValue::AipackCustom(AipackCustom::Redo)) = AipackCustom::from_value(output_response.clone()) {
+			return Ok(Some(RunAgentInputResponse::Redo));
+		}
 
 		Ok(Some(RunAgentInputResponse::OutputResponse(output_response)))
 	} else {

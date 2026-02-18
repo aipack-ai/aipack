@@ -26,6 +26,9 @@ pub fn init_module(lua: &Lua, _runtime: &Runtime) -> Result<Table> {
 	let before_all_response_fn = lua.create_function(aipack_before_all_response)?;
 	table.set("before_all_response", before_all_response_fn)?;
 
+	let redo_fn = lua.create_function(aipack_redo)?;
+	table.set("redo", redo_fn)?;
+
 	let skip_fn = lua.create_function(aipack_skip)?;
 	table.set("skip", skip_fn)?;
 
@@ -219,6 +222,53 @@ fn aipack_skip(lua: &Lua, reason: Option<String>) -> mlua::Result<Value> {
 	let inner = lua.create_table()?;
 	inner.set("kind", "Skip")?;
 	inner.set("data", data)?;
+
+	let outer = lua.create_table()?;
+	outer.set("_aipack_", inner)?;
+
+	Ok(Value::Table(outer))
+}
+
+/// ## Lua Documentation
+///
+/// Returns a response instructing AIPACK to redo the entire agent execution.
+///
+/// When this function is called and its result is returned from any stage (Before All, Data, or Output),
+/// the current agent execution will finish its current task(s) and then trigger a complete re-execution
+/// of the agent using the same initial arguments but with the latest agent file content.
+///
+/// ```lua
+/// -- API Signature
+/// aip.flow.redo() -> table
+/// ```
+///
+/// ### Example
+///
+/// ```lua
+/// -- Trigger a redo if some condition is met in the output stage
+/// if ai_response.content == "RETRY" then
+///   return aip.flow.redo()
+/// end
+/// ```
+///
+/// ### Error
+///
+/// This function does not directly return any errors. Errors might occur during the creation of lua table.
+///
+/// ## Internal (not for Lua doc)
+///
+/// Internaly this returns a Lua table with a specific structure recognized by AIPACK's executor.
+///
+/// ```ts
+/// type AipackFlowResponse = {
+///   _aipack_: {
+///     kind: "Redo"
+///   }
+/// }
+/// ```
+fn aipack_redo(lua: &Lua, _: ()) -> mlua::Result<Value> {
+	let inner = lua.create_table()?;
+	inner.set("kind", "Redo")?;
 
 	let outer = lua.create_table()?;
 	outer.set("_aipack_", inner)?;

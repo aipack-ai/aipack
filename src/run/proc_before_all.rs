@@ -16,6 +16,7 @@ pub struct ProcBeforeAllResponse {
 	pub agent: Agent,
 	pub inputs: Option<Vec<Value>>,
 	pub skip: bool,
+	pub redo: bool,
 }
 
 impl ProcBeforeAllResponse {
@@ -25,6 +26,17 @@ impl ProcBeforeAllResponse {
 			agent,
 			inputs,
 			skip: true,
+			redo: false,
+		}
+	}
+
+	fn new_redo(agent: Agent, inputs: Option<Vec<Value>>) -> Self {
+		ProcBeforeAllResponse {
+			before_all: Value::Null,
+			agent,
+			inputs,
+			skip: false,
+			redo: true,
 		}
 	}
 }
@@ -54,6 +66,7 @@ pub async fn process_before_all(
 			// Now return empty array if no inputs
 			inputs,
 			skip: false,
+			redo: false,
 		}
 	};
 
@@ -101,6 +114,11 @@ async fn process_before_all_script(
 			rt_model.rec_skip_run(run_id, Stage::BeforeAll, reason).await?;
 
 			return Ok(ProcBeforeAllResponse::new_skip(agent, inputs));
+		}
+
+		// it is a redo action
+		FromValue::AipackCustom(AipackCustom::Redo) => {
+			return Ok(ProcBeforeAllResponse::new_redo(agent, inputs));
 		}
 
 		// it is before_all_response, so, we eventually override the inputs
@@ -158,5 +176,6 @@ async fn process_before_all_script(
 		agent,
 		inputs,
 		skip: false,
+		redo: false,
 	})
 }

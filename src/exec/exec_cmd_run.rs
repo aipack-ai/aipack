@@ -5,29 +5,30 @@ use crate::run::{RunRedoCtx, RunTopAgentParams, run_agent};
 use crate::runtime::Runtime;
 use crate::support::jsons::into_values;
 use crate::support::{editor, text};
-use crate::types::FileInfo;
+use crate::types::{FileInfo, RunAgentResponse};
 use crate::{Error, Result, term};
 use simple_fs::{SEventKind, SPath, list_files, watch};
 use tracing::info;
 
 /// Exec for the Run command
 /// Might do a single run or a watch
-pub async fn exec_run(run_args: RunArgs, runtime: Runtime) -> Result<RunRedoCtx> {
+/// Returns (redo_ctx, redo_requested)
+pub async fn exec_run(run_args: RunArgs, runtime: Runtime) -> Result<(RunRedoCtx, bool)> {
 	// NOTE - We might be able to remove this now. Will test later.
 	tokio::task::yield_now().await;
 
 	// -- First exec
-	let redo_ctx = exec_run_first(run_args, runtime).await?;
+	let (redo_ctx, redo_requested) = exec_run_first(run_args, runtime).await?;
 
 	// -- If watch, we start the watch (will be spawned and return immediately)
 	if redo_ctx.run_options().base_run_options().watch() {
 		exec_run_watch(redo_ctx.clone());
 	}
 
-	Ok(redo_ctx)
+	Ok((redo_ctx, redo_requested))
 }
 
-pub async fn exec_run_first(run_args: RunArgs, runtime: Runtime) -> Result<RunRedoCtx> {
+pub async fn exec_run_first(run_args: RunArgs, runtime: Runtime) -> Result<(RunRedoCtx, bool)> {
 	let hub = get_hub();
 
 	let cmd_agent_name = &run_args.cmd_agent_name;
@@ -50,11 +51,14 @@ pub async fn exec_run_first(run_args: RunArgs, runtime: Runtime) -> Result<RunRe
 
 	// Run
 	match do_run(&run_options, &runtime, &agent).await {
-		Ok(_) => (),
+		Ok(run_agent_res) => {
+			let redo_requested = run_agent_res.redo_requested;
+			return Ok((RunRedoCtx::new(runtime, agent, run_options), redo_requested));
+		}
 		Err(err) => hub.publish(err).await,
 	};
 
-	Ok(RunRedoCtx::new(runtime, agent, run_options))
+	Ok((RunRedoCtx::new(runtime, agent, run_options), false))
 }
 
 /// Redo the exec_run, with its context
@@ -127,7 +131,7 @@ pub fn exec_run_watch(redo_ctx: RunRedoCtx) {
 }
 
 /// Do one run
-async fn do_run(run_command_options: &RunTopAgentParams, runtime: &Runtime, agent: &Agent) -> Result<()> {
+async fn do_run(run_command_options: &RunTopAgentParams, runtime: &Runtime, agent: &Agent) -> Result<RunAgentResponse> {
 	let inputs = if let Some(on_inputs) = run_command_options.on_inputs() {
 		Some(into_values(on_inputs)?)
 	} else if let Some(on_file_globs) = run_command_options.on_file_globs() {
@@ -172,7 +176,7 @@ async fn do_run(run_command_options: &RunTopAgentParams, runtime: &Runtime, agen
 		None
 	};
 
-	run_agent(
+	let res = run_agent(
 		runtime,
 		None,
 		agent.clone(),
@@ -182,5 +186,5 @@ async fn do_run(run_command_options: &RunTopAgentParams, runtime: &Runtime, agen
 	)
 	.await?;
 
-	Ok(())
+	Ok(res)
 }

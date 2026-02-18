@@ -16,6 +16,7 @@ pub struct ProcDataResponse {
 	pub attachments: Attachments,
 	pub run_model_resolved: ModelName,
 	pub skip: bool,
+	pub redo: bool,
 }
 
 impl ProcDataResponse {
@@ -27,6 +28,19 @@ impl ProcDataResponse {
 			attachments: Attachments::new(Vec::new()),
 			run_model_resolved,
 			skip: true,
+			redo: false,
+		}
+	}
+
+	pub fn new_redo(agent: Agent, input: Value, run_model_resolved: ModelName) -> Self {
+		Self {
+			agent,
+			input,
+			data: Value::Null,
+			attachments: Attachments::new(Vec::new()),
+			run_model_resolved,
+			skip: false,
+			redo: true,
 		}
 	}
 }
@@ -96,6 +110,11 @@ pub async fn process_data(
 				return Ok(ProcDataResponse::new_skip(agent, input, run_model_resolved));
 			}
 
+			// If we have a redo, we redo
+			FromValue::AipackCustom(AipackCustom::Redo) => {
+				return Ok(ProcDataResponse::new_redo(agent, input, run_model_resolved));
+			}
+
 			// We have a `return aip.flow.data_response(...)``
 			FromValue::AipackCustom(AipackCustom::DataResponse(DataResponse {
 				input: input_ov,
@@ -149,5 +168,6 @@ pub async fn process_data(
 		attachments,
 		run_model_resolved,
 		skip: false,
+		redo: false,
 	})
 }

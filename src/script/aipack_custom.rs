@@ -9,6 +9,9 @@ pub enum AipackCustom {
 	/// This can be returned in BeforeAll and Data stage
 	Skip { reason: Option<String> },
 
+	/// Trigger a redo of the agent
+	Redo,
+
 	/// Customize the data response
 	/// Can only be returned from the Data stage
 	DataResponse(DataResponse),
@@ -80,6 +83,8 @@ impl AipackCustom {
 		if kind == "Skip" {
 			let reason: Option<String> = value.x_get("/_aipack_/data/reason").ok();
 			Ok(FromValue::AipackCustom(Self::Skip { reason }))
+		} else if kind == "Redo" {
+			Ok(FromValue::AipackCustom(Self::Redo))
 		} else if kind == "DataResponse" {
 			let custom_data: Option<Value> = value.x_get("/_aipack_/data").ok();
 			let data_response = parse_data_response(custom_data)?;

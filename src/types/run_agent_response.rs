@@ -12,6 +12,7 @@ use serde_json::Value;
 pub struct RunAgentResponse {
 	pub outputs: Option<Vec<Value>>,
 	pub after_all: Option<Value>,
+	pub redo_requested: bool,
 }
 
 impl IntoLua for RunAgentResponse {
@@ -21,6 +22,7 @@ impl IntoLua for RunAgentResponse {
 		let after_all = self.after_all.map(|v| serde_value_to_lua_value(lua, v)).transpose()?;
 		table.set("outputs", outputs)?;
 		table.set("after_all", after_all)?;
+		table.set("redo_requested", self.redo_requested)?;
 		Ok(mlua::Value::Table(table))
 	}
 }

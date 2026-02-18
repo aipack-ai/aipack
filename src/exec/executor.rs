@@ -278,8 +278,12 @@ impl Executor {
 
 				match agent_res {
 					Ok(_agent) => {
-						let redo = exec_run(run_args, runtime).await?;
-						self.set_current_redo_ctx(redo).await;
+						let (redo_ctx, redo_requested) = exec_run(run_args, runtime).await?;
+						self.set_current_redo_ctx(redo_ctx).await;
+
+						if redo_requested {
+							self.sender().send(ExecActionEvent::Redo).await;
+						}
 					}
 					Err(err) => {
 						// Check if it's a missing pack candidate

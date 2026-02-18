@@ -7,6 +7,7 @@ use crate::run::proc_after_all::{ProcAfterAllResponse, process_after_all};
 use crate::run::proc_before_all::{ProcBeforeAllResponse, process_before_all};
 use crate::run::run_agent_task::run_agent_task_outer;
 use crate::runtime::Runtime;
+use crate::script::{AipackCustom, FromValue};
 use crate::types::RunAgentResponse;
 use crate::{Error, Result};
 use serde_json::Value;
@@ -47,7 +48,7 @@ pub async fn run_agent(
 
 		tokio::select! {
 			res = &mut run_future => (res, false),
-			_ = &mut cancel_fut => (Ok(RunAgentResponse{ outputs: None, after_all: None }), true)
+			_ = &mut cancel_fut => (Ok(RunAgentResponse{ outputs: None, after_all: None, redo_requested: false }), true)
 		}
 	} else {
 		(run_future.await, false)
@@ -114,11 +115,19 @@ async fn run_agent_inner(
 		agent,
 		inputs,
 		skip,
+		redo: redo_ba,
 	} = res?;
 	// skip
 	if skip {
 		rt_model.set_run_end_state_to_skip(run_id)?;
 		return Ok(RunAgentResponse::default());
+	}
+	// redo
+	if redo_ba {
+		return Ok(RunAgentResponse {
+			redo_requested: true,
+			..Default::default()
+		});
 	}
 
 	// -- Print the run info
@@ -151,7 +160,7 @@ async fn run_agent_inner(
 		// Rt Step - Tasks Start
 		rt_step.step_tasks_start(run_id).await?;
 
-		let captured_outputs_res = run_tasks(
+		let (captured_outputs, redo_tasks) = run_tasks(
 			runtime,
 			run_id,
 			&agent,
@@ -161,11 +170,10 @@ async fn run_agent_inner(
 			&inputs,
 			return_output_values,
 		)
-		.await;
+		.await?;
 
 		// Rt Step - Tasks End
 		rt_step.step_tasks_end(run_id).await?;
-		let captured_outputs = captured_outputs_res?;
 
 		// -- Post-process outputs
 		let outputs = if let Some(mut captured_outputs) = captured_outputs {
@@ -175,10 +183,20 @@ async fn run_agent_inner(
 			None
 		};
 
+		if redo_tasks {
+			return Ok(RunAgentResponse {
+				outputs,
+				redo_requested: true,
+				..Default::default()
+			});
+		}
+
 		(Some(inputs), outputs)
 	} else {
 		(inputs, None)
 	};
+
+	let redo_requested = redo_ba;
 
 	// -- Process After All
 	// Rt Step - Start After All
@@ -202,10 +220,22 @@ async fn run_agent_inner(
 	rt_step.step_aa_end(run_id).await?;
 	let ProcAfterAllResponse { after_all, outputs } = res?;
 
+	// -- Aggregate Redo from After All
+	let mut redo_requested = redo_requested;
+	if let Some(after_all) = after_all.as_ref()
+		&& let Ok(FromValue::AipackCustom(AipackCustom::Redo)) = AipackCustom::from_value(after_all.clone())
+	{
+		redo_requested = true;
+	}
+
 	// -- For legacy tui
 	hub.publish(format!("\n======= COMPLETED: {}", agent.name())).await;
 
-	Ok(RunAgentResponse { after_all, outputs })
+	Ok(RunAgentResponse {
+		after_all,
+		outputs,
+		redo_requested,
+	})
 }
 
 async fn print_run_info(runtime: &Runtime, run_id: Id, agent: &Agent) -> Result<()> {
@@ -257,7 +287,7 @@ async fn run_tasks(
 	before_all: &Value,
 	inputs: &[Value],
 	return_output_values: bool,
-) -> Result<Option<Vec<(usize, Value)>>> {
+) -> Result<(Option<Vec<(usize, Value)>>, bool)> {
 	let rt_model = runtime.rt_model();
 
 	// -- Initialize outputs for capture
@@ -279,6 +309,7 @@ async fn run_tasks(
 	// -- Run the Tasks
 	let mut join_set = JoinSet::new();
 	let mut in_progress = 0;
+	let mut redo_requested = false;
 
 	// -- Rt Create all tasks (with their input)
 	// Build tasks-for-create for batch insertion to reduce events and improve performance.
@@ -302,6 +333,10 @@ async fn run_tasks(
 
 	// -- Iterate and run each task (concurrency as setup)
 	for (input, task_idx, task_id) in input_idx_task_id_list {
+		if redo_requested {
+			break;
+		}
+
 		let runtime_clone = runtime.clone();
 		let agent_clone = agent.clone();
 		let before_all_clone = before_all.clone();
@@ -350,19 +385,22 @@ async fn run_tasks(
 		// If we've reached the concurrency limit, wait for one task to complete
 		if in_progress >= concurrency
 			&& let Some(res) = join_set.join_next().await
+			&& process_join_set_res(res, &mut in_progress, &mut captured_outputs).await?
 		{
-			process_join_set_res(res, &mut in_progress, &mut captured_outputs).await?;
+			redo_requested = true;
 		}
 	}
 
 	// Wait for the remaining tasks to complete
 	while in_progress > 0 {
-		if let Some(res) = join_set.join_next().await {
-			process_join_set_res(res, &mut in_progress, &mut captured_outputs).await?;
+		if let Some(res) = join_set.join_next().await
+			&& process_join_set_res(res, &mut in_progress, &mut captured_outputs).await?
+		{
+			redo_requested = true;
 		}
 	}
 
-	Ok(captured_outputs)
+	Ok((captured_outputs, redo_requested))
 }
 
 type JoinSetResult = core::result::Result<Result<(usize, Value)>, JoinError>;
@@ -370,14 +408,20 @@ async fn process_join_set_res(
 	res: JoinSetResult,
 	in_progress: &mut usize,
 	outputs_vec: &mut Option<Vec<(usize, Value)>>,
-) -> Result<()> {
+) -> Result<bool> {
 	*in_progress -= 1;
 	match res {
 		Ok(Ok((task_idx, output))) => {
+			// Check for redo
+			let redo = matches!(
+				AipackCustom::from_value(output.clone()),
+				Ok(FromValue::AipackCustom(AipackCustom::Redo))
+			);
+
 			if let Some(outputs_vec) = outputs_vec.as_mut() {
 				outputs_vec.push((task_idx, output));
 			}
-			Ok(())
+			Ok(redo)
 		}
 		Ok(Err(e)) => Err(e),
 		Err(e) => Err(Error::custom(format!("Error while running input. Cause {e}"))),
