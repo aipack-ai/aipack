@@ -2,7 +2,7 @@ use super::SysState;
 use crate::model::{ErrRec, Id, ModelManager, Task};
 use crate::tui::core::event::{AppActionEvent, LastAppEvent};
 use crate::tui::core::{
-	AppStage, MouseEvt, OverviewTasksMode, RunItemStore, RunTab, ScrollIden, ScrollZone, ScrollZones, UiAction,
+	AppStage, ConfigTab, MouseEvt, OverviewTasksMode, RunItemStore, RunTab, ScrollIden, ScrollZone, ScrollZones, UiAction,
 };
 use crate::tui::support;
 use crate::tui::view::PopupView;
@@ -15,6 +15,7 @@ use ratatui::layout::Position;
 /// inside `crate::tui::core`.
 pub(in crate::tui::core) struct AppStateCore {
 	pub stage: AppStage,
+	pub config_tab: ConfigTab,
 
 	pub installing_pack_ref: Option<String>,
 	pub current_work_id: Option<Id>,

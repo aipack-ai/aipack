@@ -3,7 +3,7 @@ use crate::Result;
 use crate::model::{Id, ModelManager, Task};
 use crate::support::time::now_micro;
 use crate::tui::core::event::{AppActionEvent, LastAppEvent};
-use crate::tui::core::{AppStage, OverviewTasksMode, RunItemStore, RunTab, ScrollZones};
+use crate::tui::core::{AppStage, ConfigTab, OverviewTasksMode, RunItemStore, RunTab, ScrollZones};
 use crate::tui::view::PopupView;
 
 /// Public wrapper around AppStateCore.
@@ -54,6 +54,7 @@ impl AppState {
 
 			// -- Stage & Work
 			stage: AppStage::Normal,
+			config_tab: ConfigTab::ApiKeys,
 			installing_pack_ref: None,
 			current_work_id: None,
 
@@ -123,6 +124,18 @@ impl AppState {
 
 	pub fn set_stage(&mut self, stage: AppStage) {
 		self.core.stage = stage;
+	}
+
+	pub fn config_tab(&self) -> ConfigTab {
+		self.core.config_tab
+	}
+
+	pub fn set_config_tab(&mut self, config_tab: ConfigTab) {
+		self.core.config_tab = config_tab;
+	}
+
+	pub fn is_config_stage(&self) -> bool {
+		matches!(self.stage(), AppStage::Config(_))
 	}
 
 	pub fn installing_pack_ref(&self) -> Option<&str> {
