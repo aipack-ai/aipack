@@ -1,4 +1,5 @@
 use crate::model::Id;
+use crate::tui::core::ConfigTab;
 
 /// Represents a **UI Intent** stored in `AppState`.
 /// It is stateful and represents a request that might need further context
@@ -13,6 +14,11 @@ pub enum UiAction {
 	CancelRun,
 	ToggleRunsNav,
 	CycleTasksOverviewMode,
+
+	// Configuration
+	ShowConfig,
+	CloseConfig,
+	SwitchConfigTab(ConfigTab),
 
 	// Go to the tasks tab and select this task_id
 	GoToTask {
