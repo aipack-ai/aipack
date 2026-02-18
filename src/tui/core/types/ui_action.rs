@@ -16,6 +16,7 @@ pub enum UiAction {
 	CycleTasksOverviewMode,
 
 	// Configuration
+	#[allow(unused)]
 	ShowConfig,
 	CloseConfig,
 	SwitchConfigTab(ConfigTab),

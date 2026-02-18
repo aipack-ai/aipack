@@ -143,9 +143,10 @@ pub fn process_app_state(state: &mut AppState) {
 	}
 
 	// -- Show config popup
-	if let Some(KeyCode::Char('c')) = state.last_app_event().as_key_code() {
-		state.set_action(UiAction::ShowConfig);
-	}
+	// NOTE: For now, the Config popup is not finished, so disable for now.
+	// if let Some(KeyCode::Char('c')) = state.last_app_event().as_key_code() {
+	// 	state.set_action(UiAction::ShowConfig);
+	// }
 
 	// -- Config specific keys
 	if let AppStage::Config(current_tab) = state.stage()
