@@ -76,7 +76,7 @@ async fn process_agent_response_to_output(
 
 	// Process the output
 	let run_input_value = run_task_response.map(|v| v.into_value()).unwrap_or_default();
-	let output = match AipackCustom::from_value(run_input_value)? {
+	let output = match AipackCustom::from_value(run_input_value.clone())? {
 		// if it is a skip, we skip
 		FromValue::AipackCustom(AipackCustom::Skip { reason }) => {
 			let reason_msg = reason.map(|reason| format!(" (Reason: {reason})")).unwrap_or_default();
@@ -84,12 +84,12 @@ async fn process_agent_response_to_output(
 				"Aipack Skip input at Output stage{reason_msg}"
 			)))
 			.await;
-			Value::Null
+			run_input_value
 		}
 
 		// Any other AipackCustom is not supported at output stage
 		FromValue::AipackCustom(other) => match other {
-			AipackCustom::Redo => Value::Null,
+			AipackCustom::Redo => run_input_value,
 			_ => {
 				return Err(Error::custom(format!(
 					"Aipack custom '{}' not supported at the Output stage",
