@@ -2,7 +2,7 @@ use crate::model::{ErrBmc, InstallData, RunBmc, TaskBmc, WorkBmc};
 use crate::support::time::now_micro;
 use crate::tui::AppState;
 use crate::tui::core::event::{AppActionEvent, ScrollDir};
-use crate::tui::core::{AppStage, MouseEvt, NavDir, RunItemStore, RunTab, ScrollIden, UiAction};
+use crate::tui::core::{AppStage, ConfigTab, MouseEvt, NavDir, RunItemStore, RunTab, ScrollIden, UiAction};
 use crate::tui::support::offset_and_clamp_option_idx_in_len;
 use crate::tui::view::{PopupMode, PopupView};
 use crossterm::event::{KeyCode, MouseEventKind};
