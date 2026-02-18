@@ -12,6 +12,7 @@ pub enum AppStage {
     Installing, // Dialog-style installation progress overlay
     Installed,  // Success dialog overlay (auto-dismisses after 4s)
     PromptInstall(Id), // Interactive installation confirmation
+    Config(ConfigTab), // Configuration popup (Work in progress / Disabled)
 }
 
 pub enum RunTab { Overview, Tasks }
@@ -47,6 +48,11 @@ pub enum UiAction {
     Quit, Redo, CancelRun,
     ToggleRunsNav,
     CycleTasksOverviewMode,
+    // Configuration (Work in progress / Disabled)
+    ShowConfig,
+    CloseConfig,
+    SwitchConfigTab(ConfigTab),
+
     GoToTask { task_id: Id },
     WorkConfirm(Id),
     WorkCancel(Id),
@@ -82,6 +88,7 @@ AIPack distinguishes between **UI Intents** and **System Commands** to maintain 
 ### Main Accessors
 - `mm()`, `stage()`, `show_runs()`, `run_tab()`, `last_app_event()`.
 - `installing_pack_ref()`, `current_work_id()`.
+- `config_tab()`, `is_config_stage()`.
 - `should_redraw()`, `trigger_redraw()`, `should_be_pinged()`.
 
 ### Run & Task Data
