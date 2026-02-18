@@ -1,4 +1,4 @@
-use super::{ActionView, InstallView, RunsView, SumView};
+use super::{ActionView, ConfigView, InstallView, RunsView, SumView};
 use crate::model::ErrRec;
 use crate::tui::AppState;
 use crate::tui::core::AppStage;
@@ -39,7 +39,7 @@ impl StatefulWidget for MainView {
 
 		// -- Render main
 		match state.stage() {
-			AppStage::Normal | AppStage::Installing | AppStage::Installed | AppStage::PromptInstall(_) => {
+			AppStage::Normal | AppStage::Installing | AppStage::Installed | AppStage::PromptInstall(_) | AppStage::Config(_) => {
 				if state.show_runs() {
 					RunMainView::clear_scroll_idens(state);
 					RunsView.render(content_a, buf, state);
@@ -48,9 +48,14 @@ impl StatefulWidget for MainView {
 					RunMainView.render(content_a, buf, state);
 				}
 
-				// Render Install/Installed/Prompt overlay
-				if state.stage() != AppStage::Normal {
+				// Render Install/Installed/Prompt overlay (excluding Config)
+				if matches!(state.stage(), AppStage::Installing | AppStage::Installed | AppStage::PromptInstall(_)) {
 					InstallView.render(content_a, buf, state);
+				}
+
+				// Render Config overlay
+				if let AppStage::Config(_) = state.stage() {
+					ConfigView.render(content_a, buf, state);
 				}
 			}
 		}

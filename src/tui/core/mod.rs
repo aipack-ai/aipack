@@ -14,7 +14,7 @@ mod tui_impl;
 mod types;
 
 // -- Cherry Flatten
-pub use app_state::{AppStage, AppState};
+pub use app_state::{AppStage, AppState, ConfigTab};
 pub use ping_timer::{PingTimerTx, start_ping_timer};
 pub use tui_impl::{AppTx, ExitTx, start_tui};
 // -- Public flatten
