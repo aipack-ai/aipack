@@ -16,6 +16,7 @@ impl ConfigTab {
 		}
 	}
 
+	#[allow(unused)]
 	pub fn prev(self) -> Self {
 		match self {
 			ConfigTab::ApiKeys => ConfigTab::Help,

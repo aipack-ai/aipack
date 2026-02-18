@@ -39,7 +39,11 @@ impl StatefulWidget for MainView {
 
 		// -- Render main
 		match state.stage() {
-			AppStage::Normal | AppStage::Installing | AppStage::Installed | AppStage::PromptInstall(_) | AppStage::Config(_) => {
+			AppStage::Normal
+			| AppStage::Installing
+			| AppStage::Installed
+			| AppStage::PromptInstall(_)
+			| AppStage::Config(_) => {
 				if state.show_runs() {
 					RunMainView::clear_scroll_idens(state);
 					RunsView.render(content_a, buf, state);
@@ -49,19 +53,22 @@ impl StatefulWidget for MainView {
 				}
 
 				// Render Install/Installed/Prompt overlay (excluding Config)
-				if matches!(state.stage(), AppStage::Installing | AppStage::Installed | AppStage::PromptInstall(_)) {
+				if matches!(
+					state.stage(),
+					AppStage::Installing | AppStage::Installed | AppStage::PromptInstall(_)
+				) {
 					InstallView.render(content_a, buf, state);
-				}
-
-				// Render Config overlay
-				if let AppStage::Config(_) = state.stage() {
-					ConfigView.render(content_a, buf, state);
 				}
 			}
 		}
 
 		// -- Render action
 		ActionView.render(action_a, buf, state);
+
+		// -- Render popup config
+		if matches!(state.stage(), AppStage::Config(_)) {
+			ConfigView.render(content_a, buf, state);
+		}
 
 		// -- Render popup overlay last (on top)
 		PopupOverlay.render(area, buf, state);

@@ -148,16 +148,16 @@ pub fn process_app_state(state: &mut AppState) {
 	}
 
 	// -- Config specific keys
-	if let AppStage::Config(current_tab) = state.stage() {
-		if let Some(key_event) = state.last_app_event().as_key_event() {
-			match key_event.code {
-				KeyCode::Esc | KeyCode::Char('x') => state.set_action(UiAction::CloseConfig),
-				KeyCode::Char('1') => state.set_action(UiAction::SwitchConfigTab(ConfigTab::ApiKeys)),
-				KeyCode::Char('2') => state.set_action(UiAction::SwitchConfigTab(ConfigTab::ModelAliases)),
-				KeyCode::Char('3') => state.set_action(UiAction::SwitchConfigTab(ConfigTab::Help)),
-				KeyCode::Tab => state.set_action(UiAction::SwitchConfigTab(current_tab.next())),
-				_ => (),
-			}
+	if let AppStage::Config(current_tab) = state.stage()
+		&& let Some(key_event) = state.last_app_event().as_key_event()
+	{
+		match key_event.code {
+			KeyCode::Esc | KeyCode::Char('x') => state.set_action(UiAction::CloseConfig),
+			KeyCode::Char('1') => state.set_action(UiAction::SwitchConfigTab(ConfigTab::ApiKeys)),
+			KeyCode::Char('2') => state.set_action(UiAction::SwitchConfigTab(ConfigTab::ModelAliases)),
+			KeyCode::Char('3') => state.set_action(UiAction::SwitchConfigTab(ConfigTab::Help)),
+			KeyCode::Tab => state.set_action(UiAction::SwitchConfigTab(current_tab.next())),
+			_ => (),
 		}
 	}
 
@@ -399,6 +399,9 @@ fn process_stage(state: &mut AppState) {
 				state.set_stage(AppStage::Normal);
 				state.core_mut().current_work_id = None;
 				state.core_mut().installing_pack_ref = None;
+			}
+			AppStage::Config(_) => {
+				// Stay in Config
 			}
 		}
 	}

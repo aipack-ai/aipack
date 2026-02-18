@@ -134,6 +134,7 @@ impl AppState {
 		self.core.config_tab = config_tab;
 	}
 
+	#[allow(unused)]
 	pub fn is_config_stage(&self) -> bool {
 		matches!(self.stage(), AppStage::Config(_))
 	}
