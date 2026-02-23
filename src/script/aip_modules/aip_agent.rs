@@ -186,7 +186,7 @@ pub fn aip_agent_extract_options(lua: &Lua, value: Value) -> mlua::Result<Value>
 			let result_table = lua.create_table()?;
 
 			// List of keys to copy
-			let keys_to_copy = ["model", "model_aliases", "input_concurrency", "temperature", "top_p"];
+			let keys_to_copy = ["model", "model_aliases", "input_concurrency", "temperature", "top_p", "allow_run_on_task_fail"];
 
 			for key in keys_to_copy.iter() {
 				if let Some(val) = table.x_get_value(key)

@@ -22,6 +22,8 @@ pub struct AgentOptions {
 	// Runtime settings
 	input_concurrency: Option<usize>,
 
+	allow_run_on_task_fail: Option<bool>,
+
 	model_aliases: Option<ModelAliases>,
 }
 
@@ -150,6 +152,10 @@ impl AgentOptions {
 		self.input_concurrency
 	}
 
+	pub fn allow_run_on_task_fail(&self) -> Option<bool> {
+		self.allow_run_on_task_fail
+	}
+
 	pub fn temperature(&self) -> Option<f64> {
 		self.temperature
 	}
@@ -218,6 +224,7 @@ impl AgentOptions {
 			temperature: options_ov.temperature.or(self.temperature),
 			top_p: options_ov.top_p.or(self.top_p),
 			input_concurrency: options_ov.input_concurrency.or(self.input_concurrency),
+			allow_run_on_task_fail: options_ov.allow_run_on_task_fail.or(self.allow_run_on_task_fail),
 			model_aliases,
 		})
 	}
@@ -233,6 +240,7 @@ impl AgentOptions {
 			temperature: options_ov.temperature.or(self.temperature),
 			top_p: options_ov.top_p.or(self.top_p),
 			input_concurrency: options_ov.input_concurrency.or(self.input_concurrency),
+			allow_run_on_task_fail: options_ov.allow_run_on_task_fail.or(self.allow_run_on_task_fail),
 			model_aliases,
 		})
 	}
@@ -248,6 +256,7 @@ impl mlua::IntoLua for &AgentOptions {
 		table.set("temperature", self.temperature)?;
 		table.set("top_p", self.top_p)?;
 		table.set("input_concurrency", self.input_concurrency)?;
+		table.set("allow_run_on_task_fail", self.allow_run_on_task_fail)?;
 
 		let model_aliases = self.model_aliases.as_ref();
 		table.set("model_aliases", model_aliases)?;
@@ -263,6 +272,7 @@ impl mlua::FromLua for AgentOptions {
 			let temperature = table.get::<Option<f64>>("temperature")?;
 			let top_p = table.get::<Option<f64>>("top_p")?;
 			let input_concurrency = table.get::<Option<usize>>("input_concurrency")?;
+			let allow_run_on_task_fail = table.get::<Option<bool>>("allow_run_on_task_fail")?;
 
 			// --
 			let model_aliases = table.get::<Option<mlua::Value>>("model_aliases")?;
@@ -273,6 +283,7 @@ impl mlua::FromLua for AgentOptions {
 				temperature,
 				top_p,
 				input_concurrency,
+				allow_run_on_task_fail,
 				model_aliases,
 			};
 
@@ -337,6 +348,7 @@ impl AgentOptions {
 			temperature: None,
 			top_p: None,
 			input_concurrency: None,
+			allow_run_on_task_fail: None,
 			model_aliases: None,
 		}
 	}
@@ -362,12 +374,13 @@ mod tests {
 		let options = AgentOptions::from_config_value(config_value)?;
 
 		// -- Check
-		assert_eq!(options.model(), Some("gpt-4o-mini"));
+		assert_eq!(options.model(), Some("gpt-5-mini"));
 		assert_eq!(options.temperature(), Some(0.0));
 		assert_eq!(options.input_concurrency(), Some(6));
+		assert_eq!(options.allow_run_on_task_fail(), None);
 		assert_eq!(
 			options.get_model_for_alias("small").ok_or("Should have an alias for small")?,
-			"gemini-2.0-flash-001"
+			"gemini-2.5-flash"
 		);
 
 		Ok(())
@@ -384,6 +397,7 @@ return {
 	temperature = 0.3,
 	model_aliases = { small = "flash-001" },
 	item_concurrency = nil, -- same as absent
+	allow_run_on_task_fail = true
 }"#,
 		);
 		let options_lua = options_chunk.eval::<mlua::Value>()?;
@@ -398,6 +412,7 @@ return {
 			options.input_concurrency().is_none(),
 			"input concurrency should be none"
 		);
+		assert_eq!(options.allow_run_on_task_fail(), Some(true));
 		assert_eq!(options.get_model_for_alias("small"), Some("flash-001"));
 		assert!(
 			options.get_model_for_alias("non-existent").is_none(),
@@ -415,7 +430,8 @@ return {
 			r#"
 	model = "gpt-4o-mini"
 	temperature = 0.3
-	model_aliases = { small = "flash-001" }		
+	model_aliases = { small = "flash-001" }
+	allow_run_on_task_fail = true
 		"#,
 		)?;
 		let options = AgentOptions::from_options_value(options.clone())?;
@@ -427,6 +443,7 @@ return {
 		let options_table = options_lua.as_table().ok_or("Should be a table")?;
 		assert_eq!(&options_table.get::<String>("model")?, "gpt-4o-mini");
 		assert_eq!(options_table.get::<f64>("temperature")?, 0.3);
+		assert_eq!(options_table.get::<bool>("allow_run_on_task_fail")?, true);
 		let aliases_table = options_table.get::<mlua::Value>("model_aliases")?;
 		let aliases_table = aliases_table.as_table().ok_or("model_aliases should be table")?;
 		assert_eq!(&aliases_table.get::<String>("small")?, "flash-001");
