@@ -16,7 +16,6 @@ use uuid::Uuid;
 use value_ext::JsonValueExt;
 
 const DEFAULT_CONCURRENCY: usize = 1;
-const DEFAULT_ALLOW_RUN_ON_TASK_FAIL: bool = false;
 
 pub async fn run_agent(
 	runtime: &Runtime,
@@ -301,10 +300,7 @@ async fn run_tasks(
 
 	// extract concurrency and allow_run_on_task_fail
 	let concurrency = agent.options().input_concurrency().unwrap_or(DEFAULT_CONCURRENCY);
-	let allow_run_on_task_fail = agent
-		.options()
-		.allow_run_on_task_fail()
-		.unwrap_or(DEFAULT_ALLOW_RUN_ON_TASK_FAIL);
+	let allow_run_on_task_fail = agent.options().allow_run_on_task_fail().unwrap_or_default();
 
 	// -- Rt Update - model name & concurrency
 	let _ = rt_model
@@ -380,7 +376,12 @@ async fn run_tasks(
 				Err(err) => {
 					//
 					rt_step.step_task_end_err(run_id, task_id, &err).await?;
-					Err(err)
+					if allow_run_on_task_fail {
+						let err_val = serde_json::json!({ "error": err.to_string() });
+						Ok((task_idx, err_val))
+					} else {
+						Err(err)
+					}
 				}
 			}
 		});
@@ -390,7 +391,7 @@ async fn run_tasks(
 		// If we've reached the concurrency limit, wait for one task to complete
 		if in_progress >= concurrency
 			&& let Some(res) = join_set.join_next().await
-			&& process_join_set_res(res, &mut in_progress, &mut captured_outputs, allow_run_on_task_fail).await?
+			&& process_join_set_res(res, &mut in_progress, &mut captured_outputs).await?
 		{
 			redo_requested = true;
 		}
@@ -399,7 +400,7 @@ async fn run_tasks(
 	// Wait for the remaining tasks to complete
 	while in_progress > 0 {
 		if let Some(res) = join_set.join_next().await
-			&& process_join_set_res(res, &mut in_progress, &mut captured_outputs, allow_run_on_task_fail).await?
+			&& process_join_set_res(res, &mut in_progress, &mut captured_outputs).await?
 		{
 			redo_requested = true;
 		}
@@ -413,7 +414,6 @@ async fn process_join_set_res(
 	res: JoinSetResult,
 	in_progress: &mut usize,
 	outputs_vec: &mut Option<Vec<(usize, Value)>>,
-	allow_run_on_task_fail: bool,
 ) -> Result<bool> {
 	*in_progress -= 1;
 	match res {
@@ -429,17 +429,8 @@ async fn process_join_set_res(
 			}
 			Ok(redo)
 		}
-		Ok(Err(e)) => {
-			if allow_run_on_task_fail {
-				Ok(false)
-			} else {
-				Err(e)
-			}
-		}
-		Err(e) => {
-			let err = Error::custom(format!("Error while running input. Cause {e}"));
-			if allow_run_on_task_fail { Ok(false) } else { Err(err) }
-		}
+		Ok(Err(e)) => Err(e),
+		Err(e) => Err(Error::custom(format!("Error while running input. Cause {e}"))),
 	}
 }
 
