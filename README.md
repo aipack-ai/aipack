@@ -101,6 +101,18 @@ For now, installation requires building directly from source with Rust. It works
 - Install Rust: https://www.rust-lang.org/tools/install
 - For now, install with `cargo install aipack`
 
+#### Build docker
+
+No images are published yet, but you can build a docker image locally.
+
+```sh
+docker build -t aipack:latest -f docker/Dockerfile .
+
+# There is an alias you can copy or modify into your own ~/.bashrc or ~/.zshrc
+source docker/docker-alias
+
+aip check-keys
+```
 
 ### Run
 
