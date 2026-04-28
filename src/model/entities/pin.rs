@@ -281,7 +281,7 @@ impl PinBmc {
 
 	// return the pin ID
 	pub fn get_run_pin_by_iden(mm: &ModelManager, run_id: Id, iden: &str) -> Result<Option<Id>> {
-		let sql = "SELECT id FROM pin WHERE run_id = ? AND iden = ?";
+		let sql = "SELECT id FROM pin WHERE run_id = ? AND iden = ? AND task_id IS NULL";
 		let id = mm.db().exec_returning_as_optional::<i64>(sql, (run_id, iden))?;
 
 		Ok(id.map(|id| id.into()))
