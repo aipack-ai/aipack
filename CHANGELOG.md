@@ -1,5 +1,15 @@
 `.` minor | `-` Fix | `+` Addition | `^` improvement | `!` Change | `*` important | `>` Refactor
 
+## 2026-04-29 [v0.8.23](https://github.com/jeremychone/rust-devai/compare/v0.8.22...v0.8.23)
+
+- `.` MODEL - `gpt` alias to `gpt-5.5`
+- `.` MODEL - deepseek ai - deepseek-v4-flash/pro pricing and aliases for dflash, dpro
+- `.` MODEL - fireworks - pricing update deepseek v4-pro, kimi 2.6, gpt-5.5-pro
+- `^` tui - expand task completion header width, align task cache info with duration, and show full task header for nested runs
+- `^` term - restore tmux title on quit
+- `-` model/pin - fix run pin lookup returning task pins with same iden
+- `.` udiffx - 0.1.41 - hunk error cause concise
+
 ## 2026-04-24 [v0.8.21](https://github.com/jeremychone/rust-devai/compare/v0.8.21...v0.8.22)
 
 - `^` NEW API `aip.zip` - `aip.zip.create`, `aip.zip.extract`, and `aip.zip.list` 
