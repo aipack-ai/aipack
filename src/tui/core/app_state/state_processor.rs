@@ -10,6 +10,7 @@ use simple_fs::SPath;
 use std::time::Duration;
 
 const SCROLL_KEY_MAIN_VIEW: bool = true;
+const AUTO_SWITCH_OVERVIEW_US: i64 = 500_000;
 
 #[derive(Debug, Clone, Copy, Default)]
 pub struct ProcessAppStateOpts {
@@ -188,6 +189,27 @@ pub fn process_app_state(state: &mut AppState, opts: ProcessAppStateOpts) {
 
 	let refresh = compute_refresh_decision(state, opts);
 	refresh_data(state, refresh);
+
+	// -- Auto-switch to Overview if no tasks after timeout
+	if state.run_tab() == RunTab::Tasks
+		&& state.tasks().is_empty()
+		&& let Some(run_item) = state.current_run_item()
+	{
+		let run = run_item.run();
+		let mut should_switch = run.is_done() || run.has_task_stages == Some(false);
+
+		if !should_switch
+			&& let Some(start) = run.start
+			&& state.core().time - start.as_i64() > AUTO_SWITCH_OVERVIEW_US
+		{
+			should_switch = true;
+		}
+
+		if should_switch {
+			state.set_run_tab(RunTab::Overview);
+			state.trigger_redraw();
+		}
+	}
 
 	// -- Initialise RunDetailsView if needed
 	{
