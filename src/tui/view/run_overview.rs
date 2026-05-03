@@ -103,18 +103,19 @@ fn render_body(area: Rect, buf: &mut Buffer, state: &mut AppState) {
 	} else {
 		task_list_line_count(state.tasks())
 	};
+	let after_task_section_start = task_section_start + tasks_section_line_count;
 
 	let mut after_task_lines: Vec<Line> = Vec::new();
 
 	// -- Add after all
 	// Here false for add empty end line because logs add it for each log section
-	link_zones.set_current_line(after_task_lines.len());
+	link_zones.set_current_line(after_task_section_start + after_task_lines.len());
 	support::extend_lines(
 		&mut after_task_lines,
 		ui_for_after_all(&logs, max_width, false, &mut link_zones, path_color),
 		false,
 	);
-	link_zones.set_current_line(after_task_lines.len());
+	link_zones.set_current_line(after_task_section_start + after_task_lines.len());
 
 	// -- Add Error if present
 	if let Some(err_id) = state.current_run_item().and_then(|r| r.run().end_err_id) {
@@ -125,7 +126,7 @@ fn render_body(area: Rect, buf: &mut Buffer, state: &mut AppState) {
 		);
 	}
 
-	link_zones.set_current_line(after_task_lines.len());
+	link_zones.set_current_line(task_section_start);
 
 	// -- Clamp scroll
 	// TODO: Needs to have it's own scroll state.
