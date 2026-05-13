@@ -71,7 +71,7 @@ pub fn list_files_with_options(
 	};
 
 	// -- Build ListOptions
-	let mut options = ListOptions::from_relative_glob(!absolute);
+	let mut options = ListOptions::from_relative_glob(true);
 
 	// if there is some exlude special folders
 	let exclude_globs = if !special_folder_excludes.is_empty() {

@@ -632,7 +632,7 @@ pub(super) fn file_first(
 	let mut sfiles = iter_files(
 		&base_path,
 		Some(&include_globs.iter().map(|s| s.as_str()).collect::<Vec<&str>>()),
-		Some(simple_fs::ListOptions::from_relative_glob(!absolute)),
+		Some(simple_fs::ListOptions::from_relative_glob(true)),
 	)
 	.map_err(crate::Error::from)?;
 
@@ -873,6 +873,45 @@ mod tests {
 		assert_contains(&res_paths, "sub-dir-a/sub-sub-dir/agent-hello-3.aip");
 		assert_contains(&res_paths, "sub-dir-a/sub-sub-dir/main.aip");
 		assert_contains(&res_paths, "sub-dir-a/agent-hello-2.aip");
+
+		Ok(())
+	}
+
+	#[tokio::test]
+	async fn test_lua_file_list_negative_glob_absolute() -> Result<()> {
+		// -- Exec
+		let res = run_reflective_agent(
+			r#"return aip.file.list({"**/*.aip", "!sub-dir-a/**/*.aip"}, { absolute = true })"#,
+			None,
+		)
+		.await?;
+
+		// -- Check
+		let res_paths = to_res_paths(&res)?;
+		assert!(!res_paths.is_empty(), "Should have at least one aip file");
+		assert_contains(&res_paths, "agent-script/agent-hello.aip");
+		for path in res_paths {
+			assert!(
+				!path.contains("sub-dir-a/"),
+				"Negative glob should exclude sub-dir-a paths even when absolute = true. Got: {path}"
+			);
+		}
+
+		Ok(())
+	}
+
+	#[tokio::test]
+	async fn test_lua_file_first_negative_glob_absolute() -> Result<()> {
+		// -- Exec
+		let res = run_reflective_agent(
+			r#"return aip.file.first({"sub-dir-a/**/*.*", "!sub-dir-a/agent-hello-2.aip", "!sub-dir-a/sub-sub-dir/agent-hello-3.aip"}, { absolute = true })"#,
+			None,
+		)
+		.await?;
+
+		// -- Check
+		assert_eq!(res.x_get_str("name")?, "main.aip");
+		assert_contains(res.x_get_str("path")?, "sub-dir-a/sub-sub-dir/main.aip");
 
 		Ok(())
 	}
