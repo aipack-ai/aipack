@@ -1,5 +1,11 @@
 `.` minor | `-` Fix | `+` Addition | `^` improvement | `!` Change | `*` important | `>` Refactor
 
+## 2026-05-15 [v0.8.25](https://github.com/jeremychone/rust-devai/compare/v0.8.24...v0.8.25)
+
+- `-` aip.file - Fix negative globs with absolute paths
+- `.` model - Update lite alias to gemini-3.1-flash-lite
+- `.` dependencies - Update sysinfo and quick-xml
+
 ## 2026-05-06 [v0.8.24](https://github.com/jeremychone/rust-devai/compare/v0.8.23...v0.8.24)
 
 - `-` tui - Fix overview link zones
