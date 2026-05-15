@@ -63,7 +63,7 @@ html-escape = "0.2"
 html-helpers = { version = "0.1.0" }
 htmd = "0.5"
 url = "2.5.7"
-quick-xml = "0.39"
+quick-xml = "0.40"
 # -- Web
 reqwest = {version = "0.13", default-features = false, features = ["json", "stream"]}
 # -- Template & Scripting
@@ -88,7 +88,7 @@ bs58 = "0.5.1"
 hex = "0.4" # Added for hex encoding
 # -- OS
 arboard = "3.6.1"
-sysinfo = "0.38"
+sysinfo = "0.39"
 # -- Macro uttils
 paste = "1.0"
 macro_rules_attribute = "0.2.2"

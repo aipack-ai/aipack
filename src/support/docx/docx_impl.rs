@@ -2,6 +2,7 @@
 //! NOTE: Need to customize and use latest zip (will eventually do PRs)
 
 use super::md_support::to_markdown_table;
+use quick_xml::XmlVersion;
 use quick_xml::events::Event;
 use quick_xml::reader::Reader;
 use std::io::{Cursor, Read};
@@ -41,7 +42,8 @@ impl Styles {
 fn get_attr(e: &quick_xml::events::BytesStart, key: &[u8]) -> Option<String> {
 	for attr in e.attributes().with_checks(false).flatten() {
 		if attr.key.as_ref() == key {
-			return Some(attr.unescape_value().ok()?.into_owned());
+			let v = attr.normalized_value(XmlVersion::Implicit1_0);
+			return v.ok().map(|v| v.to_string());
 		}
 	}
 	None
