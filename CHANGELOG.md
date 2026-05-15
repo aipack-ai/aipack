@@ -1,5 +1,12 @@
 `.` minor | `-` Fix | `+` Addition | `^` improvement | `!` Change | `*` important | `>` Refactor
 
+## 2026-05-06 [v0.8.24](https://github.com/jeremychone/rust-devai/compare/v0.8.23...v0.8.24)
+
+- `-` tui - Fix overview link zones
+- `^` tui - Auto-switch to Overview tab if no tasks after 500ms
+- `.` genai -  with Bedrock support
+- `.` udiffx - dependencies alignment, emphasis file_append
+
 ## 2026-04-29 [v0.8.23](https://github.com/jeremychone/rust-devai/compare/v0.8.22...v0.8.23)
 
 - `.` MODEL - `gpt` alias to `gpt-5.5`
