@@ -53,7 +53,7 @@ dpro          = "deepseek-v4-pro"
 # -- z.ai
 glm           = "zai::glm-5.2"
 # -- kimi
-kimi          = "kimi::kimi-k2.7-code"
+kimi          = "kimi::kimi-k3"
 kimi-fast     = "kimi::kimi-k2.7-code-highspeed"
 # -- minimax
 minimax       = "MiniMax-M3"
