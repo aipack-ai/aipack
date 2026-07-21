@@ -38,8 +38,8 @@ futures-timer = "3.0.3"
 futures = "0.3.31"
 # -- AI
 genai = { version = "0.7.0-beta.14"}
-udiffx = { version = "=0.3.0-beta.4", features = ["prompt"]}
-markex = { version = "=0.3.0-beta.2" }
+udiffx = { version = "0.3.0", features = ["prompt"]}
+markex = { version = "0.3.0" }
 aicost = { version = "0.2.2" }
 # -- Json & Data Files
 serde = { version = "1", features = ["derive"] }
