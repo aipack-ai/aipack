@@ -44,8 +44,9 @@ nano          = "gpt-5.4-nano"
 codex         = "gpt-5.6-sol"
 # -- Google
 gpro          = "gemini-3.1-pro-preview"
-flash         = "gemini-3.5-flash"
-lite          = "gemini-3.1-flash-lite"
+flash         = "gemini-3.6-flash"
+lite          = "gemini-3.5-flash-lite"
+lite31        = "gemini-3.1-flash-lite"
 flash3        = "gemini-3-flash-preview" # older than flash 3.5, but 3x cheaper
 # -- DeepSeek
 dflash        = "deepseek-v4-flash"
