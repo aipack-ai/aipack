@@ -1,6 +1,14 @@
 `.` minor | `-` Fix | `+` Addition | `^` improvement | `!` Change | `*` important | `>` Refactor
 
 
+## 2026-07-25 [v0.8.32](https://github.com/jeremychone/rust-devai/compare/v0.8.31...v0.8.32)
+
+- `^` model - Opus 5 pricing and alias
+- `.` model - Add Flash 3.6 and Lite 3.5 pricing & alias
+- `.` model - Add `kimi-k3` pricing & alias
+- `.` udiffx - more tuning (Emphasize `~` rules)
+- `.` version - Update to 0.8.32-WIP
+
 ## 2026-07-14 [v0.8.31](https://github.com/jeremychone/rust-devai/compare/v0.8.30...v0.8.31)
 
 - `^` OpenAI - improved AI caching hit support

@@ -13,7 +13,7 @@
 # AIPACK detects the provider, or defaults to local Ollama.
 # Specify with namespacing, e.g., `fireworks::kimi-k2-instruct`.
 
-model = "gpt-5.4-mini"
+model = "gpt-5.6-luna"
 
 # Temperature (unset by default)
 # temperature = 0.0
@@ -30,7 +30,7 @@ input_concurrency = 2
 # -- Anthropic
 mythos        = "claude-mythos-5"
 fable         = "claude-fable-5"
-opus          = "claude-opus-4-8"
+opus          = "claude-opus-5"
 claude        = "claude-sonnet-5"
 sonnet        = "claude-sonnet-5"
 haiku         = "claude-haiku-4-5"
