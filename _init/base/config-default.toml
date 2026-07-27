@@ -65,7 +65,7 @@ mimo-pro      = "mimo::mimo-v2.5-pro"
 mflash        = "mimo::mimo-v2.5"
 mpro          = "mimo::mimo-v2.5-pro"
 # -- Fireworks models (namespaced with `fireworks::`)
-f-kimi          = "fireworks::kimi-k2p7-code"
+f-kimi          = "fireworks::kimi-k3"
 f-qwen          = "fireworks::qwen3p7-plus"
 f-minimax       = "fireworks::minimax-m3"
 f-glm           = "fireworks::glm-5p2"
