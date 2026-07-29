@@ -5,7 +5,13 @@ Functions for executing system commands.
 ### Functions Summary
 
 ```lua
-aip.cmd.exec(cmd_name: string, args?: string | string[]): CmdResponse | {error: string, stdout?: string, stderr?: string, exit?: number}
+aip.cmd.exec(cmd_name: string, args?: string | list, options?: CmdOptionsExec): CmdResponse
+```
+
+```typescript
+type CmdOptionsExec = {
+  cwd?: string;
+};
 ```
 
 ### aip.cmd.exec
@@ -14,15 +20,18 @@ Execute a system command with optional arguments.
 
 ```lua
 -- API Signature
-aip.cmd.exec(cmd_name: string, args?: string | string[]): CmdResponse | {error: string, stdout?: string, stderr?: string, exit?: number}
+aip.cmd.exec(cmd_name: string, args?: string | list, options?: CmdOptionsExec): CmdResponse
 ```
 
 Executes the command using the system shell. On Windows, wraps with `cmd /C`.
+
+The optional `cwd` value sets the command's working directory. Relative paths resolve from the workspace using the standard runtime path resolution. Absolute paths are also supported. A missing, `nil`, or empty `cwd` uses the default working directory.
 
 #### Arguments
 
 - `cmd_name: string`: Command name or path.
 - `args?: string | string[]` (optional): Arguments as a single string or list of strings.
+- `options?: {cwd?: string}` (optional): Execution options. `cwd` sets the command's working directory.
 
 #### Returns
 
@@ -41,10 +50,14 @@ local r2 = aip.cmd.exec("ls", {"-l", "-a", "nonexistent"})
 print("stderr:", r2.stderr) -- Output: ls: nonexistent: No such file... (or similar)
 print("exit:", r2.exit)   -- Output: non-zero exit code
 
+-- Run from a workspace-relative directory
+local r3 = aip.cmd.exec("git", {"status"}, {cwd = "some/project"})
+print("stdout:", r3.stdout)
+
 -- Example of potential error return (e.g., command not found)
-local r3 = aip.cmd.exec("nonexistent_command")
-if type(r3) == "table" and r3.error then
-  print("Execution Error:", r3.error)
+local r4 = aip.cmd.exec("nonexistent_command")
+if type(r4) == "table" and r4.error then
+  print("Execution Error:", r4.error)
 end
 ```
 

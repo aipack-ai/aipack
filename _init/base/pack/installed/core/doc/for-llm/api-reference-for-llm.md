@@ -281,6 +281,10 @@ type CmdResponse = {
   stderr: string; // Standard error
   exit: number; // Exit code (0 usually success)
 };
+
+type CmdOptionsExec = {
+  cwd?: string; // Working directory. Relative paths resolve from the workspace.
+};
 ```
 
 ## 4. Lua Semantics & API Reference
@@ -586,7 +590,7 @@ aip.task.pin(iden: string, priority: number, content: string | {label?: string, 
 ### aip.cmd - System Commands
 
 ```typescript
-aip.cmd.exec(cmd_name: string, args?: string | string[]): CmdResponse | {error: string, stdout?: string, stderr?: string, exit?: number} // args can be single string or list of strings.
+aip.cmd.exec(cmd_name: string, args?: string | list, options?: CmdOptionsExec): CmdResponse // args and options can be omitted. cwd supports workspace-relative and absolute paths.
 ```
 
 ### aip.semver - Semantic Versioning

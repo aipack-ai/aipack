@@ -8,22 +8,43 @@
 //!
 //! ### Functions
 //!
-//! - `aip.cmd.exec(cmd_name: string, args?: string | list): {stdout: string, stderr: string, exit: number}`
+//! - `aip.cmd.exec(cmd_name: string, args?: string | list, options?: CmdOptionsExec): CmdResponse`
 
 use crate::Result;
 use crate::runtime::Runtime;
 use crate::script::support::into_vec_of_strings;
-use mlua::{Lua, Table, Value};
+use mlua::{FromLua, Lua, Table, Value};
+use simple_fs::SPath;
 use std::process::Command;
 
-pub fn init_module(lua: &Lua, _runtime: &Runtime) -> Result<Table> {
+#[derive(Debug, Default)]
+pub struct CmdExecOptions {
+	pub cwd: Option<String>,
+}
+
+pub fn init_module(lua: &Lua, runtime: &Runtime) -> Result<Table> {
 	let table = lua.create_table()?;
 
-	let exec_fn = lua.create_function(cmd_exec)?;
+	let runtime = runtime.clone();
+	let exec_fn = lua.create_function(move |lua, args| cmd_exec(lua, &runtime, args))?;
 
 	table.set("exec", exec_fn)?;
 
 	Ok(table)
+}
+
+impl FromLua for CmdExecOptions {
+	fn from_lua(value: Value, lua: &Lua) -> mlua::Result<Self> {
+		if matches!(value, Value::Nil) {
+			return Ok(Self::default());
+		}
+
+		let options = Table::from_lua(value, lua)?;
+		let cwd: Option<String> = options.get("cwd")?;
+		let cwd = cwd.filter(|cwd| !cwd.trim().is_empty());
+
+		Ok(Self { cwd })
+	}
 }
 
 /// ## Lua Documentation
@@ -32,8 +53,11 @@ pub fn init_module(lua: &Lua, _runtime: &Runtime) -> Result<Table> {
 ///
 /// ```lua
 /// -- API Signature
-/// aip.cmd.exec(cmd_name: string, args?: string | list): CmdResponse
+/// aip.cmd.exec(cmd_name: string, args?: string | list, options?: CmdOptionsExec): CmdResponse
 /// ```
+///
+/// An optional third `{cwd?: string}` options table can set the command's working directory.
+/// Relative working directories resolve from the workspace, and absolute paths are supported.
 ///
 /// Executes the specified command using the system shell. Arguments can be provided as a single string
 /// or a table of strings.
@@ -87,11 +111,22 @@ pub fn init_module(lua: &Lua, _runtime: &Runtime) -> Result<Table> {
 /// local result = aip.cmd.exec("ls", {"-l", "-a"})
 /// print("stdout:", result.stdout)
 /// print("exit:", result.exit)
+///
+/// -- Run from a workspace-relative directory
+/// local result = aip.cmd.exec("git", {"status"}, {cwd = "some/project"})
 /// ```
-fn cmd_exec(lua: &Lua, (cmd_name, args): (String, Option<Value>)) -> mlua::Result<Value> {
+fn cmd_exec(
+	lua: &Lua,
+	runtime: &Runtime,
+	(cmd_name, args, options): (String, Option<Value>, CmdExecOptions),
+) -> mlua::Result<Value> {
 	let args = args.map(|args| into_vec_of_strings(args, "command args")).transpose()?;
 
 	let mut command = cross_command(&cmd_name, args)?;
+	if let Some(cwd) = options.cwd {
+		let cwd = runtime.resolve_path_default(SPath::new(cwd), None)?;
+		command.current_dir(cwd.path());
+	}
 
 	match command.output() {
 		Ok(output) => {
@@ -116,9 +151,13 @@ fn cmd_exec(lua: &Lua, (cmd_name, args): (String, Option<Value>)) -> mlua::Resul
 				.map(|a| a.to_str().unwrap_or_default())
 				.collect::<Vec<&str>>();
 			let args = args.join(" ");
+			let cwd_context = command
+				.get_current_dir()
+				.map(|cwd| format!("\nWorking directory: {}", cwd.to_string_lossy()))
+				.unwrap_or_default();
 			Err(crate::Error::custom(format!(
 				"\
-Fail to execute: {cmd} {args}
+Fail to execute: {cmd} {args}{cwd_context}
 Cause:\n{err}"
 			))
 			.into())
@@ -163,6 +202,7 @@ mod tests {
 
 	use crate::_test_support::{assert_contains, eval_lua, setup_lua};
 	use crate::script::aip_modules::aip_cmd;
+	use std::fs;
 	use value_ext::JsonValueExt as _;
 
 	#[tokio::test]
@@ -266,6 +306,92 @@ mod tests {
 		assert_eq!(res.x_get_str("stdout")?, "");
 		assert_eq!(res.x_get_str("stderr")?, "");
 		assert_ne!(res.x_get_i64("exit")?, 0); // Check that exit code is non-zero
+
+		Ok(())
+	}
+
+	#[tokio::test]
+	async fn test_lua_cmd_exec_with_relative_cwd() -> Result<()> {
+		// -- Setup & Fixtures
+		let lua = setup_lua(aip_cmd::init_module, "cmd").await?;
+		let cmd_name = if cfg!(windows) { "cd" } else { "pwd" };
+		let script = format!(r#"return aip.cmd.exec("{cmd_name}", nil, {{cwd = "."}})"#);
+		let expected_cwd = fs::canonicalize(crate::_test_support::SANDBOX_01_WKS_DIR)?;
+
+		// -- Exec
+		let res = eval_lua(&lua, &script)?;
+
+		// -- Check
+		let actual_cwd = fs::canonicalize(res.x_get_str("stdout")?.trim())?;
+		assert_eq!(actual_cwd, expected_cwd);
+		assert_eq!(res.x_get_i64("exit")?, 0);
+
+		Ok(())
+	}
+
+	#[tokio::test]
+	async fn test_lua_cmd_exec_with_absolute_cwd() -> Result<()> {
+		// -- Setup & Fixtures
+		let lua = setup_lua(aip_cmd::init_module, "cmd").await?;
+		let cmd_name = if cfg!(windows) { "cd" } else { "pwd" };
+		let expected_cwd = fs::canonicalize(std::env::current_dir()?)?;
+		let cwd = serde_json::to_string(&expected_cwd.to_string_lossy())?;
+		let script = format!(r#"return aip.cmd.exec("{cmd_name}", nil, {{cwd = {cwd}}})"#);
+
+		// -- Exec
+		let res = eval_lua(&lua, &script)?;
+
+		// -- Check
+		let actual_cwd = fs::canonicalize(res.x_get_str("stdout")?.trim())?;
+		assert_eq!(actual_cwd, expected_cwd);
+		assert_eq!(res.x_get_i64("exit")?, 0);
+
+		Ok(())
+	}
+
+	#[tokio::test]
+	async fn test_lua_cmd_exec_with_empty_options() -> Result<()> {
+		// -- Setup & Fixtures
+		let lua = setup_lua(aip_cmd::init_module, "cmd").await?;
+		let script = r#"
+			local empty_options = aip.cmd.exec("echo", "hello", {})
+			local empty_cwd = aip.cmd.exec("echo", "world", {cwd = ""})
+			return {
+				empty_options = empty_options,
+				empty_cwd = empty_cwd,
+			}
+		"#;
+
+		// -- Exec
+		let res = eval_lua(&lua, script)?;
+
+		// -- Check
+		assert_eq!(res.x_get_str("empty_options.stdout")?.trim(), "hello");
+		assert_eq!(res.x_get_i64("empty_options.exit")?, 0);
+		assert_eq!(res.x_get_str("empty_cwd.stdout")?.trim(), "world");
+		assert_eq!(res.x_get_i64("empty_cwd.exit")?, 0);
+
+		Ok(())
+	}
+
+	#[tokio::test]
+	async fn test_lua_cmd_exec_with_invalid_cwd() -> Result<()> {
+		// -- Setup & Fixtures
+		let lua = setup_lua(aip_cmd::init_module, "cmd").await?;
+		let script = r#"
+			return aip.cmd.exec("echo", "hello", {cwd = ".aipack-cmd-missing-dir"})
+		"#;
+
+		// -- Exec & Check
+		let Err(err) = eval_lua(&lua, script) else {
+			return Err("Should have returned an error".into());
+		};
+
+		// -- Check
+		let err_str = err.to_string();
+		assert_contains(&err_str, "Fail to execute:");
+		assert_contains(&err_str, "Working directory:");
+		assert_contains(&err_str, "Cause:");
 
 		Ok(())
 	}
