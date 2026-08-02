@@ -17,6 +17,13 @@ use value_ext::JsonValueExt;
 
 const DEFAULT_CONCURRENCY: usize = 1;
 
+#[derive(Debug)]
+pub(crate) struct RunAgentExecution {
+	pub(crate) run_id: Id,
+	pub(crate) loop_id: Option<Id>,
+	pub(crate) response: RunAgentResponse,
+}
+
 pub async fn run_agent(
 	runtime: &Runtime,
 	parent_uid: Option<Uuid>,
@@ -25,6 +32,31 @@ pub async fn run_agent(
 	run_base_options: &RunBaseOptions,
 	return_output_values: bool,
 ) -> Result<RunAgentResponse> {
+	let execution = run_agent_with_identity(
+		runtime,
+		parent_uid,
+		agent,
+		inputs,
+		run_base_options,
+		return_output_values,
+		None,
+		false,
+	)
+	.await?;
+	Ok(execution.response)
+}
+
+#[allow(clippy::too_many_arguments)]
+pub(crate) async fn run_agent_with_identity(
+	runtime: &Runtime,
+	parent_uid: Option<Uuid>,
+	agent: Agent,
+	inputs: Option<Vec<Value>>,
+	run_base_options: &RunBaseOptions,
+	return_output_values: bool,
+	loop_id: Option<Id>,
+	reopen_loop: bool,
+) -> Result<RunAgentExecution> {
 	let rt_step = runtime.rt_step();
 	let rt_model = runtime.rt_model();
 
@@ -32,7 +64,12 @@ pub async fn run_agent(
 	// runtime.rec_trim().await?;
 	// display relative agent path if possible
 	// -- Rt Create - New run
-	let run_id = rt_model.create_run(parent_uid, &agent).await?;
+	let mut loop_id = if parent_uid.is_none() { loop_id } else { None };
+	let run_id = if let Some(loop_id) = loop_id {
+		rt_model.create_run_for_loop(loop_id, &agent, reopen_loop).await?
+	} else {
+		rt_model.create_run(parent_uid, &agent).await?
+	};
 
 	// -- Rt Step - Start Run
 	let run_id = rt_step.step_run_start(run_id).await?;
@@ -63,18 +100,33 @@ pub async fn run_agent(
 			} else {
 				rt_step.step_run_end_ok(run_id).await?;
 			}
+
+			if let Some(loop_id) = loop_id {
+				rt_model
+					.set_loop_pending(loop_id, !canceled && _ok_res.redo_requested)
+					.await?;
+			} else if !canceled && parent_uid.is_none() && _ok_res.redo_requested {
+				loop_id = Some(rt_model.create_loop_for_run(run_id).await?);
+			}
 		}
 		Err(err) => {
 			// -- Rt end with err
 			// NOTE: If the run error is already set, it won't reset it.
 			rt_step.step_run_end_err(run_id, err).await?;
+			if let Some(loop_id) = loop_id {
+				rt_model.set_loop_pending(loop_id, false).await?;
+			}
 		}
 	}
 	if parent_uid.is_none() {
 		runtime.file_write_manager().swap_if_used();
 	}
 
-	run_agent_res
+	run_agent_res.map(|response| RunAgentExecution {
+		run_id,
+		loop_id,
+		response,
+	})
 }
 
 async fn run_agent_inner(

@@ -1,8 +1,10 @@
-use crate::model::{EntityType, EpochUs, ErrBmc, InstallData, ModelEvent, RunBmc, TaskBmc, WorkBmc};
+use crate::model::{EntityType, EpochUs, ErrBmc, InstallData, LoopBmc, ModelEvent, RunBmc, TaskBmc, WorkBmc};
 use crate::support::time::now_micro;
 use crate::tui::AppState;
 use crate::tui::core::event::{AppActionEvent, ScrollDir};
-use crate::tui::core::{AppStage, ConfigTab, NavDir, RunItemStore, RunTab, ScrollIden, UiAction};
+use crate::tui::core::{
+	AppStage, ConfigTab, NavDir, RunItemStore, RunNavGroup, RunTab, ScrollIden, UiAction,
+};
 use crate::tui::support::offset_and_clamp_option_idx_in_len;
 use crate::tui::view::{PopupMode, PopupView};
 use crossterm::event::{KeyCode, MouseEventKind};
@@ -384,7 +386,19 @@ fn refresh_runs(state: &mut AppState) {
 	let prev_run_id = state.core().run_id;
 	let new_runs = RunBmc::list_for_display(state.mm(), None).unwrap_or_default();
 	let has_new_runs = new_runs.len() != state.run_items().len();
-	let run_item_store = RunItemStore::new(new_runs);
+	let loop_groups = LoopBmc::list(state.mm(), None)
+		.unwrap_or_default()
+		.into_iter()
+		.map(|loop_info| {
+			let member_ids = LoopBmc::list_members(state.mm(), loop_info.id)
+				.unwrap_or_default()
+				.into_iter()
+				.map(|run| run.id)
+				.collect();
+			RunNavGroup { loop_info, member_ids }
+		})
+		.collect();
+	let run_item_store = RunItemStore::new_with_loops(new_runs, loop_groups);
 	state.core_mut().run_item_store = run_item_store;
 
 	// only change if we have new runs
@@ -416,6 +430,17 @@ fn refresh_runs(state: &mut AppState) {
 		if state.core().run_idx != prev_run_idx {
 			let inner = state.core_mut();
 			inner.task_idx = None;
+		}
+	}
+
+	// Preserve the selected run when loop metadata changes without changing the run count.
+	if !has_new_runs
+		&& let Some(prev_run_id) = prev_run_id
+	{
+		let prev_run_idx = state.core().run_idx;
+		state.core_mut().set_run_by_id(prev_run_id);
+		if state.core().run_idx != prev_run_idx {
+			state.core_mut().task_idx = None;
 		}
 	}
 }

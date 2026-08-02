@@ -1,4 +1,5 @@
 use crate::agent::Agent;
+use crate::model::Id;
 use crate::run::RunTopAgentParams;
 use crate::runtime::Runtime;
 use std::sync::Arc;
@@ -41,8 +42,34 @@ impl RunRedoCtx {
 				runtime,
 				agent,
 				run_options,
+				run_id: None,
+				loop_id: None,
 				redo_requested,
 				flow_redo_count,
+				retryable: false,
+			}),
+		}
+	}
+
+	pub fn with_identity(
+		runtime: Runtime,
+		agent: Agent,
+		run_options: RunTopAgentParams,
+		run_id: Id,
+		loop_id: Option<Id>,
+		redo_requested: bool,
+		flow_redo_count: i32,
+	) -> Self {
+		Self {
+			inner: Arc::new(CtxInner {
+				runtime,
+				agent,
+				run_options,
+				run_id: Some(run_id),
+				loop_id,
+				redo_requested,
+				flow_redo_count,
+				retryable: false,
 			}),
 		}
 	}
@@ -58,6 +85,15 @@ impl RunRedoCtx {
 		&self.inner.agent
 	}
 
+	#[allow(dead_code)]
+	pub fn run_id(&self) -> Option<Id> {
+		self.inner.run_id
+	}
+
+	pub fn loop_id(&self) -> Option<Id> {
+		self.inner.loop_id
+	}
+
 	pub fn run_options(&self) -> &RunTopAgentParams {
 		&self.inner.run_options
 	}
@@ -69,14 +105,28 @@ impl RunRedoCtx {
 	pub fn flow_redo_count(&self) -> i32 {
 		self.inner.flow_redo_count
 	}
+
+	pub fn retryable(&self) -> bool {
+		self.inner.retryable
+	}
+
+	pub fn with_retryable(self, retryable: bool) -> Self {
+		let mut inner = (*self.inner).clone();
+		inner.retryable = retryable;
+		Self { inner: Arc::new(inner) }
+	}
 }
 
 /// A Context that hold the information to redo this run
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 struct CtxInner {
 	runtime: Runtime,
 	agent: Agent,
 	run_options: RunTopAgentParams,
+	#[allow(dead_code)]
+	run_id: Option<Id>,
+	loop_id: Option<Id>,
 	redo_requested: bool,
 	flow_redo_count: i32,
+	retryable: bool,
 }

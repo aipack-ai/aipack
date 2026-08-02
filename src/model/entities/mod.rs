@@ -2,6 +2,7 @@
 
 mod err;
 mod inout;
+mod loop_entity;
 mod log;
 mod pin;
 mod prompt;
@@ -13,6 +14,7 @@ mod work_data;
 
 pub use err::*;
 pub use inout::*;
+pub use loop_entity::*;
 pub use log::*;
 #[allow(unused)]
 pub use pin::*;

@@ -367,7 +367,7 @@ impl Executor {
 					}
 					// if fail, we set the old one to make sure it can be retried
 					else {
-						self.set_current_redo_ctx(redo_ctx).await;
+						self.set_current_redo_ctx(redo_ctx.with_retryable(true)).await;
 					}
 				} else {
 					hub.publish(HubEvent::InfoShort("Agent currently running, wait until done.".into()))

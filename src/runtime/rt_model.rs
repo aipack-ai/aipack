@@ -3,8 +3,8 @@ use crate::agent::Agent;
 use crate::hub::get_hub;
 use crate::model::base::DbBmc;
 use crate::model::{
-	EndState, Id, LogBmc, LogForCreate, LogKind, ModelManager, RunBmc, RunForCreate, RunForUpdate, Stage, TaskBmc,
-	TaskForCreate, TaskForUpdate, TypedContent,
+	EndState, Id, LogBmc, LogForCreate, LogKind, LoopBmc, ModelManager, RunBmc, RunForCreate, RunForUpdate, Stage,
+	TaskBmc, TaskForCreate, TaskForUpdate, TypedContent,
 };
 use crate::run::ModelPricing;
 use crate::runtime::Runtime;
@@ -67,6 +67,41 @@ impl<'a> RtModel<'a> {
 		Ok(run_id)
 	}
 
+	pub async fn create_run_for_loop(&self, loop_id: Id, agent: &Agent, reopen_loop: bool) -> Result<Id> {
+		let hub = get_hub();
+
+		let agent_path = match self.runtime.dir_context().get_display_path(agent.file_path()) {
+			Ok(path) => path.to_string(),
+			Err(_) => agent.file_path().to_string(),
+		};
+		let agent_name = agent.name();
+		let run_c = RunForCreate {
+			parent_id: None,
+			agent_name: Some(agent_name.to_string()),
+			agent_path: Some(agent_path.to_string()),
+			has_task_stages: Some(agent.has_task_stages()),
+			has_prompt_parts: Some(agent.has_prompt_parts()),
+		};
+
+		let run_id = if reopen_loop {
+			LoopBmc::reopen_and_create_member(self.mm(), loop_id, run_c)?
+		} else {
+			LoopBmc::create_member(self.mm(), loop_id, run_c)?
+		};
+
+		hub.publish(format!(
+			"\n======= RUNNING: {agent_name}\n     Agent path: {agent_path}",
+		))
+		.await;
+
+		Ok(run_id)
+	}
+
+	pub async fn create_loop_for_run(&self, run_id: Id) -> Result<Id> {
+		let loop_id = LoopBmc::create_for_run(self.mm(), run_id)?;
+		Ok(loop_id)
+	}
+
 	pub async fn update_run_model_and_concurrency(
 		&self,
 		run_id: Id,
@@ -80,6 +115,11 @@ impl<'a> RtModel<'a> {
 		};
 		RunBmc::update(self.mm(), run_id, run_u)?;
 
+		Ok(())
+	}
+
+	pub async fn set_loop_pending(&self, loop_id: Id, pending: bool) -> Result<()> {
+		LoopBmc::set_pending(self.mm(), loop_id, pending)?;
 		Ok(())
 	}
 
@@ -171,12 +211,16 @@ impl<'a> RtModel<'a> {
 		Ok(ids)
 	}
 
-	pub async fn update_task_model_ov(&self, _run_id: Id, task_id: Id, model_name_ov: &str) -> Result<()> {
+	pub async fn update_task_model_ov(&self, run_id: Id, task_id: Id, model_name_ov: &str) -> Result<()> {
 		let task_u = TaskForUpdate {
 			model_ov: Some(model_name_ov.to_string()),
 			..Default::default()
 		};
 		TaskBmc::update(self.mm(), task_id, task_u)?;
+
+		if let Some(loop_id) = RunBmc::get(self.mm(), run_id)?.loop_id {
+			LoopBmc::recompute_cost(self.mm(), loop_id)?;
+		}
 
 		Ok(())
 	}

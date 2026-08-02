@@ -1,5 +1,5 @@
 use crate::support::text::{self, format_time_local};
-use crate::tui::core::ScrollIden;
+use crate::tui::core::{RunNavRow, ScrollIden};
 use crate::tui::support::UiExt as _;
 use crate::tui::view::comp;
 use crate::tui::view::support::RectExt as _;
@@ -45,7 +45,7 @@ impl StatefulWidget for RunsNavView {
 
 		// -- Scroll & Select logic
 		state.set_scroll_area(SCROLL_IDEN, list_a);
-		let visible_runs_len = state.visible_run_items_for_nav().len();
+		let visible_runs_len = state.visible_run_nav_rows().len();
 		let scroll = state.clamp_scroll(SCROLL_IDEN, visible_runs_len);
 
 		// -- Process UI Event
@@ -57,13 +57,33 @@ impl StatefulWidget for RunsNavView {
 		}
 
 		// -- Build Runs UI
-		let visible_runs = state.visible_run_items_for_nav();
+		let visible_rows = state.visible_run_nav_rows();
 		let current_run_id = state.current_run_item().map(|r| r.id());
 		let is_mouse_in_nav = state.is_last_mouse_over(list_a);
-		let items: Vec<ListItem> = visible_runs
+		let items: Vec<ListItem> = visible_rows
 			.iter()
 			.enumerate()
-			.map(|(idx, run_item)| {
+			.map(|(idx, nav_row)| {
+				let run_item = match nav_row {
+					RunNavRow::LoopHeader { loop_info } => {
+						let status = if loop_info.pending { "pending" } else { "done" };
+						let mut line = Line::from(vec![
+							comp::ico_loop(),
+							Span::raw(" "),
+							Span::styled(
+								format!("Loop {} [{status}]", loop_info.id.as_i64()),
+								style::STL_FIELD_VAL,
+							),
+						]);
+
+						if is_mouse_in_nav && state.is_last_mouse_over(list_a.x_row((idx + 1) as u16 - scroll)) {
+							line = line.fg(style::CLR_TXT_HOVER);
+						}
+
+						return ListItem::new(line);
+					}
+					RunNavRow::Run { item, .. } => item,
+				};
 				let run = run_item.run();
 				let run_ico = comp::el_running_ico_with_flow(run, run.flow_redo_count);
 
@@ -139,8 +159,8 @@ fn process_mouse_for_run_nav(state: &mut AppState, nav_a: Rect, scroll: u16) -> 
 		let new_idx = mouse_evt.y() - nav_a.y + scroll;
 		let new_idx = new_idx as usize;
 
-		let visible_runs = state.visible_run_items_for_nav();
-		let Some(target_run_id) = visible_runs.get(new_idx).map(|r| r.id()) else {
+		let visible_rows = state.visible_run_nav_rows();
+		let Some(target_run_id) = visible_rows.get(new_idx).and_then(|row| row.click_run_id()) else {
 			return false;
 		};
 

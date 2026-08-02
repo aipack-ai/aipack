@@ -15,6 +15,7 @@ pub struct Run {
 	pub label: Option<String>,
 
 	pub parent_id: Option<Id>,
+	pub loop_id: Option<Id>,
 
 	pub ctime: EpochUs,
 	pub mtime: EpochUs,
@@ -85,6 +86,8 @@ pub struct RunForCreate {
 #[derive(Debug, Default, Clone, Fields, SqliteFromRow)]
 pub struct RunForUpdate {
 	pub label: Option<String>,
+
+	pub loop_id: Option<Id>,
 
 	pub start: Option<EpochUs>,
 	pub end: Option<EpochUs>,

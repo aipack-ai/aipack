@@ -1,11 +1,12 @@
 use crate::agent::{Agent, find_agent};
 use crate::exec::cli::RunArgs;
 use crate::hub::{HubEvent, get_hub};
-use crate::run::{RunRedoCtx, RunTopAgentParams, run_agent};
+use crate::model::Id;
+use crate::run::{RunAgentExecution, RunRedoCtx, RunTopAgentParams, run_agent_with_identity};
 use crate::runtime::Runtime;
 use crate::support::jsons::into_values;
 use crate::support::{editor, text};
-use crate::types::{FileInfo, RunAgentResponse};
+use crate::types::FileInfo;
 use crate::{Error, Result, term};
 use simple_fs::{SEventKind, SPath, list_files, watch};
 use tracing::info;
@@ -50,14 +51,16 @@ pub async fn exec_run_first(run_args: RunArgs, runtime: Runtime) -> Result<(RunR
 	term::set_window_name(&agent_win_name);
 
 	// Run
-	match do_run(&run_options, &runtime, &agent).await {
-		Ok(run_agent_res) => {
-			let redo_requested = run_agent_res.redo_requested;
+	match do_run(&run_options, &runtime, &agent, None, false).await {
+		Ok(execution) => {
+			let redo_requested = execution.response.redo_requested;
 			return Ok((
-				RunRedoCtx::new(
+				RunRedoCtx::with_identity(
 					runtime,
 					agent,
 					run_options.clone(),
+					execution.run_id,
+					execution.loop_id,
 					redo_requested,
 					run_options.flow_redo_count(),
 				),
@@ -92,17 +95,29 @@ pub async fn exec_run_redo(run_redo_ctx: &RunRedoCtx) -> Option<RunRedoCtx> {
 	let agent = match find_agent(agent.name(), runtime, None) {
 		Ok(agent) => agent,
 		Err(err) => {
+			if let Some(loop_id) = run_redo_ctx.loop_id() {
+				let _ = runtime.rt_model().set_loop_pending(loop_id, false).await;
+			}
 			hub.publish(err).await;
 			return None;
 		}
 	};
 
-	match do_run(&run_options, runtime, &agent).await {
-		Ok(run_agent_res) => Some(RunRedoCtx::new(
+	let retryable = run_redo_ctx.retryable();
+	let loop_id = if run_redo_ctx.redo_requested() || retryable {
+		run_redo_ctx.loop_id()
+	} else {
+		None
+	};
+
+	match do_run(&run_options, runtime, &agent, loop_id, retryable).await {
+		Ok(execution) => Some(RunRedoCtx::with_identity(
 			runtime.clone(),
 			agent,
 			run_options,
-			run_agent_res.redo_requested,
+			execution.run_id,
+			execution.loop_id,
+			execution.response.redo_requested,
 			run_redo_ctx.flow_redo_count(),
 		)),
 		Err(err) => {
@@ -155,7 +170,13 @@ pub fn exec_run_watch(redo_ctx: RunRedoCtx) {
 }
 
 /// Do one run
-async fn do_run(run_command_options: &RunTopAgentParams, runtime: &Runtime, agent: &Agent) -> Result<RunAgentResponse> {
+async fn do_run(
+	run_command_options: &RunTopAgentParams,
+	runtime: &Runtime,
+	agent: &Agent,
+	loop_id: Option<Id>,
+	reopen_loop: bool,
+) -> Result<RunAgentExecution> {
 	let inputs = if let Some(on_inputs) = run_command_options.on_inputs() {
 		Some(into_values(on_inputs)?)
 	} else if let Some(on_file_globs) = run_command_options.on_file_globs() {
@@ -200,13 +221,15 @@ async fn do_run(run_command_options: &RunTopAgentParams, runtime: &Runtime, agen
 		None
 	};
 
-	let res = run_agent(
+	let res = run_agent_with_identity(
 		runtime,
 		None,
 		agent.clone(),
 		inputs,
 		run_command_options.base_run_options(),
 		false,
+		loop_id,
+		reopen_loop,
 	)
 	.await?;
 

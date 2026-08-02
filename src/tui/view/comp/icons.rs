@@ -49,3 +49,9 @@ pub fn ico_scroll_up() -> Span<'static> {
 pub fn ico_scroll_down() -> Span<'static> {
 	Span::styled("▼", style::CLR_TXT_700)
 }
+
+pub fn ico_loop() -> Span<'static> {
+	let icon = "↻";
+	let icon = if Span::raw(icon).width() == 1 { icon } else { "o" };
+	Span::styled(icon, style::CLR_TXT_BLUE)
+}

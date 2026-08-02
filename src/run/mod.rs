@@ -21,5 +21,6 @@ pub use pricing::ModelPricing;
 pub use run_agent::*;
 pub use run_executor::*;
 pub use run_types::*;
+pub(crate) use run_agent::{run_agent_with_identity, RunAgentExecution};
 
 // endregion: --- Modules

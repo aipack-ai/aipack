@@ -3,6 +3,7 @@ use crate::model::base::DbBmc;
 use crate::model::base::prep_fields::{
 	prep_fields_for_create, prep_fields_for_create_uid_included, prep_fields_for_update,
 };
+use crate::model::db::DbTx;
 use crate::model::{EntityAction, Id, ModelEvent, ModelManager, RelIds, Result};
 use crate::support::consts;
 use modql::SqliteFromRow;
@@ -15,6 +16,25 @@ where
 	MC: DbBmc,
 {
 	create_inner::<MC>(mm, fields, true, RelIds::default())
+}
+
+pub fn create_in_tx<MC>(tx: &DbTx<'_>, mut fields: SqliteFields) -> Result<Id>
+where
+	MC: DbBmc,
+{
+	prep_fields_for_create::<MC>(&mut fields);
+
+	let sql = format!(
+		"INSERT INTO {} ({}) VALUES ({}) RETURNING id",
+		MC::table_ref(),
+		fields.sql_columns(),
+		fields.sql_placeholders()
+	);
+
+	let values = fields.values_as_dyn_to_sql_vec();
+	let id = tx.exec_returning_num(&sql, &*values)?;
+
+	Ok(id.into())
 }
 
 pub fn update_with_rel_ids<MC>(mm: &ModelManager, id: Id, mut fields: SqliteFields, rel_ids: RelIds) -> Result<usize>
@@ -42,6 +62,20 @@ where
 	});
 
 	Ok(count)
+}
+
+#[allow(dead_code)]
+pub fn update_in_tx<MC>(tx: &DbTx<'_>, id: Id, mut fields: SqliteFields) -> Result<usize>
+where
+	MC: DbBmc,
+{
+	prep_fields_for_update::<MC>(&mut fields);
+
+	let sql = format!("UPDATE {} SET {} WHERE id = ?", MC::table_ref(), fields.sql_setters());
+	let mut values = fields.values_as_dyn_to_sql_vec();
+	values.push(&id);
+
+	tx.exec(&sql, &*values)
 }
 
 pub fn update<MC>(mm: &ModelManager, id: Id, fields: SqliteFields) -> Result<usize>

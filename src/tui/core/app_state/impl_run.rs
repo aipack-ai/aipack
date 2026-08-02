@@ -1,6 +1,6 @@
 use crate::model::Id;
 use crate::support::time::tick_count;
-use crate::tui::core::{AppState, RunItem, RunTab};
+use crate::tui::core::{AppState, RunItem, RunNavRow, RunTab};
 use crate::tui::support::offset_and_clamp_option_idx_in_len;
 
 /// RunsView
@@ -54,17 +54,29 @@ impl AppState {
 			.unwrap_or_default()
 	}
 
-	pub fn visible_run_items_for_nav(&self) -> Vec<&RunItem> {
+	pub fn visible_run_nav_rows(&self) -> Vec<&RunNavRow> {
 		self.core
 			.run_item_store
-			.visible_items_for_root_branch(self.current_root_run_id())
+			.visible_nav_rows(self.current_root_run_id())
+	}
+
+	#[allow(unused)]
+	pub fn visible_run_items_for_nav(&self) -> Vec<&RunItem> {
+		self.visible_run_nav_rows()
+			.iter()
+			.filter_map(|row| row.run_item())
+			.collect()
 	}
 
 	/// Move the run selection by `offset` within the currently visible nav list.
 	/// This keeps keyboard navigation aligned with the visible rows so collapsed
 	/// sub-run branches are skipped.
 	pub fn offset_run_idx_in_visible_nav(&mut self, offset: i32) {
-		let visible_ids: Vec<Id> = self.visible_run_items_for_nav().iter().map(|r| r.id()).collect();
+		let visible_ids: Vec<Id> = self
+			.visible_run_nav_rows()
+			.iter()
+			.filter_map(|row| row.run_id())
+			.collect();
 		let len = visible_ids.len();
 		if len == 0 {
 			return;

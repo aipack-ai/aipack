@@ -1,11 +1,12 @@
-use crate::model::{Id, Run};
-use crate::tui::core::RunItem;
+use crate::model::{Id, Loop, Run};
+use crate::tui::core::{RunItem, RunNavGroup, RunNavRow};
 use std::collections::{HashMap, HashSet};
 
 #[derive(Debug, Default, Clone)]
 pub struct RunItemStore {
 	items: Vec<RunItem>,
 	items_by_id: HashMap<Id, RunItem>,
+	nav_rows: Vec<RunNavRow>,
 }
 
 impl RunItemStore {
@@ -14,6 +15,26 @@ impl RunItemStore {
 		&self.items
 	}
 
+	#[allow(unused)]
+	pub fn nav_rows(&self) -> &[RunNavRow] {
+		&self.nav_rows
+	}
+
+	pub fn visible_nav_rows(&self, root_id: Option<Id>) -> Vec<&RunNavRow> {
+		self.nav_rows
+			.iter()
+			.filter(|row| match row {
+				RunNavRow::LoopHeader { .. } => true,
+				RunNavRow::Run { item, loop_id } => {
+					item.is_root()
+						|| loop_id.is_some()
+						|| root_id.is_some_and(|root_id| item.belongs_to_root_branch(root_id))
+				}
+			})
+			.collect()
+	}
+
+	#[allow(unused)]
 	pub fn visible_items_for_root_branch(&self, root_id: Option<Id>) -> Vec<&RunItem> {
 		self.items
 			.iter()
@@ -49,7 +70,12 @@ impl RunItemStore {
 
 /// Contrustor
 impl RunItemStore {
+	#[allow(unused)]
 	pub fn new(runs: Vec<Run>) -> Self {
+		Self::new_with_loops(runs, Vec::new())
+	}
+
+	pub fn new_with_loops(runs: Vec<Run>, loop_groups: Vec<RunNavGroup>) -> Self {
 		// -- Early Exit
 		if runs.is_empty() {
 			return RunItemStore::default();
@@ -146,10 +172,121 @@ impl RunItemStore {
 		}
 
 		let items_by_id = flat.iter().map(|item| (item.id(), item.clone())).collect();
+		let nav_rows = build_nav_rows(&flat, &items_by_id, loop_groups);
 
 		RunItemStore {
 			items: flat,
 			items_by_id,
+			nav_rows,
 		}
 	}
 }
+
+// region:    --- Support
+
+#[derive(Debug)]
+enum RootNavEntry {
+	Loop {
+		loop_info: Loop,
+		member_ids: Vec<Id>,
+	},
+	Run {
+		run_id: Id,
+	},
+}
+
+impl RootNavEntry {
+	fn newest_id(&self) -> Id {
+		match self {
+			Self::Loop { loop_info, .. } => loop_info.last_run_id,
+			Self::Run { run_id } => *run_id,
+		}
+	}
+}
+
+fn build_nav_rows(
+	flat: &[RunItem],
+	items_by_id: &HashMap<Id, RunItem>,
+	loop_groups: Vec<RunNavGroup>,
+) -> Vec<RunNavRow> {
+	let mut grouped_member_ids: HashSet<Id> = HashSet::new();
+	let mut root_entries: Vec<RootNavEntry> = Vec::new();
+
+	for loop_group in loop_groups {
+		let mut member_ids: Vec<Id> = loop_group
+			.member_ids
+			.into_iter()
+			.filter(|id| items_by_id.get(id).is_some_and(|item| item.is_root()))
+			.collect();
+		member_ids.sort();
+		member_ids.dedup();
+
+		if member_ids.is_empty() {
+			continue;
+		}
+
+		grouped_member_ids.extend(member_ids.iter().copied());
+		root_entries.push(RootNavEntry::Loop {
+			loop_info: loop_group.loop_info,
+			member_ids,
+		});
+	}
+
+	for item in flat
+		.iter()
+		.filter(|item| item.is_root() && !grouped_member_ids.contains(&item.id()))
+	{
+		root_entries.push(RootNavEntry::Run { run_id: item.id() });
+	}
+
+	root_entries.sort_by_key(|entry| std::cmp::Reverse(entry.newest_id()));
+
+	let mut rows = Vec::new();
+	for entry in root_entries {
+		match entry {
+			RootNavEntry::Loop {
+				loop_info,
+				member_ids,
+			} => {
+				let loop_id = loop_info.id;
+				rows.push(RunNavRow::LoopHeader { loop_info });
+
+				for member_id in member_ids {
+					if let Some(item) = items_by_id.get(&member_id) {
+						push_run_nav_item(&mut rows, item, Some(loop_id), items_by_id);
+					}
+				}
+			}
+			RootNavEntry::Run { run_id } => {
+				if let Some(item) = items_by_id.get(&run_id) {
+					push_run_nav_item(&mut rows, item, None, items_by_id);
+				}
+			}
+		}
+	}
+
+	rows
+}
+
+fn push_run_nav_item(
+	rows: &mut Vec<RunNavRow>,
+	item: &RunItem,
+	loop_id: Option<Id>,
+	items_by_id: &HashMap<Id, RunItem>,
+) {
+	rows.push(RunNavRow::Run {
+		item: item.clone(),
+		loop_id,
+	});
+
+	for child_id in item.all_children_ids() {
+		if let Some(child) = items_by_id.get(child_id) {
+			rows.push(RunNavRow::Run {
+				item: child.clone(),
+				loop_id,
+			});
+		}
+	}
+}
+
+// endregion: --- Support

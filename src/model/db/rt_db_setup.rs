@@ -18,6 +18,23 @@ pub fn recreate_db(con: &Connection) -> Result<()> {
 
 // region:    --- Main Tables
 
+const LOOP_TABLE: (&str, &str) = (
+	"loop",
+	"
+CREATE TABLE IF NOT EXISTS loop (
+		id            INTEGER PRIMARY KEY AUTOINCREMENT,
+		uid           BLOB NOT NULL,
+
+		ctime         INTEGER NOT NULL,
+		mtime         INTEGER NOT NULL,
+
+		first_run_id  INTEGER NOT NULL,
+		last_run_id   INTEGER NOT NULL,
+		pending       INTEGER NOT NULL,
+		total_cost    REAL NOT NULL DEFAULT 0
+) STRICT",
+);
+
 const RUN_TABLE: (&str, &str) = (
 	"run",
 	"
@@ -28,6 +45,7 @@ CREATE TABLE IF NOT EXISTS run (
 		label       TEXT,	-- Only when agent call. aip.task.set_label('some label')
 
 		parent_id   INTEGER,
+		loop_id     INTEGER,
 
 		ctime  INTEGER NOT NULL,
 		mtime  INTEGER NOT NULL,
@@ -272,6 +290,7 @@ CREATE TABLE IF NOT EXISTS work (
 );
 
 const ALL_MAIN_TABLES: &[(&str, &str)] = &[
+	LOOP_TABLE,
 	RUN_TABLE,
 	TASK_TABLE,
 	ERR_TABLE,
@@ -336,6 +355,34 @@ fn create_schema(con: &Connection) -> Result<()> {
 	con.execute(
 		"
 CREATE INDEX IF NOT EXISTS idx_ucontent_hash ON ucontent(hash);
+		",
+		(),
+	)?;
+
+	con.execute(
+		"
+CREATE INDEX IF NOT EXISTS idx_run_loop_id ON run(loop_id);
+		",
+		(),
+	)?;
+
+	con.execute(
+		"
+CREATE INDEX IF NOT EXISTS idx_run_loop_id_id ON run(loop_id, id);
+		",
+		(),
+	)?;
+
+	con.execute(
+		"
+CREATE INDEX IF NOT EXISTS idx_loop_first_run_id ON loop(first_run_id);
+		",
+		(),
+	)?;
+
+	con.execute(
+		"
+CREATE INDEX IF NOT EXISTS idx_loop_last_run_id ON loop(last_run_id);
 		",
 		(),
 	)?;
