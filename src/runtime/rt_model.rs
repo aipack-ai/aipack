@@ -115,6 +115,10 @@ impl<'a> RtModel<'a> {
 		};
 		RunBmc::update(self.mm(), run_id, run_u)?;
 
+		if let Some(loop_id) = RunBmc::get(self.mm(), run_id)?.loop_id {
+			LoopBmc::recompute_cost(self.mm(), loop_id)?;
+		}
+
 		Ok(())
 	}
 
