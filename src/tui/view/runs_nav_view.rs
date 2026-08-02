@@ -64,10 +64,11 @@ impl StatefulWidget for RunsNavView {
 			.iter()
 			.enumerate()
 			.map(|(idx, nav_row)| {
-				let run_item = match nav_row {
+				let (run_item, loop_offset) = match nav_row {
 					RunNavRow::LoopHeader { loop_info } => {
 						let status = if loop_info.pending { "pending" } else { "done" };
 						let mut line = Line::from(vec![
+							Span::raw(text::spaces_up_to_10(1)),
 							comp::ico_loop(),
 							Span::raw(" "),
 							Span::styled(
@@ -82,7 +83,7 @@ impl StatefulWidget for RunsNavView {
 
 						return ListItem::new(line);
 					}
-					RunNavRow::Run { item, .. } => item,
+					RunNavRow::Run { item, loop_id } => (item, if loop_id.is_some() { 2 } else { 0 }),
 				};
 				let run = run_item.run();
 				let run_ico = comp::el_running_ico_with_flow(run, run.flow_redo_count);
@@ -97,7 +98,7 @@ impl StatefulWidget for RunsNavView {
 					format!("Run {idx}")
 				};
 
-				let prefix = text::spaces_up_to_10(run_item.indent() + 1);
+				let prefix = text::spaces_up_to_10(run_item.indent() + 1 + loop_offset);
 
 				// TODO: need to try to avoid clone
 				let label = run.label.clone().unwrap_or(label);

@@ -218,7 +218,7 @@ fn build_nav_rows(
 			.into_iter()
 			.filter(|id| items_by_id.get(id).is_some_and(|item| item.is_root()))
 			.collect();
-		member_ids.sort();
+		member_ids.sort_by_key(|id| std::cmp::Reverse(*id));
 		member_ids.dedup();
 
 		if member_ids.is_empty() {
@@ -290,3 +290,121 @@ fn push_run_nav_item(
 }
 
 // endregion: --- Support
+
+// region:    --- Tests
+
+#[cfg(test)]
+mod tests {
+	use super::*;
+	use crate::model::{LoopBmc, ModelManager, RunBmc, RunForCreate};
+
+	type Result<T> = core::result::Result<T, Box<dyn std::error::Error>>;
+
+	#[tokio::test]
+	async fn test_tui_core_types_run_item_store_new_with_loops_keeps_membership() -> Result<()> {
+		// -- Setup & Fixtures
+		let mm = ModelManager::new().await?;
+		let standalone_before_id = RunBmc::create(&mm, run_for_test("standalone-before"))?;
+		let first_run_id = RunBmc::create(&mm, run_for_test("first"))?;
+		let loop_id = LoopBmc::create_for_first_member(&mm, first_run_id)?;
+		let loop_member_id = LoopBmc::create_member(&mm, loop_id, run_for_test("member"))?;
+		let standalone_between_id = RunBmc::create(&mm, run_for_test("standalone-between"))?;
+		let loop_member_child_id =
+			RunBmc::create(&mm, child_run_for_test(loop_member_id, "member-child"))?;
+		let standalone_after_id = RunBmc::create(&mm, run_for_test("standalone-after"))?;
+		LoopBmc::set_pending(&mm, loop_id, false)?;
+
+		let loop_info = LoopBmc::get(&mm, loop_id)?;
+		let runs = vec![
+			RunBmc::get(&mm, standalone_after_id)?,
+			RunBmc::get(&mm, standalone_between_id)?,
+			RunBmc::get(&mm, loop_member_child_id)?,
+			RunBmc::get(&mm, loop_member_id)?,
+			RunBmc::get(&mm, standalone_before_id)?,
+			RunBmc::get(&mm, first_run_id)?,
+		];
+
+		// -- Exec
+		let store = RunItemStore::new_with_loops(
+			runs,
+			vec![RunNavGroup {
+				loop_info,
+				member_ids: vec![loop_member_id, first_run_id, loop_member_id],
+			}],
+		);
+		let nav_rows = store.nav_rows();
+
+		// -- Check
+		assert_eq!(nav_rows.len(), 7);
+		let loop_header_count = nav_rows.iter().filter(|row| row.loop_info().is_some()).count();
+		assert_eq!(loop_header_count, 1);
+
+		let first_row = nav_rows.first().ok_or("Should have a first navigation row")?;
+		assert_eq!(first_row.run_id(), Some(standalone_after_id));
+
+		let standalone_between = nav_rows.get(1).ok_or("Should have a middle standalone run")?;
+		assert_eq!(standalone_between.run_id(), Some(standalone_between_id));
+
+		let loop_header = nav_rows.get(2).ok_or("Should have a loop header")?;
+		let loop_info = loop_header.loop_info().ok_or("Row should be a loop header")?;
+		assert_eq!(loop_info.id, loop_id);
+		assert!(!loop_info.pending);
+		assert_eq!(loop_header.click_run_id(), Some(loop_member_id));
+
+		let loop_member_row = nav_rows.get(3).ok_or("Should have a loop member")?;
+		let loop_member_item = loop_member_row.run_item().ok_or("Row should be a run")?;
+		assert_eq!(loop_member_item.id(), loop_member_id);
+		assert_eq!(loop_member_item.indent(), 0);
+
+		let child_row = nav_rows.get(4).ok_or("Should have a loop member child")?;
+		let child_item = child_row.run_item().ok_or("Row should be a child run")?;
+		assert_eq!(child_item.id(), loop_member_child_id);
+		assert_eq!(child_item.parent_id(), Some(loop_member_id));
+		assert_eq!(child_item.indent(), loop_member_item.indent() + 1);
+
+		let grouped_ids = nav_rows
+			.iter()
+			.filter(|row| row.loop_id() == Some(loop_id))
+			.filter_map(|row| row.run_id())
+			.collect::<Vec<_>>();
+		assert_eq!(grouped_ids, vec![loop_member_id, loop_member_child_id, first_run_id]);
+
+		let standalone_ids = nav_rows
+			.iter()
+			.filter(|row| row.loop_id().is_none())
+			.filter_map(|row| row.run_id())
+			.collect::<Vec<_>>();
+		assert_eq!(
+			standalone_ids,
+			vec![standalone_after_id, standalone_between_id, standalone_before_id]
+		);
+
+		Ok(())
+	}
+
+	// region:    --- Support
+
+	fn run_for_test(label: &str) -> RunForCreate {
+		RunForCreate {
+			parent_id: None,
+			agent_name: Some(label.to_string()),
+			agent_path: Some(format!("path/{label}")),
+			has_task_stages: None,
+			has_prompt_parts: None,
+		}
+	}
+
+	fn child_run_for_test(parent_id: Id, label: &str) -> RunForCreate {
+		RunForCreate {
+			parent_id: Some(parent_id),
+			agent_name: Some(label.to_string()),
+			agent_path: Some(format!("path/{label}")),
+			has_task_stages: None,
+			has_prompt_parts: None,
+		}
+	}
+
+	// endregion: --- Support
+}
+
+// endregion: --- Tests

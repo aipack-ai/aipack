@@ -110,6 +110,13 @@ impl RunRedoCtx {
 		self.inner.retryable
 	}
 
+	pub fn with_flow_redo_count(self, flow_redo_count: i32) -> Self {
+		let mut inner = (*self.inner).clone();
+		inner.flow_redo_count = flow_redo_count;
+		inner.run_options = inner.run_options.clone().with_flow_redo_count(flow_redo_count);
+		Self { inner: Arc::new(inner) }
+	}
+
 	pub fn with_retryable(self, retryable: bool) -> Self {
 		let mut inner = (*self.inner).clone();
 		inner.retryable = retryable;

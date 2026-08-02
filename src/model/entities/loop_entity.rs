@@ -267,3 +267,79 @@ fn publish_event_for_run(action: EntityAction, run_id: Id, loop_id: Id) {
 }
 
 // endregion: --- Support
+
+// region:    --- Tests
+
+#[cfg(test)]
+mod tests {
+	use super::*;
+	use crate::model::RunForUpdate;
+
+	type Result<T> = core::result::Result<T, Box<dyn std::error::Error>>;
+
+	#[tokio::test]
+	async fn test_model_entities_loop_entity_chain_membership_and_cost() -> Result<()> {
+		// -- Setup & Fixtures
+		let mm = ModelManager::new().await?;
+		let first_run_id = RunBmc::create(&mm, run_for_test("first"))?;
+		let loop_id = LoopBmc::create_for_first_member(&mm, first_run_id)?;
+		let second_run_id = LoopBmc::create_member(&mm, loop_id, run_for_test("second"))?;
+		LoopBmc::set_pending(&mm, loop_id, false)?;
+		let retry_run_id = LoopBmc::reopen_and_create_member(&mm, loop_id, run_for_test("retry"))?;
+		let standalone_run_id = RunBmc::create(&mm, run_for_test("standalone"))?;
+		LoopBmc::set_pending(&mm, loop_id, false)?;
+
+		// -- Exec
+		for (run_id, total_cost) in [
+			(first_run_id, 1.0),
+			(second_run_id, 2.0),
+			(retry_run_id, 3.0),
+		] {
+			RunBmc::update(
+				&mm,
+				run_id,
+				RunForUpdate {
+					total_cost: Some(total_cost),
+					..Default::default()
+				},
+			)?;
+		}
+
+		let total_cost = LoopBmc::recompute_cost(&mm, loop_id)?;
+		let members = LoopBmc::list_members(&mm, loop_id)?;
+		let loop_info = LoopBmc::get(&mm, loop_id)?;
+		let first_run = RunBmc::get(&mm, first_run_id)?;
+		let standalone_run = RunBmc::get(&mm, standalone_run_id)?;
+
+		// -- Check
+		assert_eq!(total_cost, 6.0);
+		assert_eq!(loop_info.first_run_id, first_run_id);
+		assert_eq!(loop_info.last_run_id, retry_run_id);
+		assert!(!loop_info.pending);
+		assert_eq!(loop_info.total_cost, 6.0);
+		assert_eq!(
+			members.iter().map(|run| run.id).collect::<Vec<_>>(),
+			vec![first_run_id, second_run_id, retry_run_id]
+		);
+		assert_eq!(first_run.loop_id, Some(loop_id));
+		assert!(standalone_run.loop_id.is_none());
+
+		Ok(())
+	}
+
+	// region:    --- Support
+
+	fn run_for_test(label: &str) -> RunForCreate {
+		RunForCreate {
+			parent_id: None,
+			agent_name: Some(label.to_string()),
+			agent_path: Some(format!("path/{label}")),
+			has_task_stages: None,
+			has_prompt_parts: None,
+		}
+	}
+
+	// endregion: --- Support
+}
+
+// endregion: --- Tests

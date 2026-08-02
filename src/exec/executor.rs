@@ -337,30 +337,11 @@ impl Executor {
 					} else {
 						0
 					};
-					let redo_ctx = RunRedoCtx::new(
-						redo_ctx.runtime().clone(),
-						redo_ctx.agent().clone(),
-						redo_ctx.run_options().with_flow_redo_count(flow_redo_count),
-						redo_ctx.redo_requested(),
-						flow_redo_count,
-					);
+					let redo_ctx = redo_ctx.with_flow_redo_count(flow_redo_count);
 					// if sucessful, we recapture the redo_ctx to have the latest agent.
 					if let Some(redo_ctx) = exec_run_redo(&redo_ctx).await {
 						let redo_requested = redo_ctx.redo_requested();
-						let next_redo_ctx = if redo_requested {
-							let next_flow_redo_count = redo_ctx.flow_redo_count();
-							let run_options = redo_ctx.run_options().with_flow_redo_count(next_flow_redo_count);
-							RunRedoCtx::new(
-								redo_ctx.runtime().clone(),
-								redo_ctx.agent().clone(),
-								run_options,
-								redo_requested,
-								next_flow_redo_count,
-							)
-						} else {
-							redo_ctx
-						};
-						self.set_current_redo_ctx(next_redo_ctx).await;
+						self.set_current_redo_ctx(redo_ctx).await;
 						if redo_requested {
 							self.send_redo_with_delay().await;
 						}

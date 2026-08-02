@@ -353,3 +353,114 @@ return aip.flow.redo_run()
 
 	Ok(())
 }
+
+#[tokio::test]
+async fn test_run_agent_script_redo_chain_keeps_one_loop() -> Result<()> {
+	// -- Setup & Fixtures
+	let runtime = Runtime::new_test_runtime_sandbox_01().await?;
+	let redo_agent = Agent::mock_from_content(
+		r#"
+# Before All
+```lua
+return aip.flow.redo_run()
+```
+
+# Data
+```lua
+return "redo"
+```
+
+# Output
+```lua
+return data
+```
+	"#,
+	)?;
+	let final_agent = Agent::mock_from_content(
+		r#"
+# Data
+```lua
+return "done"
+```
+
+# Output
+```lua
+return data
+```
+	"#,
+	)?;
+	let run_options = RunBaseOptions::default();
+
+	// -- Exec
+	let first = crate::run::run_agent_with_identity(
+		&runtime,
+		None,
+		redo_agent.clone(),
+		None,
+		&run_options,
+		true,
+		None,
+		false,
+	)
+	.await?;
+	let loop_id = first.loop_id.ok_or("The first redo should create a loop")?;
+
+	let standalone = crate::run::run_agent_with_identity(
+		&runtime,
+		None,
+		final_agent.clone(),
+		None,
+		&run_options,
+		true,
+		None,
+		false,
+	)
+	.await?;
+
+	let second = crate::run::run_agent_with_identity(
+		&runtime,
+		None,
+		redo_agent,
+		None,
+		&run_options,
+		true,
+		Some(loop_id),
+		false,
+	)
+	.await?;
+
+	let third = crate::run::run_agent_with_identity(
+		&runtime,
+		None,
+		final_agent,
+		None,
+		&run_options,
+		true,
+		Some(loop_id),
+		false,
+	)
+	.await?;
+
+	let loop_info = crate::model::LoopBmc::get(runtime.mm(), loop_id)?;
+	let members = crate::model::LoopBmc::list_members(runtime.mm(), loop_id)?;
+	let standalone_run = crate::model::RunBmc::get(runtime.mm(), standalone.run_id)?;
+
+	// -- Check
+	assert!(first.response.redo_requested);
+	assert!(second.response.redo_requested);
+	assert!(!third.response.redo_requested);
+	assert_eq!(first.loop_id, Some(loop_id));
+	assert_eq!(second.loop_id, Some(loop_id));
+	assert_eq!(third.loop_id, Some(loop_id));
+	assert_eq!(loop_info.first_run_id, first.run_id);
+	assert_eq!(loop_info.last_run_id, third.run_id);
+	assert!(!loop_info.pending);
+	assert!(standalone_run.loop_id.is_none());
+	assert_eq!(members.len(), 3);
+	assert_eq!(
+		members.iter().map(|run| run.id).collect::<Vec<_>>(),
+		vec![first.run_id, second.run_id, third.run_id]
+	);
+
+	Ok(())
+}
