@@ -25,9 +25,8 @@ impl RunItemStore {
 			.iter()
 			.filter(|row| match row {
 				RunNavRow::LoopHeader { .. } => true,
-				RunNavRow::Run { item, loop_id } => {
+				RunNavRow::Run { item, .. } => {
 					item.is_root()
-						|| loop_id.is_some()
 						|| root_id.is_some_and(|root_id| item.belongs_to_root_branch(root_id))
 				}
 			})
@@ -373,6 +372,80 @@ mod tests {
 		Ok(())
 	}
 
+	#[tokio::test]
+	async fn test_tui_core_types_run_item_store_visible_nav_rows_expands_selected_branch() -> Result<()> {
+		// -- Setup & Fixtures
+		let mm = ModelManager::new().await?;
+		let standalone_root_id = RunBmc::create(&mm, run_for_test("standalone-root"))?;
+		let standalone_child_id =
+			RunBmc::create(&mm, child_run_for_test(standalone_root_id, "standalone-child"))?;
+		let first_run_id = RunBmc::create(&mm, run_for_test("first"))?;
+		let loop_id = LoopBmc::create_for_first_member(&mm, first_run_id)?;
+		let loop_member_id = LoopBmc::create_member(&mm, loop_id, run_for_test("member"))?;
+		let first_child_id = RunBmc::create(&mm, child_run_for_test(first_run_id, "first-child"))?;
+		let loop_member_child_id = RunBmc::create(&mm, child_run_for_test(loop_member_id, "member-child"))?;
+		LoopBmc::set_pending(&mm, loop_id, false)?;
+
+		let loop_info = LoopBmc::get(&mm, loop_id)?;
+		let runs = vec![
+			RunBmc::get(&mm, loop_member_child_id)?,
+			RunBmc::get(&mm, first_child_id)?,
+			RunBmc::get(&mm, standalone_child_id)?,
+			RunBmc::get(&mm, loop_member_id)?,
+			RunBmc::get(&mm, first_run_id)?,
+			RunBmc::get(&mm, standalone_root_id)?,
+		];
+
+		// -- Exec
+		let store = RunItemStore::new_with_loops(
+			runs,
+			vec![RunNavGroup {
+				loop_info,
+				member_ids: vec![loop_member_id, first_run_id],
+			}],
+		);
+		let visible_loop_member_rows = store.visible_nav_rows(Some(loop_member_id));
+		let visible_first_rows = store.visible_nav_rows(Some(first_run_id));
+		let visible_standalone_rows = store.visible_nav_rows(Some(standalone_root_id));
+		let visible_loop_member_ids = run_ids(&visible_loop_member_rows);
+		let visible_first_ids = run_ids(&visible_first_rows);
+		let visible_standalone_ids = run_ids(&visible_standalone_rows);
+
+		// -- Check
+		assert_eq!(
+			visible_loop_member_rows
+				.iter()
+				.filter(|row| row.loop_info().is_some())
+				.count(),
+			1
+		);
+		assert_eq!(visible_loop_member_ids.len(), 4);
+		assert!(visible_loop_member_ids.contains(&loop_member_id));
+		assert!(visible_loop_member_ids.contains(&first_run_id));
+		assert!(visible_loop_member_ids.contains(&standalone_root_id));
+		assert!(visible_loop_member_ids.contains(&loop_member_child_id));
+		assert!(!visible_loop_member_ids.contains(&first_child_id));
+		assert!(!visible_loop_member_ids.contains(&standalone_child_id));
+
+		assert_eq!(visible_first_ids.len(), 4);
+		assert!(visible_first_ids.contains(&loop_member_id));
+		assert!(visible_first_ids.contains(&first_run_id));
+		assert!(visible_first_ids.contains(&standalone_root_id));
+		assert!(visible_first_ids.contains(&first_child_id));
+		assert!(!visible_first_ids.contains(&loop_member_child_id));
+		assert!(!visible_first_ids.contains(&standalone_child_id));
+
+		assert_eq!(visible_standalone_ids.len(), 4);
+		assert!(visible_standalone_ids.contains(&loop_member_id));
+		assert!(visible_standalone_ids.contains(&first_run_id));
+		assert!(visible_standalone_ids.contains(&standalone_root_id));
+		assert!(visible_standalone_ids.contains(&standalone_child_id));
+		assert!(!visible_standalone_ids.contains(&loop_member_child_id));
+		assert!(!visible_standalone_ids.contains(&first_child_id));
+
+		Ok(())
+	}
+
 	// region:    --- Support
 
 	fn run_for_test(label: &str) -> RunForCreate {
@@ -393,6 +466,10 @@ mod tests {
 			has_task_stages: None,
 			has_prompt_parts: None,
 		}
+	}
+
+	fn run_ids(rows: &[&RunNavRow]) -> Vec<Id> {
+		rows.iter().filter_map(|row| row.run_id()).collect()
 	}
 
 	// endregion: --- Support
