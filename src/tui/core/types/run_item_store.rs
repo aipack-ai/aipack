@@ -186,13 +186,8 @@ impl RunItemStore {
 
 #[derive(Debug)]
 enum RootNavEntry {
-	Loop {
-		loop_info: Loop,
-		member_ids: Vec<Id>,
-	},
-	Run {
-		run_id: Id,
-	},
+	Loop { loop_info: Loop, member_ids: Vec<Id> },
+	Run { run_id: Id },
 }
 
 impl RootNavEntry {
@@ -244,10 +239,7 @@ fn build_nav_rows(
 	let mut rows = Vec::new();
 	for entry in root_entries {
 		match entry {
-			RootNavEntry::Loop {
-				loop_info,
-				member_ids,
-			} => {
+			RootNavEntry::Loop { loop_info, member_ids } => {
 				let loop_id = loop_info.id;
 				rows.push(RunNavRow::LoopHeader { loop_info });
 
@@ -309,8 +301,7 @@ mod tests {
 		let loop_id = LoopBmc::create_for_first_member(&mm, first_run_id)?;
 		let loop_member_id = LoopBmc::create_member(&mm, loop_id, run_for_test("member"))?;
 		let standalone_between_id = RunBmc::create(&mm, run_for_test("standalone-between"))?;
-		let loop_member_child_id =
-			RunBmc::create(&mm, child_run_for_test(loop_member_id, "member-child"))?;
+		let loop_member_child_id = RunBmc::create(&mm, child_run_for_test(loop_member_id, "member-child"))?;
 		let standalone_after_id = RunBmc::create(&mm, run_for_test("standalone-after"))?;
 		LoopBmc::set_pending(&mm, loop_id, false)?;
 

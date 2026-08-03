@@ -1,8 +1,6 @@
 use crate::get_hub;
 use crate::model::base::{self, DbBmc};
-use crate::model::{
-	EntityAction, EntityType, Id, ModelEvent, ModelManager, Result, Run, RunBmc, RunForCreate, RelIds,
-};
+use crate::model::{EntityAction, EntityType, Id, ModelEvent, ModelManager, RelIds, Result, Run, RunBmc, RunForCreate};
 use crate::support::time::now_micro;
 use modql::SqliteFromRow;
 use modql::field::{Fields, HasFields, HasSqliteFields};
@@ -87,10 +85,7 @@ impl LoopBmc {
 	}
 
 	pub fn list_members(mm: &ModelManager, loop_id: Id) -> Result<Vec<Run>> {
-		let sql = format!(
-			"SELECT {} FROM run WHERE loop_id = ? ORDER BY id",
-			Run::sql_columns()
-		);
+		let sql = format!("SELECT {} FROM run WHERE loop_id = ? ORDER BY id", Run::sql_columns());
 		mm.db().fetch_all(&sql, (loop_id,))
 	}
 
@@ -290,11 +285,7 @@ mod tests {
 		LoopBmc::set_pending(&mm, loop_id, false)?;
 
 		// -- Exec
-		for (run_id, total_cost) in [
-			(first_run_id, 1.0),
-			(second_run_id, 2.0),
-			(retry_run_id, 3.0),
-		] {
+		for (run_id, total_cost) in [(first_run_id, 1.0), (second_run_id, 2.0), (retry_run_id, 3.0)] {
 			RunBmc::update(
 				&mm,
 				run_id,

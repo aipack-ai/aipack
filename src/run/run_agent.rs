@@ -102,9 +102,7 @@ pub(crate) async fn run_agent_with_identity(
 			}
 
 			if let Some(loop_id) = loop_id {
-				rt_model
-					.set_loop_pending(loop_id, !canceled && _ok_res.redo_requested)
-					.await?;
+				rt_model.set_loop_pending(loop_id, !canceled && _ok_res.redo_requested).await?;
 			} else if !canceled && parent_uid.is_none() && _ok_res.redo_requested {
 				loop_id = Some(rt_model.create_loop_for_run(run_id).await?);
 			}

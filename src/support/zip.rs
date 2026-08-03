@@ -1,5 +1,6 @@
 use crate::{Error, Result};
 use simple_fs::{SPath, get_glob_set};
+use std::collections::HashSet;
 use std::fs::{self, File};
 use std::io::{self, Read as _};
 use std::path::Path;
@@ -13,6 +14,7 @@ use zip::{CompressionMethod, ZipArchive, ZipWriter};
 /// `dest_file` is the destination file path for the zip archive.
 ///
 /// This function recursively adds files and subdirectories from `src_dir` to the zip archive.
+#[cfg_attr(not(test), expect(dead_code))]
 pub fn zip_dir(src_dir: impl AsRef<SPath>, dest_file: impl AsRef<SPath>) -> Result<()> {
 	zip_dir_with_globs(src_dir, dest_file, None::<&[String]>)
 }
@@ -98,6 +100,94 @@ pub fn zip_dir_with_globs(
 			let mut f = File::open(path)?;
 			io::copy(&mut f, &mut zip)?;
 		}
+	}
+
+	zip.finish().map_err(|err| Error::ZipFail {
+		zip_dir: src_dir.to_string(),
+		cause: format!("Fail zip.finish '{src_dir}'. Cause {err}"),
+	})?;
+	Ok(())
+}
+
+/// Creates a zip archive from selected files beneath `src_dir` and writes it to `dest_file`.
+///
+/// Selected files are stored using paths relative to `src_dir`. Only parent directories required
+/// by selected files are emitted as directory entries.
+pub fn zip_files<I, P>(src_dir: impl AsRef<SPath>, dest_file: impl AsRef<SPath>, files: I) -> Result<()>
+where
+	I: IntoIterator<Item = P>,
+	P: AsRef<SPath>,
+{
+	let src_dir = src_dir.as_ref();
+	let dest_file = dest_file.as_ref();
+
+	if !src_dir.exists() {
+		return Err(Error::ZipFail {
+			zip_dir: src_dir.to_string(),
+			cause: format!("Fail to zip selected files. Source directory does not exist: '{src_dir}'"),
+		});
+	}
+	if !src_dir.is_dir() {
+		return Err(Error::ZipFail {
+			zip_dir: src_dir.to_string(),
+			cause: format!("Fail to zip selected files. Source path is not a directory: '{src_dir}'"),
+		});
+	}
+
+	let mut selected_files = Vec::new();
+	for file in files {
+		let file = file.as_ref();
+		let relative_path = file.strip_prefix(src_dir).map_err(|err| Error::ZipFail {
+			zip_dir: src_dir.to_string(),
+			cause: format!("Selected file '{file}' is outside source directory '{src_dir}'. Cause: {err}"),
+		})?;
+		let name = relative_path.as_str().replace('\\', "/");
+
+		if name.is_empty()
+			|| name == "."
+			|| name.starts_with('/')
+			|| name.split('/').any(|component| component == "..")
+			|| (name.len() >= 2 && name.as_bytes()[1] == b':' && name.as_bytes()[0].is_ascii_alphabetic())
+		{
+			return Err(Error::ZipFail {
+				zip_dir: src_dir.to_string(),
+				cause: format!("Selected file '{file}' has an unsafe relative archive path: '{name}'"),
+			});
+		}
+
+		selected_files.push((file.as_std_path().to_path_buf(), name));
+	}
+
+	let file = File::create(dest_file)?;
+	let mut zip = ZipWriter::new(file);
+	let options = SimpleFileOptions::default().compression_method(CompressionMethod::Deflated);
+
+	let mut directory_names = HashSet::new();
+	let mut directories = Vec::new();
+	for (_, name) in &selected_files {
+		let components = name.split('/').collect::<Vec<_>>();
+		for index in 1..components.len() {
+			let dir_name = format!("{}/", components[..index].join("/"));
+			if directory_names.insert(dir_name.clone()) {
+				directories.push(dir_name);
+			}
+		}
+	}
+
+	for dir_name in directories {
+		zip.add_directory(&dir_name, options).map_err(|err| Error::ZipFail {
+			zip_dir: src_dir.to_string(),
+			cause: format!("Fail add directory '{dir_name}'. Cause {err}"),
+		})?;
+	}
+
+	for (path, name) in selected_files {
+		zip.start_file(&name, options).map_err(|err| Error::ZipFail {
+			zip_dir: src_dir.to_string(),
+			cause: format!("Fail zip.start_file '{name}'. Cause {err}"),
+		})?;
+		let mut source_file = File::open(&path)?;
+		io::copy(&mut source_file, &mut zip)?;
 	}
 
 	zip.finish().map_err(|err| Error::ZipFail {
@@ -366,6 +456,65 @@ mod tests {
 		assert!(entries.iter().any(|entry| entry == "root.txt"));
 		assert!(entries.iter().any(|entry| entry == "nested/child.txt"));
 		assert!(entries.iter().all(|entry| !entry.contains('\\')));
+
+		// -- Cleanup
+		let _ = remove_test_dir(&root);
+
+		Ok(())
+	}
+
+	#[test]
+	fn test_zip_files_writes_only_selected_relative_entries() -> Result<()> {
+		// -- Setup & Fixtures
+		let root = gen_test_dir_path();
+		let src_dir = root.join("source");
+		let nested_dir = src_dir.join("nested");
+		let unused_dir = src_dir.join("unused");
+		std::fs::create_dir_all(nested_dir.as_std_path())?;
+		std::fs::create_dir_all(unused_dir.as_std_path())?;
+		std::fs::write(src_dir.join("root.txt").as_std_path(), "root file")?;
+		std::fs::write(nested_dir.join("child.txt").as_std_path(), "nested file")?;
+		std::fs::write(unused_dir.join("ignored.txt").as_std_path(), "ignored file")?;
+		let dest_zip = root.join("archive.zip");
+		let selected_files = [src_dir.join("root.txt"), nested_dir.join("child.txt")];
+
+		// -- Exec
+		zip_files(&src_dir, &dest_zip, selected_files.iter())?;
+		let entries = list_entries_with_globs(&dest_zip, None::<&[String]>)?;
+
+		// -- Check
+		assert!(entries.iter().any(|entry| entry == "root.txt"));
+		assert!(entries.iter().any(|entry| entry == "nested/"));
+		assert!(entries.iter().any(|entry| entry == "nested/child.txt"));
+		assert!(!entries.iter().any(|entry| entry == "unused/"));
+		assert!(!entries.iter().any(|entry| entry == "unused/ignored.txt"));
+		assert!(entries.iter().all(|entry| !entry.contains('\\')));
+		assert!(entries.iter().all(|entry| !entry.starts_with("source/")));
+		assert_eq!(extract_text_content(&dest_zip, "nested/child.txt")?, "nested file");
+
+		// -- Cleanup
+		let _ = remove_test_dir(&root);
+
+		Ok(())
+	}
+
+	#[test]
+	fn test_zip_files_rejects_files_outside_source_directory() -> Result<()> {
+		// -- Setup & Fixtures
+		let root = gen_test_dir_path();
+		let src_dir = root.join("source");
+		std::fs::create_dir_all(src_dir.as_std_path())?;
+		let outside_file = root.join("outside.txt");
+		std::fs::write(outside_file.as_std_path(), "outside file")?;
+		let dest_zip = root.join("archive.zip");
+
+		// -- Exec
+		let err = zip_files(&src_dir, &dest_zip, [outside_file])
+			.err()
+			.ok_or("should have zip error")?;
+
+		// -- Check
+		assert!(err.to_string().contains("outside source directory"));
 
 		// -- Cleanup
 		let _ = remove_test_dir(&root);

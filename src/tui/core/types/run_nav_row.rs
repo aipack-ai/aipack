@@ -12,13 +12,8 @@ pub struct RunNavGroup {
 #[derive(Debug, Clone)]
 #[allow(clippy::large_enum_variant)]
 pub enum RunNavRow {
-	LoopHeader {
-		loop_info: Loop,
-	},
-	Run {
-		item: RunItem,
-		loop_id: Option<Id>,
-	},
+	LoopHeader { loop_info: Loop },
+	Run { item: RunItem, loop_id: Option<Id> },
 }
 
 // endregion: --- Types

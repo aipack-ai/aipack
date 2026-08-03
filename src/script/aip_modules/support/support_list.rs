@@ -1,22 +1,8 @@
 use crate::runtime::Runtime;
-use crate::support::AsStrsExt;
+use crate::support::files::list_options_with_default_excludes;
 use crate::types::FileRef;
 use crate::{Error, Result};
-use simple_fs::{ListOptions, SPath, list_files};
-use std::collections::HashSet;
-
-// Those folders need to be explicitly include in the include globs or they will be ignored with `**..**` glob (e.g. `**target/**`)
-const SPECIAL_DEFAULT_FOLDER_EXCLUDES: &[&str] = &[
-	//
-	".aipack/", // otherwise, when `**/*` it get included and can confuse
-	".git/",
-	"target/",
-	"node_modules/",
-	".build/",
-	"__pycache__/",
-];
-
-const GLOBS_TO_ALWAYS_EXLUDES: &[&str] = &["**/.DS_Store", ".DS_Store", "**/Thumbs.db", "**/*.swp"];
+use simple_fs::{SPath, list_files};
 
 /// Lists files based on provided glob patterns and options
 ///
@@ -34,31 +20,9 @@ pub fn list_files_with_options(
 ) -> Result<Vec<FileRef>> {
 	// we start with the full set of special exclude folders
 	// (then if included in the include globs, they will be removed from the exclude set)
-	let mut special_folder_excludes: HashSet<&'static str> = SPECIAL_DEFAULT_FOLDER_EXCLUDES.iter().copied().collect();
 
 	// validate globs, and refine excludes
 	// (cheap check for now. Should probably be in simple-fs)
-	for glob in include_globs {
-		// this normalize the path with `/`
-		let glob = SPath::new(glob);
-		let glob = glob.as_str().trim();
-
-		// -- Update the exclude
-		let excludes_tmp: Vec<&'static str> = special_folder_excludes.iter().copied().collect();
-		for exc in excludes_tmp {
-			if glob.contains(exc) && special_folder_excludes.contains(exc) {
-				special_folder_excludes.remove(exc);
-			}
-		}
-
-		// -- Validate that it does not start wiht ../ or ./.. (not supported for now)
-		// NOTE: This not a complete check, but at least will warn the user for common mistake
-		if glob.starts_with("../") || glob.starts_with("./..") {
-			return Err(Error::custom(format!(
-				"Glob '{glob}' starting with '../'.\nStarting glob with '../' is not supported at the moment."
-			)));
-		}
-	}
 
 	// -- Build the base_path
 	let base_path = match base_path {
@@ -71,22 +35,10 @@ pub fn list_files_with_options(
 	};
 
 	// -- Build ListOptions
-	let mut options = ListOptions::from_relative_glob(true);
 
 	// if there is some exlude special folders
-	let exclude_globs = if !special_folder_excludes.is_empty() {
-		special_folder_excludes
-			.into_iter()
-			.map(|exc| format!("**/{exc}**"))
-			.collect::<Vec<_>>()
-	} else {
-		Vec::new()
-	};
-	let mut exclude_globs = exclude_globs.x_as_strs();
-	exclude_globs.extend_from_slice(GLOBS_TO_ALWAYS_EXLUDES);
-	if !exclude_globs.is_empty() {
-		options = options.with_exclude_globs(&exclude_globs);
-	}
+	let mut exclude_globs = Vec::new();
+	let options = list_options_with_default_excludes(include_globs, &mut exclude_globs)?;
 
 	// -- Execute the list_files
 	let sfiles = list_files(&base_path, Some(include_globs), Some(options)).map_err(Error::from)?;

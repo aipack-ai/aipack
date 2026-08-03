@@ -2,9 +2,7 @@ use crate::model::{EntityType, EpochUs, ErrBmc, InstallData, LoopBmc, ModelEvent
 use crate::support::time::now_micro;
 use crate::tui::AppState;
 use crate::tui::core::event::{AppActionEvent, ScrollDir};
-use crate::tui::core::{
-	AppStage, ConfigTab, NavDir, RunItemStore, RunNavGroup, RunTab, ScrollIden, UiAction,
-};
+use crate::tui::core::{AppStage, ConfigTab, NavDir, RunItemStore, RunNavGroup, RunTab, ScrollIden, UiAction};
 use crate::tui::support::offset_and_clamp_option_idx_in_len;
 use crate::tui::view::{PopupMode, PopupView};
 use crossterm::event::{KeyCode, MouseEventKind};
@@ -434,9 +432,7 @@ fn refresh_runs(state: &mut AppState) {
 	}
 
 	// Preserve the selected run when loop metadata changes without changing the run count.
-	if !has_new_runs
-		&& let Some(prev_run_id) = prev_run_id
-	{
+	if !has_new_runs && let Some(prev_run_id) = prev_run_id {
 		let prev_run_idx = state.core().run_idx;
 		state.core_mut().set_run_by_id(prev_run_id);
 		if state.core().run_idx != prev_run_idx {

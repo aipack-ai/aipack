@@ -1,10 +1,90 @@
 use crate::{Error, Result};
-use simple_fs::SPath;
+use simple_fs::{ListOptions, SPath};
+use std::collections::HashSet;
 use std::env;
 use std::fs::File;
 use std::io::{BufReader, Read};
 use std::path::Path;
 use walkdir::WalkDir;
+
+// Those folders need to be explicitly include in the include globs or they will be ignored with `**..**` glob (e.g. `**target/**`)
+pub const SPECIAL_DEFAULT_FOLDER_EXCLUDES: &[&str] = &[
+	//
+	".aipack/", // otherwise, when `**/*` it get included and can confuse
+	".git/",
+	"target/",
+	"node_modules/",
+	".build/",
+	"__pycache__/",
+];
+
+const SPECIAL_DEFAULT_FOLDER_EXCLUDE_GLOBS: &[&str] = &[
+	"**/.aipack/**",
+	"**/.git/**",
+	"**/target/**",
+	"**/node_modules/**",
+	"**/.build/**",
+	"**/__pycache__/**",
+];
+
+pub const GLOBS_TO_ALWAYS_EXLUDES: &[&str] = &["**/.DS_Store", ".DS_Store", "**/Thumbs.db", "**/*.swp"];
+
+/// Builds list options with the default file-list exclusions.
+///
+/// Explicitly matching a special folder in an include glob removes that folder
+/// from the default exclusion set.
+pub fn list_options_with_default_excludes<'a>(
+	include_globs: &[&str],
+	exclude_globs: &'a mut Vec<&'a str>,
+) -> Result<ListOptions<'a>> {
+	// we start with the full set of special exclude folders
+	// (then if included in the include globs, they will be removed from the exclude set)
+	let mut special_folder_excludes: HashSet<&'static str> = SPECIAL_DEFAULT_FOLDER_EXCLUDES.iter().copied().collect();
+
+	// validate globs, and refine excludes
+	// (cheap check for now. Should probably be in simple-fs)
+	for glob in include_globs {
+		// this normalize the path with `/`
+		let glob = SPath::new(glob);
+		let glob = glob.as_str().trim();
+
+		// -- Update the exclude
+		let excludes_tmp: Vec<&'static str> = special_folder_excludes.iter().copied().collect();
+		for exc in excludes_tmp {
+			if glob.contains(exc) && special_folder_excludes.contains(exc) {
+				special_folder_excludes.remove(exc);
+			}
+		}
+
+		// -- Validate that it does not start wiht ../ or ./.. (not supported for now)
+		// NOTE: This not a complete check, but at least will warn the user for common mistake
+		if glob.starts_with("../") || glob.starts_with("./..") {
+			return Err(Error::custom(format!(
+				"Glob '{glob}' starting with '../'.\nStarting glob with '../' is not supported at the moment."
+			)));
+		}
+	}
+
+	exclude_globs.clear();
+	if !special_folder_excludes.is_empty() {
+		for (folder, glob) in SPECIAL_DEFAULT_FOLDER_EXCLUDES
+			.iter()
+			.zip(SPECIAL_DEFAULT_FOLDER_EXCLUDE_GLOBS.iter())
+		{
+			if special_folder_excludes.contains(*folder) {
+				exclude_globs.push(*glob);
+			}
+		}
+	}
+	exclude_globs.extend_from_slice(GLOBS_TO_ALWAYS_EXLUDES);
+
+	let mut options = ListOptions::from_relative_glob(true);
+	if !exclude_globs.is_empty() {
+		options = options.with_exclude_globs(&*exclude_globs);
+	}
+
+	Ok(options)
+}
 
 /// Returns the current dir
 pub fn current_dir() -> Result<SPath> {

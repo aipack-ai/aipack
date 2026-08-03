@@ -55,28 +55,19 @@ impl AppState {
 	}
 
 	pub fn visible_run_nav_rows(&self) -> Vec<&RunNavRow> {
-		self.core
-			.run_item_store
-			.visible_nav_rows(self.current_root_run_id())
+		self.core.run_item_store.visible_nav_rows(self.current_root_run_id())
 	}
 
 	#[allow(unused)]
 	pub fn visible_run_items_for_nav(&self) -> Vec<&RunItem> {
-		self.visible_run_nav_rows()
-			.iter()
-			.filter_map(|row| row.run_item())
-			.collect()
+		self.visible_run_nav_rows().iter().filter_map(|row| row.run_item()).collect()
 	}
 
 	/// Move the run selection by `offset` within the currently visible nav list.
 	/// This keeps keyboard navigation aligned with the visible rows so collapsed
 	/// sub-run branches are skipped.
 	pub fn offset_run_idx_in_visible_nav(&mut self, offset: i32) {
-		let visible_ids: Vec<Id> = self
-			.visible_run_nav_rows()
-			.iter()
-			.filter_map(|row| row.run_id())
-			.collect();
+		let visible_ids: Vec<Id> = self.visible_run_nav_rows().iter().filter_map(|row| row.run_id()).collect();
 		let len = visible_ids.len();
 		if len == 0 {
 			return;

@@ -2,6 +2,7 @@
 
 use crate::exec::packer::PackToml;
 use crate::exec::packer::pack_toml::parse_validate_pack_toml;
+use crate::support::files::list_options_with_default_excludes;
 use crate::support::zip;
 use crate::{Error, Result};
 use simple_fs::SPath;
@@ -50,8 +51,12 @@ pub fn pack_dir(pack_dir: impl AsRef<SPath>, dest_dir: impl AsRef<SPath>) -> Res
 		fs::create_dir_all(dest_dir)?;
 	}
 
+	let mut exclude_globs = Vec::new();
+	let options = list_options_with_default_excludes(&[], &mut exclude_globs)?;
+	let pack_files = simple_fs::list_files(pack_dir, None, Some(options))?;
+
 	// Zip the directory
-	zip::zip_dir(pack_dir, &aipack_path)?;
+	zip::zip_files(pack_dir, &aipack_path, pack_files)?;
 
 	Ok(PackDirData {
 		pack_file: aipack_path,
