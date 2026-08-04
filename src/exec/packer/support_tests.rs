@@ -92,7 +92,7 @@ fn test_packer_support_pack_uri_parse_repo() -> Result<()> {
 	let uri = "pro@coder";
 
 	// -- Exec
-	let pack_uri = PackUri::parse(uri);
+	let pack_uri = PackUri::parse(uri)?;
 
 	// -- Check
 	assert!(matches!(pack_uri, PackUri::RepoPack(_)));
@@ -110,7 +110,7 @@ fn test_packer_support_pack_uri_parse_http() -> Result<()> {
 	let uri = "https://example.com/some-pack.aipack";
 
 	// -- Exec
-	let pack_uri = PackUri::parse(uri);
+	let pack_uri = PackUri::parse(uri)?;
 
 	// -- Check
 	assert!(matches!(pack_uri, PackUri::HttpLink(_)));
@@ -127,7 +127,7 @@ fn test_packer_support_pack_uri_parse_local() -> Result<()> {
 	let uri = "./path/to/pack.aipack";
 
 	// -- Exec
-	let pack_uri = PackUri::parse(uri);
+	let pack_uri = PackUri::parse(uri)?;
 
 	// -- Check
 	assert!(matches!(pack_uri, PackUri::LocalPath(_)));
@@ -152,8 +152,138 @@ fn test_packer_support_pack_uri_display() -> Result<()> {
 
 	// -- Exec & Check
 	for (input, expected_display) in data {
-		let pack_uri = PackUri::parse(input);
+		let pack_uri = PackUri::parse(input)?;
 		assert_eq!(pack_uri.to_string(), expected_display, "Input: {input}");
+	}
+
+	Ok(())
+}
+
+#[test]
+fn test_packer_support_pack_uri_parse_git() -> Result<()> {
+	// -- Setup & Fixtures
+	let uri = "git://example.com/team/pack.git";
+
+	// -- Exec
+	let pack_uri = PackUri::parse(uri)?;
+
+	// -- Check
+	assert!(matches!(pack_uri, PackUri::GitLink(_)));
+	if let PackUri::GitLink(source) = &pack_uri {
+		assert_eq!(source.repository, uri);
+		assert!(source.subpath.is_none());
+	}
+	assert_eq!(pack_uri.to_string(), format!("Git URL '{uri}'"));
+
+	Ok(())
+}
+
+#[test]
+fn test_packer_support_pack_uri_parse_git_subpath() -> Result<()> {
+	// -- Setup & Fixtures
+	let uri = "git://example.com/team/pack.git#path/to/pack_dir";
+
+	// -- Exec
+	let pack_uri = PackUri::parse(uri)?;
+
+	// -- Check
+	assert!(matches!(pack_uri, PackUri::GitLink(_)));
+	if let PackUri::GitLink(source) = &pack_uri {
+		assert_eq!(source.repository, "git://example.com/team/pack.git");
+		assert_eq!(source.subpath.as_deref(), Some("path/to/pack_dir"));
+	}
+	assert_eq!(pack_uri.to_string(), format!("Git URL '{uri}'"));
+
+	Ok(())
+}
+
+#[test]
+fn test_packer_support_pack_uri_parse_git_ssh_subpath() -> Result<()> {
+	// -- Setup & Fixtures
+	let uri = "git+ssh://git@github.com/owner/repository.git#path/to/pack_dir";
+
+	// -- Exec
+	let pack_uri = PackUri::parse(uri)?;
+
+	// -- Check
+	assert!(matches!(pack_uri, PackUri::GitLink(_)));
+	if let PackUri::GitLink(source) = &pack_uri {
+		assert_eq!(source.repository, "git+ssh://git@github.com/owner/repository.git");
+		assert_eq!(source.subpath.as_deref(), Some("path/to/pack_dir"));
+	}
+
+	Ok(())
+}
+
+#[test]
+fn test_packer_support_pack_uri_parse_git_subpath_normalizes_separators() -> Result<()> {
+	// -- Setup & Fixtures
+	let uri = r"git://example.com/team/pack.git#path\to\pack";
+
+	// -- Exec
+	let pack_uri = PackUri::parse(uri)?;
+
+	// -- Check
+	if let PackUri::GitLink(source) = &pack_uri {
+		assert_eq!(source.subpath.as_deref(), Some("path/to/pack"));
+	} else {
+		return Err("Expected GitLink variant".into());
+	}
+
+	Ok(())
+}
+
+#[test]
+fn test_packer_support_pack_uri_parse_git_invalid_subpath() -> Result<()> {
+	// -- Setup & Fixtures
+	let invalid_sources = [
+		"git://example.com/team/pack.git#",
+		"git://example.com/team/pack.git#/absolute",
+		r"git://example.com/team/pack.git#\absolute",
+		r"git://example.com/team/pack.git#C:\absolute",
+		"git://example.com/team/pack.git#nested/../pack",
+	];
+
+	// -- Exec & Check
+	for uri in invalid_sources {
+		assert!(PackUri::parse(uri).is_err(), "Input: {uri}");
+	}
+
+	Ok(())
+}
+
+#[test]
+fn test_packer_support_pack_uri_parse_git_suffix_not_inferred() -> Result<()> {
+	// -- Setup & Fixtures
+	let uri = "git://example.com/team/repository.git/nested";
+
+	// -- Exec
+	let pack_uri = PackUri::parse(uri)?;
+
+	// -- Check
+	if let PackUri::GitLink(source) = &pack_uri {
+		assert_eq!(source.repository, uri);
+		assert!(source.subpath.is_none());
+	} else {
+		return Err("Expected GitLink variant".into());
+	}
+
+	Ok(())
+}
+
+#[test]
+fn test_packer_support_pack_uri_parse_https_suffix_remains_archive() -> Result<()> {
+	// -- Setup & Fixtures
+	let uri = "https://example.com/team/repository.git#path/to/pack";
+
+	// -- Exec
+	let pack_uri = PackUri::parse(uri)?;
+
+	// -- Check
+	if let PackUri::HttpLink(url) = &pack_uri {
+		assert_eq!(url, uri);
+	} else {
+		return Err("Expected HttpLink variant".into());
 	}
 
 	Ok(())

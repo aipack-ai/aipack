@@ -167,6 +167,27 @@ Options:
   -s, --single-shot          Single Shot execution (e.g., non-interactive). (Was the `--ni` or `--non-interactive` in v0.6.x)
   -h, --help                 Print help
 
+### Install From Git
+
+Install a pack directly from a Git repository. Use an explicit `#` selector
+when the pack is located in a repository subdirectory:
+
+```sh
+aip install git://git.example.com/team/example-pack.git
+aip install git://git.example.com/team/example-pack.git#path/to/pack_dir
+aip install git+ssh://git@github.com/owner/example-pack.git#path/to/pack_dir
+```
+
+The repository portion before `#` is cloned. Without a selector, the cloned
+repository root must contain `pack.toml`. With a selector, the selected
+directory must contain `pack.toml`. The manifest's `namespace` and `name`
+fields determine the installed path under
+`~/.aipack-base/pack/installed/<namespace>/<name>`.
+
+Pack paths are selected only with an explicit `#` selector. A path after `.git`
+without `#` is not inferred as a pack path. Ordinary `http://` and `https://`
+links continue to be treated as downloadable `.aipack` archives.
+
 ### Tips
 
 **aipack** is built on top of the [genai crate](https://crates.io/crates/genai) and therefore supports all major AI Providers and Models (OpenAI, Anthropic, Gemini, Ollama, Groq, Cohere).

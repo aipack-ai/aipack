@@ -20,6 +20,19 @@ pub struct InstalledPack {
 	pub zip_size: usize,
 }
 
+enum PackSource {
+	Archive(SPath),
+	Git(SPath),
+}
+
+impl PackSource {
+	fn path(&self) -> &SPath {
+		match self {
+			Self::Archive(path) | Self::Git(path) => path,
+		}
+	}
+}
+
 /// Install a `file.aipack` into the .aipack-base/pack/installed directory
 ///
 /// IMPORTANT: Right now, very prelimealy. Should do the following:
@@ -32,23 +45,42 @@ pub struct InstalledPack {
 ///
 /// Returns the InstalledPack with information about the installed pack.
 pub async fn install_pack(dir_context: &DirContext, pack_uri: &str, force: bool) -> Result<InstallResponse> {
-	let pack_uri = PackUri::parse(pack_uri);
+	let pack_uri = PackUri::parse(pack_uri)?;
 
 	// Get the aipack file path, downloading if needed
-	let (aipack_zipped_file, pack_uri) = match pack_uri {
-		pack_uri @ PackUri::RepoPack(_) => support::download_from_repo(dir_context, pack_uri).await?,
-		pack_uri @ PackUri::LocalPath(_) => support::resolve_local_path(dir_context, pack_uri)?,
-		pack_uri @ PackUri::HttpLink(_) => support::download_pack(dir_context, pack_uri).await?,
+	let (source, pack_uri) = match pack_uri {
+		pack_uri @ PackUri::RepoPack(_) => {
+			let (aipack_zipped_file, pack_uri) = support::download_from_repo(dir_context, pack_uri).await?;
+			(PackSource::Archive(aipack_zipped_file), pack_uri)
+		}
+		pack_uri @ PackUri::LocalPath(_) => {
+			let (aipack_zipped_file, pack_uri) = support::resolve_local_path(dir_context, pack_uri)?;
+			(PackSource::Archive(aipack_zipped_file), pack_uri)
+		}
+		pack_uri @ PackUri::HttpLink(_) => {
+			let (aipack_zipped_file, pack_uri) = support::download_pack(dir_context, pack_uri).await?;
+			(PackSource::Archive(aipack_zipped_file), pack_uri)
+		}
+		pack_uri @ PackUri::GitLink(_) => {
+			let (git_dir, pack_uri) = support::clone_from_git(dir_context, pack_uri).await?;
+			(PackSource::Git(git_dir), pack_uri)
+		}
 	};
 
 	// Validate file exists and has correct extension
-	support::validate_aipack_file(&aipack_zipped_file, &pack_uri.to_string())?;
-
-	// Get the zip file size
-	let zip_size = support::get_file_size(&aipack_zipped_file, &pack_uri.to_string())?;
+	let zip_size = if let PackSource::Archive(aipack_zipped_file) = &source {
+		support::validate_aipack_file(aipack_zipped_file, &pack_uri.to_string())?;
+		support::get_file_size(aipack_zipped_file, &pack_uri.to_string())?
+	} else {
+		0
+	};
 
 	// Common installation steps for both local and remote files
-	let mut install_res = install_aipack_file(dir_context, &aipack_zipped_file, &pack_uri, force)?;
+	let install_result = match &source {
+		PackSource::Archive(_) => install_pack_source(dir_context, &source, &pack_uri, force),
+		PackSource::Git(clone_dir) => install_git_source(dir_context, &source, clone_dir, &pack_uri, force),
+	};
+	let mut install_res = install_result?;
 
 	match install_res {
 		InstallResponse::Installed(ref mut p) | InstallResponse::UpToDate(ref mut p) => {
@@ -58,17 +90,46 @@ pub async fn install_pack(dir_context: &DirContext, pack_uri: &str, force: bool)
 
 	// If the file was downloaded (RepoPack or HttpLink), trash the temporary file
 	if matches!(pack_uri, PackUri::RepoPack(_) | PackUri::HttpLink(_)) {
-		safer_trash_file(&aipack_zipped_file, Some(DeleteCheck::CONTAINS_AIPACK_BASE))?;
+		safer_trash_file(source.path(), Some(DeleteCheck::CONTAINS_AIPACK_BASE))?;
 	}
 
 	Ok(install_res)
 }
 
+fn install_git_source(
+	dir_context: &DirContext,
+	source: &PackSource,
+	clone_dir: &SPath,
+	pack_uri: &PackUri,
+	force: bool,
+) -> Result<InstallResponse> {
+	let install_result = install_pack_source(dir_context, source, pack_uri, force);
+
+	match support::cleanup_git_clone(clone_dir) {
+		Ok(()) => install_result,
+		Err(cleanup_error) => {
+			let cause = match install_result {
+				Ok(_) => format!("Failed to clean up temporary Git clone '{}': {cleanup_error}", clone_dir.as_str()),
+				Err(install_error) => format!(
+					"Failed to install Git pack: {install_error}\nFailed to clean up temporary Git clone '{}': {cleanup_error}",
+					clone_dir.as_str()
+				),
+			};
+
+			Err(Error::FailToInstall {
+				aipack_ref: pack_uri.to_string(),
+				cause,
+			})
+		}
+	}
+}
+
+
 /// Common installation logic for both local and remote aipack files
 /// Return the InstalledPack containing pack information and installation details
-fn install_aipack_file(
+fn install_pack_source(
 	dir_context: &DirContext,
-	aipack_zipped_file: &SPath,
+	source: &PackSource,
 	pack_uri: &PackUri,
 	force: bool,
 ) -> Result<InstallResponse> {
@@ -90,8 +151,16 @@ fn install_aipack_file(
 		});
 	}
 
+	let source_path = match source {
+		PackSource::Archive(path) => path.clone(),
+		PackSource::Git(clone_dir) => support::resolve_git_pack_dir(clone_dir, pack_uri)?,
+	};
+
 	// -- Extract the pack.toml from zip and validate
-	let new_pack_toml = support::extract_pack_toml_from_pack_file(aipack_zipped_file)?;
+	let new_pack_toml = match source {
+		PackSource::Archive(aipack_zipped_file) => support::extract_pack_toml_from_pack_file(aipack_zipped_file)?,
+		PackSource::Git(_) => support::extract_pack_toml_from_pack_dir(&source_path, &pack_uri.to_string())?,
+	};
 
 	// NEW: Validate prerelease format for installation
 	support::validate_version_for_install(&new_pack_toml.version)?;
@@ -145,10 +214,20 @@ fn install_aipack_file(
 		})?;
 	}
 
-	zip::unzip_file(aipack_zipped_file, &pack_target_dir).map_err(|e| Error::FailToInstall {
-		aipack_ref: pack_uri.to_string(),
-		cause: format!("Failed to unzip pack: {e}"),
-	})?;
+	match source {
+		PackSource::Archive(aipack_zipped_file) => {
+			zip::unzip_file(aipack_zipped_file, &pack_target_dir).map_err(|e| Error::FailToInstall {
+				aipack_ref: pack_uri.to_string(),
+				cause: format!("Failed to unzip pack: {e}"),
+			})?;
+		}
+		PackSource::Git(_) => {
+			support::copy_git_pack(&source_path, &pack_target_dir).map_err(|e| Error::FailToInstall {
+				aipack_ref: pack_uri.to_string(),
+				cause: format!("Failed to copy Git pack: {e}"),
+			})?;
+		}
+	}
 
 	// Calculate the size of the installed pack
 	let size = support::calculate_directory_size(&pack_target_dir)?;

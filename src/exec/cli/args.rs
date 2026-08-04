@@ -53,7 +53,7 @@ pub enum CliCommand {
 	/// Pack a directory into a .aipack file
 	Pack(PackArgs),
 
-	/// Install an aipack file
+	/// Install an `.aipack` file, archive URL, repository pack, or Git repository pack
 	Install(InstallArgs),
 
 	/// Unpack a repo pack into the workspace custom pack area
@@ -187,9 +187,14 @@ pub struct InstallArgs {
 	#[arg(long = "force")]
 	pub force: bool,
 
-	/// The path to the .aipack file to install
-	/// Can be the path to the `path/to/some-pack.aipack`
-	/// Or later, can be `namspace@pack_name` and in this case, it will look aipack.ai registry
+	/// The installation source, such as a local `.aipack` path, a repository
+	/// pack reference, an HTTP or HTTPS archive link, or a Git URL.
+	/// Git URLs support an explicit `#path/to/pack_dir` selector, for example
+	/// `git://host/path/repository.git#path/to/pack_dir` or
+	/// `git+ssh://git@github.com/owner/repository.git#path/to/pack_dir`.
+	/// Without a selector, `pack.toml` must be at the repository root. With a
+	/// selector, the selected directory must contain `pack.toml`.
+	/// A path after `.git` without `#` is not inferred as a pack path.
 	pub aipack_ref: String,
 }
 

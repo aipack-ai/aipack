@@ -29,6 +29,9 @@ pub async fn exec_install(dir_context: DirContext, install_args: InstallArgs) ->
 		}
 	};
 
+	let is_git_source = install_args.aipack_ref.starts_with("git://")
+		|| install_args.aipack_ref.starts_with("git+ssh://");
+
 	// Format the zip size using the size crate
 	let formatted_zip_size = Size::from_bytes(installed_pack.zip_size as u64).to_string();
 
@@ -49,18 +52,32 @@ pub async fn exec_install(dir_context: DirContext, install_args: InstallArgs) ->
 		.await;
 		hub.publish("\n==== DONE (Skipped)".to_string()).await;
 	} else {
-		hub.publish(format!(
-			"{:>15} {formatted_zip_size}\n{:>15} {}@{}\n{:>15} {}\n{:>15} {}",
-			".aipack Size:",
-			"Pack:",
-			installed_pack.pack_toml.namespace,
-			installed_pack.pack_toml.name,
-			"Version:",
-			installed_pack.pack_toml.version,
-			"Installed At:",
-			installed_pack.path
-		))
-		.await;
+		if is_git_source {
+			hub.publish(format!(
+				"{:>15} {}@{}\n{:>15} {}\n{:>15} {}",
+				"Pack:",
+				installed_pack.pack_toml.namespace,
+				installed_pack.pack_toml.name,
+				"Version:",
+				installed_pack.pack_toml.version,
+				"Installed At:",
+				installed_pack.path
+			))
+			.await;
+		} else {
+			hub.publish(format!(
+				"{:>15} {formatted_zip_size}\n{:>15} {}@{}\n{:>15} {}\n{:>15} {}",
+				".aipack Size:",
+				"Pack:",
+				installed_pack.pack_toml.namespace,
+				installed_pack.pack_toml.name,
+				"Version:",
+				installed_pack.pack_toml.version,
+				"Installed At:",
+				installed_pack.path
+			))
+			.await;
+		}
 		hub.publish("\n==== DONE".to_string()).await;
 	}
 
