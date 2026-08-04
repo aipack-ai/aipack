@@ -56,6 +56,8 @@ glm           = "zai::glm-5.2"
 # -- kimi
 kimi          = "kimi::kimi-k3"
 kimi-fast     = "kimi::kimi-k2.7-code-highspeed"
+# -- Qwen
+qwen          = "qwen_cloud::qwen3.8-max"
 # -- minimax
 minimax       = "MiniMax-M3"
 minimax-speed = "MiniMax-M2.7-highspeed"
