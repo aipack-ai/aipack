@@ -16,6 +16,7 @@ async fn test_installer_impl_local_file_simple() -> Result<()> {
 	let to_pack_dir = SPath::new("tests-data/test_packs_folder/test_pack_01");
 	let pack_result = packer::pack_dir(to_pack_dir, dir_context.current_dir())?;
 	let aipack_file_path = pack_result.pack_file;
+	let source_archive = std::fs::read(aipack_file_path.path())?;
 
 	// -- Exec
 	let installed_pack = install_pack(dir_context, aipack_file_path.as_str(), true).await?;
@@ -46,6 +47,16 @@ async fn test_installer_impl_local_file_simple() -> Result<()> {
 
 	// Verify zip_size is set correctly
 	assert!(installed_pack.zip_size > 0, "zip_size should be greater than 0");
+
+	let expected_source_path = if aipack_file_path.path().is_absolute() {
+		aipack_file_path.clone()
+	} else {
+		dir_context.current_dir().join(aipack_file_path.as_str())
+	};
+	let (installed_time, installed_source) = read_installed_provenance(&pack_toml_path)?;
+	assert!(!installed_time.is_empty(), "installed.time should be populated");
+	assert_eq!(installed_source, expected_source_path.as_str());
+	assert_eq!(std::fs::read(aipack_file_path.path())?, source_archive);
 
 	// -- Cleanup
 	// This will check that it is a `tests-data/.tmp`
@@ -188,11 +199,17 @@ async fn test_installer_impl_git_local_pack_installation() -> Result<()> {
 		],
 	)?;
 
-	let (clone_dir, pack_uri) = clone_git_repository(dir_context, &repo_dir).await?;
-	let source = PackSource::Git(clone_dir.clone());
+	let expected_commit = git_repository_commit(&repo_dir)?;
+	let (clone_dir, pack_uri, commit) = clone_git_repository(dir_context, &repo_dir).await?;
+	let source = PackSource::Git {
+		clone_dir: clone_dir.clone(),
+		commit,
+	};
 
 	// -- Exec
-	let result = install_git_source(dir_context, &source, &clone_dir, &pack_uri, false);
+	let provenance_source = "git://example.com/team/local-pack.git";
+	let result =
+		install_git_source_with_provenance(dir_context, &source, &clone_dir, &pack_uri, false, provenance_source);
 
 	// -- Check
 	let installed_pack = match result? {
@@ -214,6 +231,16 @@ async fn test_installer_impl_git_local_pack_installation() -> Result<()> {
 	assert!(!expected_install_path.join(".git").exists());
 	assert!(installed_pack.size > 0);
 	assert_eq!(installed_pack.zip_size, 0);
+	let (installed_time, installed_source) =
+		read_installed_provenance(&expected_install_path.join("pack.toml"))?;
+	assert!(!installed_time.is_empty(), "installed.time should be populated");
+	assert_eq!(installed_source, provenance_source);
+	let installed_commit = read_installed_commit(&expected_install_path.join("pack.toml"))?;
+	assert_eq!(installed_commit, expected_commit);
+	assert_eq!(
+		std::fs::read_to_string(repo_dir.join("pack.toml").path())?,
+		pack_toml
+	);
 	assert!(!clone_dir.exists());
 
 	// -- Cleanup
@@ -234,8 +261,11 @@ async fn test_installer_impl_git_missing_pack_toml_err() -> Result<()> {
 		&[("main.aip", "A Git pack without a root manifest.")],
 	)?;
 
-	let (clone_dir, pack_uri) = clone_git_repository(dir_context, &repo_dir).await?;
-	let source = PackSource::Git(clone_dir.clone());
+	let (clone_dir, pack_uri, commit) = clone_git_repository(dir_context, &repo_dir).await?;
+	let source = PackSource::Git {
+		clone_dir: clone_dir.clone(),
+		commit,
+	};
 
 	// -- Exec
 	let result = install_git_source(dir_context, &source, &clone_dir, &pack_uri, false);
@@ -369,7 +399,16 @@ async fn test_installer_impl_git_equal_version_up_to_date() -> Result<()> {
 	let first_repo_dir = dir_context.current_dir().join("git-source/first-equal");
 	let pack_toml = git_pack_toml("git", "equal-pack", "0.1.0");
 	create_git_repository(&first_repo_dir, Some(&pack_toml), &[("main.aip", "First version.")])?;
+	let expected_first_commit = git_repository_commit(&first_repo_dir)?;
 	let _ = install_git_repository(dir_context, &first_repo_dir, false).await?;
+	let expected_install_path = dir_context
+		.aipack_paths()
+		.get_base_pack_installed_dir()?
+		.join("git")
+		.join("equal-pack");
+	let (first_time, first_source) = read_installed_provenance(&expected_install_path.join("pack.toml"))?;
+	let first_installed_commit = read_installed_commit(&expected_install_path.join("pack.toml"))?;
+	assert_eq!(first_installed_commit, expected_first_commit);
 
 	let second_repo_dir = dir_context.current_dir().join("git-source/second-equal");
 	create_git_repository(
@@ -377,6 +416,7 @@ async fn test_installer_impl_git_equal_version_up_to_date() -> Result<()> {
 		Some(&pack_toml),
 		&[("main.aip", "Second source with equal version.")],
 	)?;
+	let second_commit = git_repository_commit(&second_repo_dir)?;
 
 	// -- Exec
 	let result = install_git_repository(dir_context, &second_repo_dir, false).await?;
@@ -390,6 +430,13 @@ async fn test_installer_impl_git_equal_version_up_to_date() -> Result<()> {
 		std::fs::read_to_string(installed_pack.path.join("main.aip").path())?,
 		"First version."
 	);
+	let (up_to_date_time, up_to_date_source) =
+		read_installed_provenance(&installed_pack.path.join("pack.toml"))?;
+	assert_eq!(up_to_date_time, first_time);
+	assert_eq!(up_to_date_source, first_source);
+	let up_to_date_commit = read_installed_commit(&installed_pack.path.join("pack.toml"))?;
+	assert_eq!(up_to_date_commit, first_installed_commit);
+	assert_ne!(up_to_date_commit, second_commit);
 
 	// -- Cleanup
 	remove_test_dir(dir_context.current_dir())?;
@@ -406,7 +453,10 @@ async fn test_installer_impl_git_force_replaces_equal_version() -> Result<()> {
 	let first_repo_dir = dir_context.current_dir().join("git-source/first-force");
 	let pack_toml = git_pack_toml("git", "force-pack", "0.1.0");
 	create_git_repository(&first_repo_dir, Some(&pack_toml), &[("main.aip", "Original content.")])?;
-	let _ = install_git_repository(dir_context, &first_repo_dir, false).await?;
+	let first_commit = git_repository_commit(&first_repo_dir)?;
+	let first_provenance = "git://example.com/team/force-first.git";
+	let _ =
+		install_git_repository_with_provenance(dir_context, &first_repo_dir, false, first_provenance).await?;
 
 	let second_repo_dir = dir_context.current_dir().join("git-source/second-force");
 	create_git_repository(
@@ -414,9 +464,12 @@ async fn test_installer_impl_git_force_replaces_equal_version() -> Result<()> {
 		Some(&pack_toml),
 		&[("main.aip", "Forced replacement content.")],
 	)?;
+	let second_commit = git_repository_commit(&second_repo_dir)?;
 
 	// -- Exec
-	let result = install_git_repository(dir_context, &second_repo_dir, true).await?;
+	let second_provenance = "git://example.com/team/force-second.git";
+	let result =
+		install_git_repository_with_provenance(dir_context, &second_repo_dir, true, second_provenance).await?;
 
 	// -- Check
 	let installed_pack = match result {
@@ -427,6 +480,13 @@ async fn test_installer_impl_git_force_replaces_equal_version() -> Result<()> {
 		std::fs::read_to_string(installed_pack.path.join("main.aip").path())?,
 		"Forced replacement content."
 	);
+	let (installed_time, installed_source) =
+		read_installed_provenance(&installed_pack.path.join("pack.toml"))?;
+	assert!(!installed_time.is_empty(), "installed.time should be populated");
+	assert_eq!(installed_source, second_provenance);
+	let installed_commit = read_installed_commit(&installed_pack.path.join("pack.toml"))?;
+	assert_eq!(installed_commit, second_commit);
+	assert_ne!(first_commit, second_commit);
 
 	// -- Cleanup
 	remove_test_dir(dir_context.current_dir())?;
@@ -477,8 +537,11 @@ async fn test_installer_impl_git_nested_pack_requires_root_manifest() -> Result<
 	];
 	create_git_repository(&repo_dir, None, &nested_files)?;
 
-	let (clone_dir, pack_uri) = clone_git_repository(dir_context, &repo_dir).await?;
-	let source = PackSource::Git(clone_dir.clone());
+	let (clone_dir, pack_uri, commit) = clone_git_repository(dir_context, &repo_dir).await?;
+	let source = PackSource::Git {
+		clone_dir: clone_dir.clone(),
+		commit,
+	};
 	let installed_dir = dir_context.aipack_paths().get_base_pack_installed_dir()?;
 
 	// -- Exec
@@ -518,11 +581,24 @@ async fn test_installer_impl_git_selected_subdirectory_installation() -> Result<
 		],
 	)?;
 
-	let (clone_dir, pack_uri) = clone_git_repository_with_subpath(dir_context, &repo_dir, "packs/nested").await?;
-	let source = PackSource::Git(clone_dir.clone());
+	let expected_commit = git_repository_commit(&repo_dir)?;
+	let (clone_dir, pack_uri, commit) =
+		clone_git_repository_with_subpath(dir_context, &repo_dir, "packs/nested").await?;
+	let source = PackSource::Git {
+		clone_dir: clone_dir.clone(),
+		commit,
+	};
 
 	// -- Exec
-	let result = install_git_source(dir_context, &source, &clone_dir, &pack_uri, false)?;
+	let provenance_source = "git+ssh://git@example.com/team/selected-pack.git#packs/nested";
+	let result = install_git_source_with_provenance(
+		dir_context,
+		&source,
+		&clone_dir,
+		&pack_uri,
+		false,
+		provenance_source,
+	)?;
 
 	// -- Check
 	let installed_pack = match result {
@@ -548,6 +624,16 @@ async fn test_installer_impl_git_selected_subdirectory_installation() -> Result<
 	assert!(!expected_install_path.join(".git").exists());
 	assert!(installed_pack.size > 0);
 	assert_eq!(installed_pack.zip_size, 0);
+	let (installed_time, installed_source) =
+		read_installed_provenance(&expected_install_path.join("pack.toml"))?;
+	assert!(!installed_time.is_empty(), "installed.time should be populated");
+	assert_eq!(installed_source, provenance_source);
+	let installed_commit = read_installed_commit(&expected_install_path.join("pack.toml"))?;
+	assert_eq!(installed_commit, expected_commit);
+	assert_eq!(
+		std::fs::read_to_string(repo_dir.join("packs/nested/pack.toml").path())?,
+		selected_pack_toml
+	);
 	assert!(!clone_dir.exists());
 
 	// -- Cleanup
@@ -563,9 +649,12 @@ async fn test_installer_impl_git_selected_directory_missing_err() -> Result<()> 
 	let dir_context = runtime.dir_context();
 	let repo_dir = dir_context.current_dir().join("git-source/missing-selected-pack");
 	create_git_repository(&repo_dir, None, &[("README.md", "No selected pack.")])?;
-	let (clone_dir, pack_uri) =
+	let (clone_dir, pack_uri, commit) =
 		clone_git_repository_with_subpath(dir_context, &repo_dir, "packs/missing").await?;
-	let source = PackSource::Git(clone_dir.clone());
+	let source = PackSource::Git {
+		clone_dir: clone_dir.clone(),
+		commit,
+	};
 
 	// -- Exec
 	let result = install_git_source(dir_context, &source, &clone_dir, &pack_uri, false);
@@ -597,9 +686,12 @@ async fn test_installer_impl_git_selected_directory_missing_manifest_err() -> Re
 		None,
 		&[("packs/no-manifest/main.aip", "The selected pack has no manifest.")],
 	)?;
-	let (clone_dir, pack_uri) =
+	let (clone_dir, pack_uri, commit) =
 		clone_git_repository_with_subpath(dir_context, &repo_dir, "packs/no-manifest").await?;
-	let source = PackSource::Git(clone_dir.clone());
+	let source = PackSource::Git {
+		clone_dir: clone_dir.clone(),
+		commit,
+	};
 
 	// -- Exec
 	let result = install_git_source(dir_context, &source, &clone_dir, &pack_uri, false);
@@ -640,8 +732,12 @@ name = "invalid"
 			("packs/invalid/main.aip", "The selected pack has an invalid manifest."),
 		],
 	)?;
-	let (clone_dir, pack_uri) = clone_git_repository_with_subpath(dir_context, &repo_dir, "packs/invalid").await?;
-	let source = PackSource::Git(clone_dir.clone());
+	let (clone_dir, pack_uri, commit) =
+		clone_git_repository_with_subpath(dir_context, &repo_dir, "packs/invalid").await?;
+	let source = PackSource::Git {
+		clone_dir: clone_dir.clone(),
+		commit,
+	};
 
 	// -- Exec
 	let result = install_git_source(dir_context, &source, &clone_dir, &pack_uri, false);
@@ -697,26 +793,28 @@ fn create_git_repository(
 async fn clone_git_repository(
 	dir_context: &crate::dir_context::DirContext,
 	repo_dir: &SPath,
-) -> crate::Result<(SPath, crate::exec::packer::support::PackUri)> {
+) -> crate::Result<(SPath, crate::exec::packer::support::PackUri, String)> {
 	let pack_uri = crate::exec::packer::support::PackUri::GitLink(crate::exec::packer::support::GitSource {
 		repository: repo_dir.as_str().to_string(),
 		subpath: None,
 	});
-	let (clone_dir, _) = crate::exec::packer::support::clone_from_git(dir_context, pack_uri.clone()).await?;
-	Ok((clone_dir, pack_uri))
+	let (clone_dir, _, commit) =
+		crate::exec::packer::support::clone_from_git_with_commit(dir_context, pack_uri.clone()).await?;
+	Ok((clone_dir, pack_uri, commit))
 }
 
 async fn clone_git_repository_with_subpath(
 	dir_context: &crate::dir_context::DirContext,
 	repo_dir: &SPath,
 	subpath: &str,
-) -> crate::Result<(SPath, crate::exec::packer::support::PackUri)> {
+) -> crate::Result<(SPath, crate::exec::packer::support::PackUri, String)> {
 	let pack_uri = crate::exec::packer::support::PackUri::GitLink(crate::exec::packer::support::GitSource {
 		repository: repo_dir.as_str().to_string(),
 		subpath: Some(subpath.to_string()),
 	});
-	let (clone_dir, _) = crate::exec::packer::support::clone_from_git(dir_context, pack_uri.clone()).await?;
-	Ok((clone_dir, pack_uri))
+	let (clone_dir, _, commit) =
+		crate::exec::packer::support::clone_from_git_with_commit(dir_context, pack_uri.clone()).await?;
+	Ok((clone_dir, pack_uri, commit))
 }
 
 async fn install_git_repository(
@@ -724,10 +822,94 @@ async fn install_git_repository(
 	repo_dir: &SPath,
 	force: bool,
 ) -> crate::Result<InstallResponse> {
-	let (clone_dir, pack_uri) = clone_git_repository(dir_context, repo_dir).await?;
-	let source = PackSource::Git(clone_dir.clone());
+	let (clone_dir, pack_uri, commit) = clone_git_repository(dir_context, repo_dir).await?;
+	let source = PackSource::Git {
+		clone_dir: clone_dir.clone(),
+		commit,
+	};
 
 	install_git_source(dir_context, &source, &clone_dir, &pack_uri, force)
+}
+
+async fn install_git_repository_with_provenance(
+	dir_context: &crate::dir_context::DirContext,
+	repo_dir: &SPath,
+	force: bool,
+	provenance_source: &str,
+) -> crate::Result<InstallResponse> {
+	let (clone_dir, pack_uri, commit) = clone_git_repository(dir_context, repo_dir).await?;
+	let source = PackSource::Git {
+		clone_dir: clone_dir.clone(),
+		commit,
+	};
+
+	install_git_source_with_provenance(
+		dir_context,
+		&source,
+		&clone_dir,
+		&pack_uri,
+		force,
+		provenance_source,
+	)
+}
+
+fn read_installed_provenance(pack_toml_path: &SPath) -> Result<(String, String)> {
+	let content = std::fs::read_to_string(pack_toml_path.path())?;
+	let document = content.parse::<toml_edit::DocumentMut>()?;
+	let installed = document
+		.get("installed")
+		.and_then(|item| item.as_table())
+		.ok_or_else(|| "Missing [installed] section".to_string())?;
+	let time = installed
+		.get("time")
+		.and_then(|item| item.as_str())
+		.ok_or_else(|| "Missing installed.time".to_string())?
+		.to_string();
+	let source = installed
+		.get("source")
+		.and_then(|item| item.as_str())
+		.ok_or_else(|| "Missing installed.source".to_string())?
+		.to_string();
+
+	Ok((time, source))
+}
+
+fn read_installed_commit(pack_toml_path: &SPath) -> Result<String> {
+	let content = std::fs::read_to_string(pack_toml_path.path())?;
+	let document = content.parse::<toml_edit::DocumentMut>()?;
+	let installed = document
+		.get("installed")
+		.and_then(|item| item.as_table())
+		.ok_or_else(|| "Missing [installed] section".to_string())?;
+	let commit = installed
+		.get("commit")
+		.and_then(|item| item.as_str())
+		.ok_or_else(|| "Missing installed.commit".to_string())?
+		.to_string();
+
+	Ok(commit)
+}
+
+fn git_repository_commit(repo_dir: &SPath) -> Result<String> {
+	let output = std::process::Command::new("git")
+		.args(["rev-parse", "HEAD"])
+		.current_dir(repo_dir.path())
+		.output()?;
+
+	if !output.status.success() {
+		return Err(format!(
+			"Git commit resolution failed: {}",
+			String::from_utf8_lossy(&output.stderr)
+		)
+		.into());
+	}
+
+	let commit = String::from_utf8(output.stdout)?.trim().to_string();
+	if commit.is_empty() {
+		return Err("Git commit resolution returned an empty hash".into());
+	}
+
+	Ok(commit)
 }
 
 fn run_git_command(repo_dir: &SPath, args: &[&str]) -> Result<()> {

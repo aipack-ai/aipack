@@ -288,3 +288,34 @@ fn test_packer_support_pack_uri_parse_https_suffix_remains_archive() -> Result<(
 
 	Ok(())
 }
+
+#[test]
+fn test_packer_support_resolve_install_provenance_source_variants() -> Result<()> {
+	// -- Setup & Fixtures
+	use simple_fs::SPath;
+
+	let repo_reference = "pro@coder";
+	let repo_uri = PackUri::parse(repo_reference)?;
+	let http_reference = "https://example.com/pack.aipack";
+	let http_uri = PackUri::parse(http_reference)?;
+	let git_reference = "git+ssh://git@example.com/team/pack.git#packs/example";
+	let git_uri = PackUri::parse(git_reference)?;
+	let local_reference = "./packs/example.aipack";
+	let local_uri = PackUri::parse(local_reference)?;
+	let resolved_local_path = SPath::new("/workspace/packs/example.aipack");
+
+	// -- Exec
+	let repo_source = resolve_install_provenance_source(repo_reference, &repo_uri, None)?;
+	let http_source = resolve_install_provenance_source(http_reference, &http_uri, None)?;
+	let git_source = resolve_install_provenance_source(git_reference, &git_uri, None)?;
+	let local_source =
+		resolve_install_provenance_source(local_reference, &local_uri, Some(&resolved_local_path))?;
+
+	// -- Check
+	assert_eq!(repo_source, "aipack.ai");
+	assert_eq!(http_source, http_reference);
+	assert_eq!(git_source, git_reference);
+	assert_eq!(local_source, resolved_local_path.as_str());
+
+	Ok(())
+}

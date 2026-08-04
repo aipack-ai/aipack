@@ -1,7 +1,7 @@
 use crate::dir_context::DirContext;
 use crate::exec::packer::pack_toml::parse_validate_pack_toml;
 use crate::exec::packer::support::PackUri;
-use crate::exec::packer::{PackToml, support};
+use crate::exec::packer::{PackToml, provenance, support};
 use crate::support::files::{DeleteCheck, safer_trash_dir, safer_trash_file};
 use crate::support::zip;
 use crate::{Error, Result};
@@ -22,13 +22,17 @@ pub struct InstalledPack {
 
 enum PackSource {
 	Archive(SPath),
-	Git(SPath),
+	Git {
+		clone_dir: SPath,
+		commit: String,
+	},
 }
 
 impl PackSource {
 	fn path(&self) -> &SPath {
 		match self {
-			Self::Archive(path) | Self::Git(path) => path,
+			Self::Archive(path) => path,
+			Self::Git { clone_dir, .. } => clone_dir,
 		}
 	}
 }
@@ -45,7 +49,8 @@ impl PackSource {
 ///
 /// Returns the InstalledPack with information about the installed pack.
 pub async fn install_pack(dir_context: &DirContext, pack_uri: &str, force: bool) -> Result<InstallResponse> {
-	let pack_uri = PackUri::parse(pack_uri)?;
+	let original_pack_uri = pack_uri.to_string();
+	let pack_uri = PackUri::parse(&original_pack_uri)?;
 
 	// Get the aipack file path, downloading if needed
 	let (source, pack_uri) = match pack_uri {
@@ -62,10 +67,26 @@ pub async fn install_pack(dir_context: &DirContext, pack_uri: &str, force: bool)
 			(PackSource::Archive(aipack_zipped_file), pack_uri)
 		}
 		pack_uri @ PackUri::GitLink(_) => {
-			let (git_dir, pack_uri) = support::clone_from_git(dir_context, pack_uri).await?;
-			(PackSource::Git(git_dir), pack_uri)
+			let (git_dir, pack_uri, commit) = support::clone_from_git_with_commit(dir_context, pack_uri).await?;
+			(
+				PackSource::Git {
+					clone_dir: git_dir,
+					commit,
+				},
+				pack_uri,
+			)
 		}
 	};
+
+	let resolved_local_path = match (&pack_uri, &source) {
+		(PackUri::LocalPath(_), PackSource::Archive(path)) => Some(path),
+		_ => None,
+	};
+	let provenance_source = support::resolve_install_provenance_source(
+		&original_pack_uri,
+		&pack_uri,
+		resolved_local_path,
+	)?;
 
 	// Validate file exists and has correct extension
 	let zip_size = if let PackSource::Archive(aipack_zipped_file) = &source {
@@ -77,8 +98,17 @@ pub async fn install_pack(dir_context: &DirContext, pack_uri: &str, force: bool)
 
 	// Common installation steps for both local and remote files
 	let install_result = match &source {
-		PackSource::Archive(_) => install_pack_source(dir_context, &source, &pack_uri, force),
-		PackSource::Git(clone_dir) => install_git_source(dir_context, &source, clone_dir, &pack_uri, force),
+		PackSource::Archive(_) => {
+			install_pack_source_with_provenance(dir_context, &source, &pack_uri, force, &provenance_source)
+		}
+		PackSource::Git { clone_dir, .. } => install_git_source_with_provenance(
+			dir_context,
+			&source,
+			clone_dir,
+			&pack_uri,
+			force,
+			&provenance_source,
+		),
 	};
 	let mut install_res = install_result?;
 
@@ -96,14 +126,27 @@ pub async fn install_pack(dir_context: &DirContext, pack_uri: &str, force: bool)
 	Ok(install_res)
 }
 
-fn install_git_source(
+
+fn install_git_source_with_provenance(
 	dir_context: &DirContext,
 	source: &PackSource,
 	clone_dir: &SPath,
 	pack_uri: &PackUri,
 	force: bool,
+	provenance_source: &str,
 ) -> Result<InstallResponse> {
-	let install_result = install_pack_source(dir_context, source, pack_uri, force);
+	let commit = match source {
+		PackSource::Git { commit, .. } => Some(commit.as_str()),
+		PackSource::Archive(_) => None,
+	};
+	let install_result = install_pack_source_with_provenance_and_commit(
+		dir_context,
+		source,
+		pack_uri,
+		force,
+		provenance_source,
+		commit,
+	);
 
 	match support::cleanup_git_clone(clone_dir) {
 		Ok(()) => install_result,
@@ -125,13 +168,46 @@ fn install_git_source(
 }
 
 
-/// Common installation logic for both local and remote aipack files
-/// Return the InstalledPack containing pack information and installation details
-fn install_pack_source(
+#[cfg(test)]
+fn install_git_source(
+	dir_context: &DirContext,
+	source: &PackSource,
+	clone_dir: &SPath,
+	pack_uri: &PackUri,
+	force: bool,
+) -> Result<InstallResponse> {
+	let provenance_source = pack_uri.to_string();
+	install_git_source_with_provenance(
+		dir_context,
+		source,
+		clone_dir,
+		pack_uri,
+		force,
+		&provenance_source,
+	)
+}
+
+
+fn install_pack_source_with_provenance(
 	dir_context: &DirContext,
 	source: &PackSource,
 	pack_uri: &PackUri,
 	force: bool,
+	provenance_source: &str,
+) -> Result<InstallResponse> {
+	install_pack_source_with_provenance_and_commit(dir_context, source, pack_uri, force, provenance_source, None)
+}
+
+
+/// Common installation logic for both local and remote aipack files
+/// Return the InstalledPack containing pack information and installation details
+fn install_pack_source_with_provenance_and_commit(
+	dir_context: &DirContext,
+	source: &PackSource,
+	pack_uri: &PackUri,
+	force: bool,
+	provenance_source: &str,
+	commit: Option<&str>,
 ) -> Result<InstallResponse> {
 	// -- Get the aipack base pack install dir
 	// This is the pack base dir and now, we need ot add `namespace/pack_name`
@@ -153,13 +229,13 @@ fn install_pack_source(
 
 	let source_path = match source {
 		PackSource::Archive(path) => path.clone(),
-		PackSource::Git(clone_dir) => support::resolve_git_pack_dir(clone_dir, pack_uri)?,
+		PackSource::Git { clone_dir, .. } => support::resolve_git_pack_dir(clone_dir, pack_uri)?,
 	};
 
 	// -- Extract the pack.toml from zip and validate
 	let new_pack_toml = match source {
 		PackSource::Archive(aipack_zipped_file) => support::extract_pack_toml_from_pack_file(aipack_zipped_file)?,
-		PackSource::Git(_) => support::extract_pack_toml_from_pack_dir(&source_path, &pack_uri.to_string())?,
+		PackSource::Git { .. } => support::extract_pack_toml_from_pack_dir(&source_path, &pack_uri.to_string())?,
 	};
 
 	// NEW: Validate prerelease format for installation
@@ -221,7 +297,7 @@ fn install_pack_source(
 				cause: format!("Failed to unzip pack: {e}"),
 			})?;
 		}
-		PackSource::Git(_) => {
+		PackSource::Git { .. } => {
 			support::copy_git_pack(&source_path, &pack_target_dir).map_err(|e| Error::FailToInstall {
 				aipack_ref: pack_uri.to_string(),
 				cause: format!("Failed to copy Git pack: {e}"),
@@ -231,6 +307,30 @@ fn install_pack_source(
 
 	// Calculate the size of the installed pack
 	let size = support::calculate_directory_size(&pack_target_dir)?;
+
+	let installed_pack_toml_path = pack_target_dir.join("pack.toml");
+	let provenance_result = match commit {
+		Some(commit) => provenance::write_installation_provenance_with_commit(
+			&installed_pack_toml_path,
+			provenance_source,
+			commit,
+		),
+		None => provenance::write_installation_provenance(&installed_pack_toml_path, provenance_source),
+	};
+	if let Err(provenance_error) = provenance_result {
+		let cause = match safer_trash_dir(&pack_target_dir, Some(DeleteCheck::CONTAINS_AIPACK_BASE)) {
+			Ok(_) => format!("Failed to write installation provenance: {provenance_error}"),
+			Err(cleanup_error) => format!(
+				"Failed to write installation provenance: {provenance_error}\nFailed to clean up installed pack directory '{}': {cleanup_error}",
+				pack_target_dir.as_str()
+			),
+		};
+
+		return Err(Error::FailToInstall {
+			aipack_ref: pack_uri.to_string(),
+			cause,
+		});
+	}
 
 	Ok(InstallResponse::Installed(InstalledPack {
 		pack_toml: new_pack_toml,

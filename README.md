@@ -149,6 +149,11 @@ Pack paths are selected only with an explicit `#` selector. A path after `.git`
 without `#` is not inferred as a pack path. Ordinary `http://` and `https://`
 links continue to be treated as downloadable `.aipack` archives.
 
+Git installations resolve the checked-out commit and record its full hash as
+`[installed].commit` in the copied `pack.toml`. When a selected subpath is
+used, `[installed].source` retains the original Git URL and selector.
+
+
 ### Thanks to
 
 - **[Stephane Philipakis](https://github.com/sphilipakis)**, a key [aipack](https://aipack.ai) collaborator.

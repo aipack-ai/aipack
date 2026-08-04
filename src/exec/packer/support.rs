@@ -2,7 +2,10 @@ use crate::dir_context::DirContext;
 use crate::exec::packer::PackToml;
 use crate::exec::packer::pack_toml::{PartialPackToml, parse_validate_pack_toml};
 use crate::support::files::{DeleteCheck, safer_trash_dir};
-use crate::support::{proc::proc_exec, webc, zip};
+use crate::support::{
+	proc::{proc_exec, proc_exec_to_output, ProcOptions},
+	webc, zip,
+};
 use crate::types::PackIdentity;
 use crate::{Error, Result};
 use lazy_regex::regex;
@@ -127,6 +130,24 @@ impl std::fmt::Display for PackUri {
 	}
 }
 
+pub(super) fn resolve_install_provenance_source(
+	original_reference: &str,
+	pack_uri: &PackUri,
+	resolved_local_path: Option<&SPath>,
+) -> Result<String> {
+	match pack_uri {
+		PackUri::RepoPack(_) => Ok("aipack.ai".to_string()),
+		PackUri::HttpLink(_) | PackUri::GitLink(_) => Ok(original_reference.to_string()),
+		PackUri::LocalPath(_) => resolved_local_path
+			.map(|path| path.as_str().to_string())
+			.ok_or_else(|| {
+				Error::custom(format!(
+					"Cannot resolve installation provenance source for local pack '{original_reference}': resolved local path is missing"
+				))
+			}),
+	}
+}
+
 // endregion: --- PackUri
 
 // region:    --- LatestToml
@@ -239,7 +260,16 @@ pub(super) async fn download_from_repo(dir_context: &DirContext, pack_uri: PackU
 }
 
 /// Clones a Git source into a unique temporary directory under the base download directory.
+#[allow(dead_code)]
 pub(super) async fn clone_from_git(dir_context: &DirContext, pack_uri: PackUri) -> Result<(SPath, PackUri)> {
+	let (clone_dir, pack_uri, _) = clone_from_git_with_commit(dir_context, pack_uri).await?;
+	Ok((clone_dir, pack_uri))
+}
+
+pub(super) async fn clone_from_git_with_commit(
+	dir_context: &DirContext,
+	pack_uri: PackUri,
+) -> Result<(SPath, PackUri, String)> {
 	let PackUri::GitLink(git_source) = pack_uri else {
 		return Err(Error::custom(
 			"Expected GitLink variant but got a different one".to_string(),
@@ -273,7 +303,32 @@ pub(super) async fn clone_from_git(dir_context: &DirContext, pack_uri: PackUri) 
 		});
 	}
 
-	Ok((clone_dir, PackUri::GitLink(git_source)))
+	let commit_options = ProcOptions::default().with_cwd(clone_dir_str);
+	let commit_result = proc_exec_to_output("git", &["rev-parse", "HEAD"], Some(&commit_options)).await;
+	let commit = match commit_result {
+		Ok(commit) if !commit.trim().is_empty() => Ok(commit.trim().to_string()),
+		Ok(_) => Err(Error::custom("Git commit resolution returned an empty hash")),
+		Err(error) => Err(error),
+	};
+
+	let commit = match commit {
+		Ok(commit) => commit,
+		Err(error) => {
+			let cause = match cleanup_git_clone(&clone_dir) {
+				Ok(()) => format!("Failed to resolve Git commit: {error}"),
+				Err(cleanup_error) => format!(
+					"Failed to resolve Git commit: {error}\nFailed to clean up temporary Git clone '{clone_dir_str}': {cleanup_error}"
+				),
+			};
+
+			return Err(Error::FailToInstall {
+				aipack_ref: git_reference,
+				cause,
+			});
+		}
+	};
+
+	Ok((clone_dir, PackUri::GitLink(git_source), commit))
 }
 
 /// Resolves a selected Git pack directory relative to the clone root.

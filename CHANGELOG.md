@@ -1,5 +1,9 @@
 `.` minor | `-` Fix | `+` Addition | `^` improvement | `!` Change | `*` important | `>` Refactor
 
+## 2026-08-04 [Unreleased]
+
+- `^` installer - record the resolved Git commit in installed pack provenance
+
 
 ## 2026-07-25 [v0.8.32](https://github.com/jeremychone/rust-devai/compare/v0.8.31...v0.8.32)
 
