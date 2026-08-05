@@ -4,6 +4,21 @@
 
 - `^` installer - record the resolved Git commit in installed pack provenance
 
+## 2026-08-05 [v0.8.33](https://github.com/jeremychone/rust-devai/compare/v0.8.32...v0.8.33)
+
+- `+` loop - add first-pass loop support
+- **aip install**
+  - `+` add Git source support
+  - `^` Add an `[installed]` section to pack sources
+- `^` `aip pack ...` - add default ignores for `target/`, `node_modules/`, and similar directories
+- `+` provider - add Qwen Cloud support for Alibaba International
+- `^` model and pricing updates
+  - `.` Fireworks `dflash` now targets `deepseek-v4-flash-0731`
+  - `^` Add Qwen Claude costs for `3.8-max` and `qwen3.7-plus`
+  - `^` Update Luna and Terra price reductions
+  - `.` Add the `f-kimi` alias for the Fireworks Kimi K3 model
+- `&` `aip.cmd` - add `.cwd` current working directory execution support
+
 
 ## 2026-07-25 [v0.8.32](https://github.com/jeremychone/rust-devai/compare/v0.8.31...v0.8.32)
 
