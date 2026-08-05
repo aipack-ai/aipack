@@ -67,7 +67,9 @@ pub async fn install_pack(dir_context: &DirContext, pack_uri: &str, force: bool)
 			(PackSource::Archive(aipack_zipped_file), pack_uri)
 		}
 		pack_uri @ PackUri::GitLink(_) => {
-			let (git_dir, pack_uri, commit) = support::clone_from_git_with_commit(dir_context, pack_uri).await?;
+			let (git_dir, pack_uri, commit) = support::clone_from_git_with_commit(dir_context, pack_uri)
+				.await
+				.map_err(|error| preserve_install_error_reference(error, &original_pack_uri))?;
 			(
 				PackSource::Git {
 					clone_dir: git_dir,
@@ -110,7 +112,7 @@ pub async fn install_pack(dir_context: &DirContext, pack_uri: &str, force: bool)
 			&provenance_source,
 		),
 	};
-	let mut install_res = install_result?;
+	let mut install_res = install_result.map_err(|error| preserve_install_error_reference(error, &original_pack_uri))?;
 
 	match install_res {
 		InstallResponse::Installed(ref mut p) | InstallResponse::UpToDate(ref mut p) => {
@@ -124,6 +126,16 @@ pub async fn install_pack(dir_context: &DirContext, pack_uri: &str, force: bool)
 	}
 
 	Ok(install_res)
+}
+
+fn preserve_install_error_reference(error: Error, reference: &str) -> Error {
+	match error {
+		Error::FailToInstall { cause, .. } => Error::FailToInstall {
+			aipack_ref: reference.to_string(),
+			cause,
+		},
+		other => other,
+	}
 }
 
 

@@ -135,8 +135,15 @@ when the pack is located in a repository subdirectory:
 
 ```sh
 aip install git://git.example.com/team/example-pack.git
+
+# with path to the pack dir
 aip install git://git.example.com/team/example-pack.git#path/to/pack_dir
+
+# with auth
 aip install git+ssh://git@github.com/owner/example-pack.git#path/to/pack_dir
+
+# or with the SCP way (the copy/paste from github for example)
+aip install git@github.com:owner/example-pack.git
 ```
 
 The repository portion before `#` is cloned. Without a selector, the cloned

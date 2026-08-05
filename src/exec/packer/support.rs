@@ -26,7 +26,7 @@ pub struct GitSource {
 	pub subpath: Option<String>,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum PackUri {
 	RepoPack(PackIdentity),
 	LocalPath(String),
@@ -41,6 +41,10 @@ impl PackUri {
 			return Ok(PackUri::RepoPack(pack_identity));
 		}
 
+		if let Some(git_source) = Self::parse_scp_source(uri)? {
+			return Ok(PackUri::GitLink(git_source));
+		}
+
 		// If not a PackIdentity, check if it's an HTTP link
 		if uri.starts_with("http://") || uri.starts_with("https://") {
 			return Ok(PackUri::HttpLink(uri.to_string()));
@@ -52,6 +56,30 @@ impl PackUri {
 
 		// Otherwise, treat as local path
 		Ok(PackUri::LocalPath(uri.to_string()))
+	}
+
+	fn parse_scp_source(uri: &str) -> Result<Option<GitSource>> {
+		let scp_pattern = regex!(r"^[^@/\s:]+@[^:/\s]+:[^#\s]+(?:#.*)?$");
+		if !scp_pattern.is_match(uri) {
+			return Ok(None);
+		}
+
+		let (source, selector) = uri
+			.split_once('#')
+			.map_or((uri, None), |(source, selector)| (source, Some(selector)));
+		let (user, host_and_path) = source
+			.split_once('@')
+			.ok_or_else(|| Error::custom(format!("Invalid SCP Git source '{uri}'")))?;
+		let (host, repository) = host_and_path
+			.split_once(':')
+			.ok_or_else(|| Error::custom(format!("Invalid SCP Git source '{uri}'")))?;
+
+		let normalized_source = format!("git+ssh://{user}@{host}/{repository}");
+		let normalized_uri = selector.map_or(normalized_source.clone(), |selector| {
+			format!("{normalized_source}#{selector}")
+		});
+
+		Ok(Some(Self::parse_git_source(&normalized_uri)?))
 	}
 
 	fn parse_git_source(uri: &str) -> Result<GitSource> {

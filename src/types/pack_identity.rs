@@ -7,7 +7,7 @@ use std::str::FromStr;
 ///
 /// It does not contain a sub_path, as this is not part of the pack identity,
 /// but part of the pack ref
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct PackIdentity {
 	pub namespace: String,
 	pub name: String,

@@ -303,6 +303,8 @@ fn test_packer_support_resolve_install_provenance_source_variants() -> Result<()
 	let local_reference = "./packs/example.aipack";
 	let local_uri = PackUri::parse(local_reference)?;
 	let resolved_local_path = SPath::new("/workspace/packs/example.aipack");
+	let scp_reference = "git@github.com:team/pack.git#packs/example";
+	let scp_uri = PackUri::parse(scp_reference)?;
 
 	// -- Exec
 	let repo_source = resolve_install_provenance_source(repo_reference, &repo_uri, None)?;
@@ -310,12 +312,100 @@ fn test_packer_support_resolve_install_provenance_source_variants() -> Result<()
 	let git_source = resolve_install_provenance_source(git_reference, &git_uri, None)?;
 	let local_source =
 		resolve_install_provenance_source(local_reference, &local_uri, Some(&resolved_local_path))?;
+	let scp_source = resolve_install_provenance_source(scp_reference, &scp_uri, None)?;
 
 	// -- Check
 	assert_eq!(repo_source, "aipack.ai");
 	assert_eq!(http_source, http_reference);
 	assert_eq!(git_source, git_reference);
 	assert_eq!(local_source, resolved_local_path.as_str());
+	assert_eq!(scp_source, scp_reference);
+
+	Ok(())
+}
+
+#[test]
+fn test_packer_support_pack_uri_parse_scp_root() -> Result<()> {
+	// -- Setup & Fixtures
+	let uri = "git@github.com:rust10x/rust10x.git";
+
+	// -- Exec
+	let pack_uri = PackUri::parse(uri)?;
+
+	// -- Check
+	assert_eq!(
+		pack_uri,
+		PackUri::GitLink(GitSource {
+			repository: "git+ssh://git@github.com/rust10x/rust10x.git".to_string(),
+			subpath: None,
+		})
+	);
+	assert_eq!(pack_uri.to_string(), "Git URL 'git+ssh://git@github.com/rust10x/rust10x.git'");
+
+	Ok(())
+}
+
+#[test]
+fn test_packer_support_pack_uri_parse_scp_subpath() -> Result<()> {
+	// -- Setup & Fixtures
+	let uri = "git@github.com:rust10x/rust10x.git#path/to/pack_dir";
+
+	// -- Exec
+	let pack_uri = PackUri::parse(uri)?;
+
+	// -- Check
+	let PackUri::GitLink(source) = &pack_uri else {
+		return Err("Expected GitLink variant".into());
+	};
+	assert_eq!(source.repository, "git+ssh://git@github.com/rust10x/rust10x.git");
+	assert_eq!(source.subpath.as_deref(), Some("path/to/pack_dir"));
+
+	Ok(())
+}
+
+#[test]
+fn test_packer_support_pack_uri_parse_scp_invalid_selectors() -> Result<()> {
+	// -- Setup & Fixtures
+	let invalid_sources = [
+		"git@github.com:rust10x/rust10x.git#",
+		"git@github.com:rust10x/rust10x.git#/absolute",
+		r"git@github.com:rust10x/rust10x.git#\absolute",
+		r"git@github.com:rust10x/rust10x.git#C:\absolute",
+		"git@github.com:rust10x/rust10x.git#nested/../pack",
+	];
+
+	// -- Exec & Check
+	for uri in invalid_sources {
+		assert!(PackUri::parse(uri).is_err(), "Input: {uri}");
+	}
+
+	Ok(())
+}
+
+#[test]
+fn test_packer_support_pack_uri_parse_explicit_git_sources_unchanged() -> Result<()> {
+	// -- Setup & Fixtures
+	let sources = [
+		(
+			"git://example.com/team/pack.git#path/to/pack",
+			"git://example.com/team/pack.git",
+			Some("path/to/pack"),
+		),
+		(
+			"git+ssh://git@example.com/team/pack.git#path/to/pack",
+			"git+ssh://git@example.com/team/pack.git",
+			Some("path/to/pack"),
+		),
+	];
+
+	// -- Exec & Check
+	for (uri, expected_repository, expected_subpath) in sources {
+		let PackUri::GitLink(source) = PackUri::parse(uri)? else {
+			return Err("Expected GitLink variant".into());
+		};
+		assert_eq!(source.repository, expected_repository);
+		assert_eq!(source.subpath.as_deref(), expected_subpath);
+	}
 
 	Ok(())
 }
