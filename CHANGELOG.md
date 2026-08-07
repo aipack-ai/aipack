@@ -1,13 +1,9 @@
 `.` minor | `-` Fix | `+` Addition | `^` improvement | `!` Change | `*` important | `>` Refactor
 
-## 2026-08-04 [Unreleased]
-
-- `^` installer - record the resolved Git commit in installed pack provenance
-
-## 2026-08-05 [v0.8.33](https://github.com/jeremychone/rust-devai/compare/v0.8.32...v0.8.33)
+## 2026-08-05 [v0.8.33](https://github.com/aipack-ai/aipack/compare/v0.8.32...v0.8.33)
 
 - `+` loop - add first-pass loop support
-- **aip install**
+- **aip install git**
   - `+` add Git source support
   - `^` Add an `[installed]` section to pack sources
 - `^` `aip pack ...` - add default ignores for `target/`, `node_modules/`, and similar directories
@@ -20,7 +16,7 @@
 - `&` `aip.cmd` - add `.cwd` current working directory execution support
 
 
-## 2026-07-25 [v0.8.32](https://github.com/jeremychone/rust-devai/compare/v0.8.31...v0.8.32)
+## 2026-07-25 [v0.8.32](https://github.com/aipack-ai/aipack/compare/v0.8.31...v0.8.32)
 
 - `^` model - Opus 5 pricing and alias
 - `.` model - Add Flash 3.6 and Lite 3.5 pricing & alias
@@ -28,7 +24,7 @@
 - `.` udiffx - more tuning (Emphasize `~` rules)
 - `.` version - Update to 0.8.32-WIP
 
-## 2026-07-14 [v0.8.31](https://github.com/jeremychone/rust-devai/compare/v0.8.30...v0.8.31)
+## 2026-07-14 [v0.8.31](https://github.com/aipack-ai/aipack/compare/v0.8.30...v0.8.31)
 
 - `^` OpenAI - improved AI caching hit support
 - `^` udiffx - auto-close file directives and more resilient `*** End Patch` cleanup
@@ -40,7 +36,7 @@
 - `-` cost - fix cache computation on saving
 - `>` udiffx - big refactor, now tag brackets (internal, just change raw AI output)
 
-## 2026-07-09 [v0.8.30](https://github.com/jeremychone/rust-devai/compare/v0.8.29...v0.8.30)
+## 2026-07-09 [v0.8.30](https://github.com/aipack-ai/aipack/compare/v0.8.29...v0.8.30)
 
 - `+` Models - added GPT-5.6 pricing and aliases (`luna`, `terra`, `sol`, `gpt == terra`)
 - `+` Models - added Grok 4.5 pricing with `sol`, `terra`, and `luna` aliases
@@ -49,7 +45,7 @@
 - `^` File detection - classify `.db`, `.db3`, `.sqlite`, and `.sqlite3` files as binary
 - `.` Provider - added ZAI and KIMI API key information
 
-## 2026-06-30 [v0.8.29](https://github.com/jeremychone/rust-devai/compare/v0.8.28...v0.8.29)
+## 2026-06-30 [v0.8.29](https://github.com/aipack-ai/aipack/compare/v0.8.28...v0.8.29)
 
 - `+` Provider - omlx (local llm) (with `OMLX_API_KEY` and `OMLX_ENDPOINT` envs)
 - `+` Provider - added Kimi access, aliases, and pricing (`KIMI_API_KEY`)
@@ -62,7 +58,7 @@
 - `.` udiffx 0.2.2 - prompt - emphasis to only use file_changes
 - `-` fix first run not creating files when .aipack/ did not exist
 
-## 2026-06-10 [v0.8.28](https://github.com/jeremychone/rust-devai/compare/v0.8.27...v0.8.28)
+## 2026-06-10 [v0.8.28](https://github.com/aipack-ai/aipack/compare/v0.8.27...v0.8.28)
 
 - `^` Model - added Clause Fable (Alias & pricing)
 - `^` Model - added Minimax M3 cost and `minimax::..` namespace
@@ -70,7 +66,7 @@
 - `^` aip.tag.extractor - now support self-closing tags
 - `.` tui - change done check mark color for flow redo
 
-## 2026-05-30 [v0.8.27](https://github.com/jeremychone/rust-devai/compare/v0.8.26...v0.8.27)
+## 2026-05-30 [v0.8.27](https://github.com/aipack-ai/aipack/compare/v0.8.26...v0.8.27)
 
 - `^` Model - Opus 4.8 cost, alias, opus 4.8 
 - `^` Model - OpenAI '-max' suffix matches to 'max' reasoning effort (was xhigh)
@@ -84,25 +80,25 @@
 - `.` sqlite 3.53.1 (rusqlite v0.40.0)
 - `.` aip.json.parse - Fully relax format (support for single or no key quotes, missing commas, and more)
 
-## 2026-05-19 [v0.8.26](https://github.com/jeremychone/rust-devai/compare/v0.8.25...v0.8.26)
+## 2026-05-19 [v0.8.26](https://github.com/aipack-ai/aipack/compare/v0.8.25...v0.8.26)
 
 - `^` model - gemini flash 3.5 pricing and `flash` alias 
 - `.` model - `flash3` alias to the old `gemini-3-flash-preview` (3x cheaper)
 
-## 2026-05-15 [v0.8.25](https://github.com/jeremychone/rust-devai/compare/v0.8.24...v0.8.25)
+## 2026-05-15 [v0.8.25](https://github.com/aipack-ai/aipack/compare/v0.8.24...v0.8.25)
 
 - `-` aip.file - Fix negative globs with absolute paths
 - `.` model - Update lite alias to gemini-3.1-flash-lite
 - `.` dependencies - Update sysinfo and quick-xml
 
-## 2026-05-06 [v0.8.24](https://github.com/jeremychone/rust-devai/compare/v0.8.23...v0.8.24)
+## 2026-05-06 [v0.8.24](https://github.com/aipack-ai/aipack/compare/v0.8.23...v0.8.24)
 
 - `-` tui - Fix overview link zones
 - `^` tui - Auto-switch to Overview tab if no tasks after 500ms
 - `.` genai -  with Bedrock support
 - `.` udiffx - dependencies alignment, emphasis file_append
 
-## 2026-04-29 [v0.8.23](https://github.com/jeremychone/rust-devai/compare/v0.8.22...v0.8.23)
+## 2026-04-29 [v0.8.23](https://github.com/aipack-ai/aipack/compare/v0.8.22...v0.8.23)
 
 - `.` MODEL - `gpt` alias to `gpt-5.5`
 - `.` MODEL - deepseek ai - deepseek-v4-flash/pro pricing and aliases for dflash, dpro
@@ -112,7 +108,7 @@
 - `-` model/pin - fix run pin lookup returning task pins with same iden
 - `.` udiffx - 0.1.41 - hunk error cause concise
 
-## 2026-04-24 [v0.8.22](https://github.com/jeremychone/rust-devai/compare/v0.8.21...v0.8.22)
+## 2026-04-24 [v0.8.22](https://github.com/aipack-ai/aipack/compare/v0.8.21...v0.8.22)
 
 - `^` NEW API `aip.zip` - `aip.zip.create`, `aip.zip.extract`, and `aip.zip.list` 
 - `+` `aip.file` - add workspace-safe `ensure_dir` directory creation
@@ -126,7 +122,7 @@
 - `.` Model pricing / model aliases - gpt 5.4, opus 4.7 
 - `.` Model pricing - gpt 5.5 (not aliased yet as not available as API) 
 
-## 2026-03-25 [v0.8.21](https://github.com/jeremychone/rust-devai/compare/v0.8.20...v0.8.21)
+## 2026-03-25 [v0.8.21](https://github.com/aipack-ai/aipack/compare/v0.8.20...v0.8.21)
 
 - `+` unpack - add unpack command specification
 - `^` aip.udiffx - include error_hunks data
@@ -134,7 +130,7 @@
 - `.` docs - update udiffx `ApplyChangesItem` error_hunks serialization docs
 - `.` doc/udiffx - update ApplyChangesStatus and error_hunks
 
-## 2026-03-19 [v0.8.20](https://github.com/jeremychone/rust-devai/compare/v0.8.19...v0.8.20)
+## 2026-03-19 [v0.8.20](https://github.com/aipack-ai/aipack/compare/v0.8.19...v0.8.20)
 
 - `^` model - gpt-5.4 mini/nano pricing update and aliases
 - `^` model suffix - add support for `-xhigh` and `-max` (with property fallback)
@@ -149,7 +145,7 @@
 - `>` memory optimization - ucontent - Now pins share common content.
 - `>` genai - Now genai points GPT-5 to the OpenAI Responses API endpoint
 
-## 2026-03-08 [v0.8.19](https://github.com/jeremychone/rust-devai/compare/v0.8.18...v0.8.19)
+## 2026-03-08 [v0.8.19](https://github.com/aipack-ai/aipack/compare/v0.8.18...v0.8.19)
 
 - `^` udiffx - crlf handling, lot of resiliency tuning in file patch
 - `&` udiffx - file_patch fix when append with file_append directive (simpler, more accurate when just appending)
@@ -157,7 +153,7 @@
 - `>` file write manager - now have ArcSwap and auto cleanup. Memory optimization
 - `.` pricing / aliases - gpt 5.4
 
-## 2026-03-05 [v0.8.18](https://github.com/jeremychone/rust-devai/compare/v0.8.17...v0.8.18)
+## 2026-03-05 [v0.8.18](https://github.com/aipack-ai/aipack/compare/v0.8.17...v0.8.18)
 
 - `^` API - FileRecord & FileInfo now have `.is_likely_text`
 - `^` aip file append - now fully concurrent proof (atomic file append per file)
@@ -168,7 +164,7 @@
 - `+` aip_path - Add aip.path.sort_by_globs Lua function with tests
 - `.` lua engine - include pack ref base dir when present as well as the file agent dir (for lua includes)
 
-## 2026-02-23 - [v0.8.17](https://github.com/jeremychone/rust-devai/compare/v0.8.16...v0.8.17)
+## 2026-02-23 - [v0.8.17](https://github.com/aipack-ai/aipack/compare/v0.8.16...v0.8.17)
 
 - `+` aip.udiffx - add `aip.udiffx.load_files_context(..)`, `aip.udiffx.file_changes_instruction()`
 - `-` fix nested task/run freeze on core limit
@@ -182,11 +178,11 @@
 - `.` config-default & pricing - sonnet-4-6, gemini 3.1
 - `.` doc - update doc-for-llm
 
-## 2026-02-06 - [v0.8.16](https://github.com/jeremychone/rust-devai/compare/v0.8.15...v0.8.16)
+## 2026-02-06 - [v0.8.16](https://github.com/aipack-ai/aipack/compare/v0.8.15...v0.8.16)
 
 - `^` Anthropic - add `opus-4-6 `pricing and default for `opus` alias
 
-## 2026-02-04 - [v0.8.15](https://github.com/jeremychone/rust-devai/compare/v0.8.14...v0.8.15)
+## 2026-02-04 - [v0.8.15](https://github.com/aipack-ai/aipack/compare/v0.8.14...v0.8.15)
 
 - `+` aip.file - Add `.copy(..)` and `.move(..)`
 - `^` api.lua.merge.. - now accept Value::Nil and Value::NULL as objs (will be ignored)
@@ -204,7 +200,7 @@
 - `-` fix concurrency db transaction issue
 
 
-## 2026-01-19 - [v0.8.14](https://github.com/jeremychone/rust-devai/compare/v0.8.13...v0.8.14)
+## 2026-01-19 - [v0.8.14](https://github.com/aipack-ai/aipack/compare/v0.8.13...v0.8.14)
 
 - `^` udiffx - many updates (more resilient)
 - `^` install - Skip installation if pack is already up to date and add --force flag
@@ -213,11 +209,11 @@
 - `-` error - make sure that error in 'aip install' quit the term
 - `>` support/files - Refactor safer deletes to use simple-fs trash API
 
-## 2026-01-14 - [v0.8.13](https://github.com/jeremychone/rust-devai/compare/v0.8.12...v0.8.13)
+## 2026-01-14 - [v0.8.13](https://github.com/aipack-ai/aipack/compare/v0.8.12...v0.8.13)
 
 - `^` aip.udiffx - update dependency. More resilient uniffied patch matching.
 
-## 2026-01-05 - [v0.8.12](https://github.com/jeremychone/rust-devai/compare/v0.8.11...v0.8.12)
+## 2026-01-05 - [v0.8.12](https://github.com/aipack-ai/aipack/compare/v0.8.11...v0.8.12)
 
 - `+` NEW API - aip.file - Implement `aip.file.load_yaml`, `aip.yaml.parse/stringify` for Lua
 - `+` NEW API - `aip.udiffx.apply_file_changes`
@@ -240,7 +236,7 @@
 - `.` config-default - flash to flash-3-preview
 - `.` pricing - add gemini-3-flash pricing
 
-## 2025-12-13 - [v0.8.11](https://github.com/jeremychone/rust-devai/compare/v0.8.10...v0.8.11)
+## 2025-12-13 - [v0.8.11](https://github.com/aipack-ai/aipack/compare/v0.8.10...v0.8.11)
 
 - `!` init-base - now delete the builtin installed packs before installing (for consistency, use to trash for recovery)
 - `!` aip.file.delete - now use `to_trash` to enable recovery.
@@ -250,7 +246,7 @@
 - `*` core@doc - now has the for-llm/ and standard/ structure
 - `-` aip.file.list - fix issue when listting `**/..` and before was a non existent start folder glob
 
-## 2025-11-28 - [v0.8.10](https://github.com/jeremychone/rust-devai/compare/v0.8.9...v0.8.10)
+## 2025-11-28 - [v0.8.10](https://github.com/aipack-ai/aipack/compare/v0.8.9...v0.8.10)
 
 - `+` BIG ONE - file attachment support - on a `aip.flow.data_response(..., {attchments: ...})`
 - `+` aip.task.set_label - new api to set task label
@@ -258,14 +254,14 @@
 - `+` aip.md.extract_refs - news api to extract markdown ref/links
 - `-` self update on nix - fix has_aip_in_path function
 
-## 2025-11-25 - [v0.8.9](https://github.com/jeremychone/rust-devai/compare/v0.8.8...v0.8.9)
+## 2025-11-25 - [v0.8.9](https://github.com/aipack-ai/aipack/compare/v0.8.8...v0.8.9)
 
 - `^` aip.lua.merge - support multi object merge and merge_deep (& merge on first target object now)
 - `^` Opus-4-5 - Added support for new reasonning effort config
 - `^` Opus-4-5 - Updated pricing
 - `^` gemini 3 - Use new `thinkingLevel` when gemini-3.. for `-low` and `-high`
 
-## 2025-11-23 - [v0.8.8](https://github.com/jeremychone/rust-devai/compare/v0.8.7...v0.8.8)
+## 2025-11-23 - [v0.8.8](https://github.com/aipack-ai/aipack/compare/v0.8.7...v0.8.8)
 
 - `!` api change - csv - now returns `{headers?, rows}` (was `{headers, content}`)
 - `!` aip.file.load_spans - return tuple spans `[start, end]` rather than `{start: number, end: number}`
@@ -280,7 +276,7 @@
 - `^` pricing - gemini 3, openai gpt 5.1, fireworks pricing update
 - `-` tui - runs nav view - fix issue when clicking nav on no item, last item get selected
 
-## 2025-10-25 - [v0.8.7](https://github.com/jeremychone/rust-devai/compare/v0.8.5...v0.8.7)
+## 2025-10-25 - [v0.8.7](https://github.com/aipack-ai/aipack/compare/v0.8.5...v0.8.7)
 
 - `^` aip.file.list - big speed boost and special folder support for `target/`, `.build/`, `node_modules/` and `__pycache__/` (but have explicit globs)
 - `+` aip.web - `.get` and `.post` now support `.headers`, `.user_agent`, and `redirect_limit` in options, and return `.headers` in WebResponse
@@ -291,11 +287,11 @@
 - `.` config-default - added haiku 4.5 to default aliases
 - `.` pricing - updated Anthropic pricing with haiku 4.5
 
-## 2025-10-13 - [v0.8.5](https://github.com/jeremychone/rust-devai/compare/v0.8.4...v0.8.5)
+## 2025-10-13 - [v0.8.5](https://github.com/aipack-ai/aipack/compare/v0.8.4...v0.8.5)
 
 - `^` aip.tag.extract - Add support for tag attributes
 
-## 2025-10-12 - [v0.8.4](https://github.com/jeremychone/rust-devai/compare/v0.8.3...v0.8.4)
+## 2025-10-12 - [v0.8.4](https://github.com/aipack-ai/aipack/compare/v0.8.3...v0.8.4)
 
 - `+` New API - aip.tag - `aip.tag.extract(content, tag_names, options?)`, `.extact_as_map`, `.extact_as_multi_map`
 - `+` tui - add 'x' to cancel run (without quitting)
@@ -312,7 +308,7 @@
 - `.` lua file - error when globs starts with ../
 - `^` aip.file.list - now always get/return meta (size, ctime, mtime) when found
 
-## 2025-10-03 - [v0.8.3](https://github.com/jeremychone/rust-devai/compare/v0.8.2...v0.8.3)
+## 2025-10-03 - [v0.8.3](https://github.com/aipack-ai/aipack/compare/v0.8.2...v0.8.3)
 
 - `.` pricing - update pricing for gemini..-latest
 - `-` lua_value_to_serde_value - made that LightUserData get json seralized as null
@@ -323,7 +319,7 @@
 - `^` anthropic models - add support for reasoning (genai 0.4.1)
 - `.` doc - lua-apis fix for site render
 
-## 2025-09-29 - [v0.8.2](https://github.com/jeremychone/rust-devai/compare/v0.8.1...v0.8.2)
+## 2025-09-29 - [v0.8.2](https://github.com/aipack-ai/aipack/compare/v0.8.1...v0.8.2)
 
 - `!` globs - now does not ignore target/ and node_modules/
 - `+` gpt-5-codex - Add transparent support for OpenAI gpt-5-codex model
@@ -334,7 +330,7 @@
 - `.` openai - add support for gpt-5-codex (pricing & genai 0.4.0-alpha.17)
 - `.` init - update config-default claude aliases
 
-## 2025-08-31 - [v0.8.1](https://github.com/jeremychone/rust-devai/compare/v0.8.0...v0.8.1)
+## 2025-08-31 - [v0.8.1](https://github.com/aipack-ai/aipack/compare/v0.8.0...v0.8.1)
 
 - `+` **NEW API** - New `aip.shape...` apis to reshape data.
 - `^` **NEW API** - add aip.time.local_tz_id() e.g., 'America/Los_Angeles'
@@ -349,7 +345,7 @@
 - `-` aip.agent.extract_options - fix input_concurrency typo
 - `.` aip - remove end "happy coding" exit message
 
-## 2025-08-14 - [v0.8.0](https://github.com/jeremychone/rust-devai/compare/v0.7.20...v0.8.0)
+## 2025-08-14 - [v0.8.0](https://github.com/aipack-ai/aipack/compare/v0.7.20...v0.8.0)
 
 - **TUI BY DEFAULT** (`--old-term` for the old terminal, and still `-s` for single shot)
 - `+` aip.file.load_html_as_md
@@ -360,7 +356,7 @@
 - `+` aip.file.delete - only in workspace dir
 - `.` lua-api - fix markdown format
 
-## 2025-08-12 - [v0.7.20](https://github.com/jeremychone/rust-devai/compare/v0.7.19...v0.7.20)
+## 2025-08-12 - [v0.7.20](https://github.com/aipack-ai/aipack/compare/v0.7.19...v0.7.20)
 
 - `+` BIG ONE, tui, Copy to clipboard sections
 - `+` aip.file.load_docx_as_md(...)
@@ -372,7 +368,7 @@
 - `.` many TUI tune-ups
 - `.` config default, TOML, GPT-5 only
 
-## 2025-08-08 - [v0.7.19](https://github.com/jeremychone/rust-devai/compare/v0.7.18...v0.7.19)
+## 2025-08-08 - [v0.7.19](https://github.com/aipack-ai/aipack/compare/v0.7.18...v0.7.19)
 
 - `^` pricing - add gpt-5, gpt-5-mini, gpt-5-nano pricing
 - `^` pricing - add GPT-OSS models (Fireworks) and include in config-default.toml
@@ -384,7 +380,7 @@
 - `.` lua-apis - update aip.run/task pin APIs
 - `.` keys - add Nebius API key to known systems
 
-## 2025-08-04 - [v0.7.18](https://github.com/jeremychone/rust-devai/compare/v0.7.17...v0.7.18)
+## 2025-08-04 - [v0.7.18](https://github.com/aipack-ai/aipack/compare/v0.7.17...v0.7.18)
 
 - `!` base config tomls - now have `~/.aipack-base/config-default.toml` and `~/.aipack-base/config-user.toml`
   - Old `~/.aipack-base/config.toml` will be renamed to `~/.aipack-base/config-deprecated.toml` and won't be used (can be deleted)
@@ -401,7 +397,7 @@
 - `-` tui - fix agent run cost not displaying when no sub agents
 - `-` model pin - fix the pin run save concurrency issue
 
-## 2025-07-21 - [v0.7.17](https://github.com/jeremychone/rust-devai/compare/v0.7.16...v0.7.17)
+## 2025-07-21 - [v0.7.17](https://github.com/aipack-ai/aipack/compare/v0.7.16...v0.7.17)
 
 - `+` pin - added `aip.run.pin(..)` and `aip.task.pin(..)` with text and first Marker Universal Component `{label, content}`
 - `+` tui - nested runs (sub agents)
@@ -431,14 +427,14 @@
 - `.` tui - truncate model name, queue (rather than waiting)
 - `.` tui - run nav view - fix run icon to show run past state
 
-## 2025-07-23 - [v0.7.16](https://github.com/jeremychone/rust-devai/compare/v0.7.15...v0.7.16)
+## 2025-07-23 - [v0.7.16](https://github.com/aipack-ai/aipack/compare/v0.7.15...v0.7.16)
 
 - `-` tui - fix tui crash when resize to very small height
 - `-` fix issue when first run is skipped at before all with instruction (used to never show task(s) again)
 - `.` turn off debug trace when xp-tui
 - `.` core@doc - update # Options (from legacy config)
 
-## 2025-07-23 - [v0.7.15](https://github.com/jeremychone/rust-devai/compare/v0.7.14...v0.7.15)
+## 2025-07-23 - [v0.7.15](https://github.com/aipack-ai/aipack/compare/v0.7.14...v0.7.15)
 
 - `+` **BIG ONE**: New Terminal UI with the `--xp-tui` flag
   - Example: `aip run pro@coder --xp-tui`
@@ -447,12 +443,12 @@
   - Running without `--xp-tui` will use the previous UI
 - `.` Other fixes, pricing & model update (Kimi 2 on groq)
 
-## 2025-06-23 - [v0.7.14](https://github.com/jeremychone/rust-devai/compare/v0.7.13...v0.7.14)
+## 2025-06-23 - [v0.7.14](https://github.com/aipack-ai/aipack/compare/v0.7.13...v0.7.14)
 
 - `-` pricing - fix gemini 2.5 lite pricing (to reflect new pricing)
 - `.` update config.toml with gemini 2.5
 
-## 2025-06-12 - [v0.7.13](https://github.com/jeremychone/rust-devai/compare/v0.7.12...v0.7.13)
+## 2025-06-12 - [v0.7.13](https://github.com/aipack-ai/aipack/compare/v0.7.12...v0.7.13)
 
 - `+` `aip.file_file_hash_...` for sha256, sha512, and blake3 (hex, b64, b64u, and b58 encoding)
 - `^` doc - lua-apis for the file.hash*... and aip.file.hash*...
@@ -460,13 +456,13 @@
 - `.` all 'y' input are now case insensitive and match 'yes' as well
 - `.` init - config update to latest gemini 2.5 pro 06-05
 
-## 2025-05-31 - [v0.7.12](https://github.com/jeremychone/rust-devai/compare/v0.7.11...v0.7.12)
+## 2025-05-31 - [v0.7.12](https://github.com/aipack-ai/aipack/compare/v0.7.11...v0.7.12)
 
 - `+` Added `aip.hash` - [See doc](https://aipack.ai/doc/lua-apis#aipuuid) e.g., `aip.hash.blak3_b58(some_text_content)` - Added `aip.hash` lua utilities for sha256, sha512, blake3, with hex, b64, b64u, base 58 serialization
 - `+` Added `aip.uuid` - [See doc](https://aipack.ai/doc/lua-apis#aiphash) e.g., `aip.hash.new() -- v4`, `aip.hash.new_v7_b58() -- v7 in base 58`
 - `-` aip.file.load - fix base_path issue (was causing issue with pro@coder when base_dir was not empty)
 
-## 2025-05-26 - [v0.7.11](https://github.com/jeremychone/rust-devai/compare/v0.7.10...v0.7.11)
+## 2025-05-26 - [v0.7.11](https://github.com/aipack-ai/aipack/compare/v0.7.10...v0.7.11)
 
 - `+` BIG ONE - on mac/lin now `aip self update` fully update binary!
 - `+` Now support `~/` for home dir, and will normalize path with `~/` (to limit Personal Information in prompt)
@@ -484,13 +480,13 @@
 - `.` update init config.tomls
 - `.` craft@text - add for no long dash (more)
 
-## 2025-05-17 - [v0.7.10](https://github.com/jeremychone/rust-devai/compare/v0.7.9...v0.7.10)
+## 2025-05-17 - [v0.7.10](https://github.com/aipack-ai/aipack/compare/v0.7.9...v0.7.10)
 
 - `+` meta block / parametric prompt - added support for json and yaml (on top of toml)
 - `!` soft deprecation - now `config.toml` has `[options]` (rather than `[default_options]`). Both still supported during transition.
 - `.` message - fix print issue when pressing R while already running
 
-## 2025-05-16 - [v0.7.9](https://github.com/jeremychone/rust-devai/compare/v0.7.7...v0.7.9)
+## 2025-05-16 - [v0.7.9](https://github.com/aipack-ai/aipack/compare/v0.7.7...v0.7.9)
 
 - `+` aip.path.parse - parse a file and return a FileInfo (without size, modified, ...)
 - `+` aip.web.resolve_href
@@ -506,7 +502,7 @@
 - `^` error - make better error display
 - `-` (v0.7.8) - Fix install issue on nixes.
 
-## 2025-05-08 - [v0.7.7](https://github.com/jeremychone/rust-devai/compare/v0.7.6...v0.7.7)
+## 2025-05-08 - [v0.7.7](https://github.com/aipack-ai/aipack/compare/v0.7.6...v0.7.7)
 
 - `+` NEW session & tmp dir - Added `CTX.SESSION`, `CTX.TMP_DIR`, and `$tmp/some/path.txt` alias
 - `+` NEW Base and Workspace support directory for packs with `ns@pack_name$base/some/file.txt` and `ns@pack_name$workspace/some/file.txt`
@@ -529,27 +525,27 @@
 - `.` \_init config.toml update with flash-prev-zero
 - `.` Gemini - Added support for `-zero`, `-low`, `-medium`, `-high` suffixes for reasoning budget
 
-## 2025-04-26 - [v0.7.6](https://github.com/jeremychone/rust-devai/compare/v0.7.5...v0.7.6)
+## 2025-04-26 - [v0.7.6](https://github.com/aipack-ai/aipack/compare/v0.7.5...v0.7.6)
 
 - `-` gemini pricing fix (update to genai 0.2.3 for normalized gemini usage)
 - `-` pricing - fix price calculation to correctly compute prompt price when cache tokens
 
-## 2025-04-20 - [v0.7.5](https://github.com/jeremychone/rust-devai/compare/v0.7.4...v0.7.5)
+## 2025-04-20 - [v0.7.5](https://github.com/aipack-ai/aipack/compare/v0.7.4...v0.7.5)
 
 - `-` pricing calculation - Fix pricing calculation when cache tokens.
 
-## 2025-04-19 - [v0.7.4](https://github.com/jeremychone/rust-devai/compare/v0.7.3...v0.7.4)
+## 2025-04-19 - [v0.7.4](https://github.com/aipack-ai/aipack/compare/v0.7.3...v0.7.4)
 
 - `^` Windows x86 binary now 64bit (https://aipack.ai)
 - `^` gemini 2.5\* - Support reasoning tokens,and update pricing calculation
 - `.` config.toml - update the config tomls with new models
 
-## 2025-04-16 - [v0.7.3](https://github.com/jeremychone/rust-devai/compare/v0.7.2...v0.7.3)
+## 2025-04-16 - [v0.7.3](https://github.com/aipack-ai/aipack/compare/v0.7.2...v0.7.3)
 
 - `.` Added support and pricing for OpenAI `o4*` and `o3` models
 - `^` `aip self update` - now check online version
 
-## 2025-04-15 - [v0.7.2](https://github.com/jeremychone/rust-devai/compare/v0.7.0...v0.7.2)
+## 2025-04-15 - [v0.7.2](https://github.com/aipack-ai/aipack/compare/v0.7.0...v0.7.2)
 
 - `.` `aip self update` - fix self update to print messsage (rather to do incomplete update)
 - `.` pricing - add xai/grok pricing
@@ -561,7 +557,7 @@
 - `.` update setup messages
 - `-` aip.file.list_load - fix bug that make the function hang
 
-## 2025-04-13 - [v0.7.0](https://github.com/jeremychone/rust-devai/compare/v0.6.18...v0.7.0)
+## 2025-04-13 - [v0.7.0](https://github.com/aipack-ai/aipack/compare/v0.6.18...v0.7.0)
 
 - `*` BIG ONE - WINDOWS SUPPORT - x86 & ARM
 - `!` --single-shot - For single shot run, use `-s` or `--single-shot` (rather than --non-interactive)
@@ -570,25 +566,25 @@
 - `!` API KEY - disable the mac keychain storage for now
 - `.` lua cmd.exec - make it cross platform(ish), by wrapping the cmd with /C on windows
 
-## 2025-04-10 - [v0.6.18](https://github.com/jeremychone/rust-devai/compare/v0.6.17...v0.6.18)
+## 2025-04-10 - [v0.6.18](https://github.com/aipack-ai/aipack/compare/v0.6.17...v0.6.18)
 
 - `.` update to simple-fs 0.6.0-rc.4
 - `.` zip - for common zip (for pack ..) compress with Deflated (most standard)
 - `.` build.rs - use zstd for asset zip/unzip
 
-## 2025-04-08 - [v0.6.17](https://github.com/jeremychone/rust-devai/compare/v0.6.16...v0.6.17)
+## 2025-04-08 - [v0.6.17](https://github.com/aipack-ai/aipack/compare/v0.6.16...v0.6.17)
 
 - `+` self setup - Added setup support that init ~/.apack-base/bin/aip and aip-env
 - `>` tui - work on the Prompt hub event
 - `.` pricing - update pricing-all.json and pricing/data.rs for gemini 2.5 pro
 - `.` more fixes & refactors
 
-## 2025-03-29 - [v0.6.16](https://github.com/jeremychone/rust-devai/compare/v0.6.15...v0.6.16)
+## 2025-03-29 - [v0.6.16](https://github.com/aipack-ai/aipack/compare/v0.6.15...v0.6.16)
 
 - `.` run input - change the way model print and ai_response.info to include provider model name
 - `.` craft/text - tune the prompt to not echo content tag and follow better user instruction
 
-## 2025-03-28 - [v0.6.15](https://github.com/jeremychone/rust-devai/compare/v0.6.14...v0.6.15)
+## 2025-03-28 - [v0.6.15](https://github.com/aipack-ai/aipack/compare/v0.6.14...v0.6.15)
 
 - `*` install, pack, list - now does not init workspace
 - `+` cli - add 'aip check-keys'
@@ -599,7 +595,7 @@
 - `.` init-base - fix print
 - `.` demo@craft/text - fix the ==== issue
 
-## 2025-03-25 - [v0.6.14](https://github.com/jeremychone/rust-devai/compare/v0.6.13...v0.6.14)
+## 2025-03-25 - [v0.6.14](https://github.com/aipack-ai/aipack/compare/v0.6.13...v0.6.14)
 
 - `+` agent - add aip.flow.data_response({input?, data?, options?}) - Now can override model, input at Data stage
 - `^` doc lua - add aip.agent, aip.flow
@@ -611,12 +607,12 @@
 - `-` agent parse - fix issues when prompt part has a code block with level one heading
 - `^` models-pricing - update data and agent
 
-## 2025-03-21 - [v0.6.13](https://github.com/jeremychone/rust-devai/compare/v0.6.12...v0.6.13)
+## 2025-03-21 - [v0.6.13](https://github.com/aipack-ai/aipack/compare/v0.6.12...v0.6.13)
 
 - `^` @ask-aipack - Fixes and improvements
 - `^` run - now init-base if aipack version is not the same
 
-## 2025-03-20 - [v0.6.12](https://github.com/jeremychone/rust-devai/compare/v0.6.11...v0.6.12)
+## 2025-03-20 - [v0.6.12](https://github.com/aipack-ai/aipack/compare/v0.6.11...v0.6.12)
 
 - `+` NEW - Now can **call agent within agents** `aip.agent.run(agent_name, {inputs?, options?})`
 - `-` agent - fix parse issue with not matching backticks on prompt sections
@@ -627,19 +623,19 @@
 - `^` error msg - Enhance parse_prompt_part_options error message
 - `.` update test_lua_semver_compare_basic
 
-## 2025-03-16 - [v0.6.11](https://github.com/jeremychone/rust-devai/compare/v0.6.10...v0.6.11)
+## 2025-03-16 - [v0.6.11](https://github.com/aipack-ai/aipack/compare/v0.6.10...v0.6.11)
 
 - `-` fix html5ever 0.29.2 yank compile issue
 - `^` PromptPart options now evaluated at hbs render time
 - `.` update version to 0.6.11-WIP
 
-## 2025-03-14 - [v0.6.10](https://github.com/jeremychone/rust-devai/compare/v0.6.9...v0.6.10)
+## 2025-03-14 - [v0.6.10](https://github.com/aipack-ai/aipack/compare/v0.6.9...v0.6.10)
 
 - `-` compile issue - fix compile issue from html5ever patch update and markup5ever_rcdom
 - `>` prompt_part - prep work to support dynamic (at hbs render time) prompt part options
 - `^` agent - now support four backticks (as well as the three) for the toml/lua code blocks
 
-## 2025-03-12 - [v0.6.9](https://github.com/jeremychone/rust-devai/compare/v0.6.8...v0.6.9)
+## 2025-03-12 - [v0.6.9](https://github.com/aipack-ai/aipack/compare/v0.6.8...v0.6.9)
 
 - `!` Lua module rename - Now `aip...` rather than `utils...` (backward compatibility preserved)
 - `!` Lua module rename - Now `aip.flow` rather than `aipack.` (backward compatibility preserved)
@@ -648,7 +644,7 @@
 - `^` Lua - `file.save` now has a workspace guard (cannot save outside of the workspace for now). Might allow force flag later.
 - `*` FIX v0.6.8 compile error ([#56 aipack install fail (v0.6.8)](https://github.com/aipack-ai/aipack/issues/56)).
 
-## 2025-03-10 - [v0.6.8](https://github.com/jeremychone/rust-devai/compare/v0.6.7...v0.6.8)
+## 2025-03-10 - [v0.6.8](https://github.com/aipack-ai/aipack/compare/v0.6.7...v0.6.8)
 
 BIG ERROR - This won't compile; some files are missing. Use v0.6.9.
 
@@ -658,7 +654,7 @@ BIG ERROR - This won't compile; some files are missing. Use v0.6.9.
 - `^` find_agent - now support symlink for pack dirs
 - `.` int - base config model name update.
 
-## 2025-03-06 - [v0.6.7](https://github.com/jeremychone/rust-devai/compare/v0.6.6...v0.6.7)
+## 2025-03-06 - [v0.6.7](https://github.com/aipack-ai/aipack/compare/v0.6.6...v0.6.7)
 
 - `!` lua - added the 'utils' to the 'aip' (which might be the new name for base aip utils). For now, they just alias to the same utilities set
 - `.` @craft/text - minor prompt update
@@ -669,36 +665,36 @@ BIG ERROR - This won't compile; some files are missing. Use v0.6.9.
 - `^` install - installing pack check version now to make sure greater than.
 - `>` refactors - tui, printers, tests_installer, tests_packer
 
-## 2025-03-04 - [v0.6.6](https://github.com/jeremychone/rust-devai/compare/v0.6.5...v0.6.6)
+## 2025-03-04 - [v0.6.6](https://github.com/aipack-ai/aipack/compare/v0.6.5...v0.6.6)
 
 - `.` Minor cleanup and update AIPACK resource links and text.
 
-## 2025-03-02 - [v0.6.5](https://github.com/jeremychone/rust-devai/compare/v0.6.4...v0.6.5)
+## 2025-03-02 - [v0.6.5](https://github.com/aipack-ai/aipack/compare/v0.6.4...v0.6.5)
 
 - `!` now pack `jc@coder` is not preinstalled. Install it with `aip install jc@coder`
 - `.` refators and fixes
 
-## 2025-03-01 - [v0.6.4](https://github.com/jeremychone/rust-devai/compare/v0.6.3...v0.6.4)
+## 2025-03-01 - [v0.6.4](https://github.com/aipack-ai/aipack/compare/v0.6.3...v0.6.4)
 
 - `^` demo & jc agents - change default prompt file to be under .aipack/.prompt/namespace@pack_name/...-prompt.md
 - `-` (#53) core@ask-aipack - first pass at fixing the `aip run core@ask-aipack`
 - `^` lua - file.list.. - added {absolute} option
 - `-` init-base - fix no print issue
 
-## 2025-02-28 - [v0.6.3](https://github.com/jeremychone/rust-devai/compare/v0.6.2...v0.6.3)
+## 2025-02-28 - [v0.6.3](https://github.com/aipack-ai/aipack/compare/v0.6.2...v0.6.3)
 
 - `+` **pricing** - first pass at adding pricing. Now, when available, `ai_response.price_usd` and added in `ai_response.info`
 - `+` **install** - Now can do `aip install path/to/file.aipack`
 - `>` major internal refactor - pack, packer (and first wire for aip install)
 
-## 2025-02-28 - [v0.6.2](https://github.com/jeremychone/rust-devai/compare/v0.6.1...v0.6.2)
+## 2025-02-28 - [v0.6.2](https://github.com/aipack-ai/aipack/compare/v0.6.1...v0.6.2)
 
 - `-` @coder - normalize coder to use four backtics for code block
 - `-` jc@coder - fix the 6 backticks to be 4, which is the correct standard (for extract_blocks and extract_sections)
 - `+` pack - template generation
 - `+` pack - first pass at pack dir `aip pack some/path/to/dir
 
-## 2025-02-27 - [v0.6.1](https://github.com/jeremychone/rust-devai/compare/v0.6.0...v0.6.1)
+## 2025-02-27 - [v0.6.1](https://github.com/aipack-ai/aipack/compare/v0.6.0...v0.6.1)
 
 - `!` workspace - do not add .aipack/pack/custom on init anymore (still part of pack resolution)
 - `-` aipbase - fix core/ask-aipack/
@@ -713,32 +709,32 @@ BIG ERROR - This won't compile; some files are missing. Use v0.6.9.
 
 - See [README.md](README.md)
 
-## 2025-02-23 - [v0.5.12](https://github.com/jeremychone/rust-devai/compare/v0.5.11...v0.5.12)
+## 2025-02-23 - [v0.5.12](https://github.com/aipack-ai/aipack/compare/v0.5.11...v0.5.12)
 
 - `*` readme - NOTICE about AIPACK migration
 - `.` rust - update to 2024 edition, rust-version 1.85
 - `^` lua - aip.text.extract_line_blocks error handling when options.starts_with is missing
 - `^` agent - coder - fine tune prompt & move the initial doc below the ====
 
-## 2025-02-22 - [v0.5.11](https://github.com/jeremychone/rust-devai/compare/v0.5.9...v0.5.11)
+## 2025-02-22 - [v0.5.11](https://github.com/aipack-ai/aipack/compare/v0.5.9...v0.5.11)
 
 - `+` Parametric Agents with support for `#!meta` prompt code blocks
 - `+` `coder` agent
 - ... many more
 
-## 2025-01-27 - [v0.5.9](https://github.com/jeremychone/rust-devai/compare/v0.5.8...v0.5.9)
+## 2025-01-27 - [v0.5.9](https://github.com/aipack-ai/aipack/compare/v0.5.8...v0.5.9)
 
 - `^` groq - update genai to 0.1.19 for Groq deepseek-r1-distill-llama-70b
 
-## 2025-01-23 - [v0.5.8](https://github.com/jeremychone/rust-devai/compare/v0.5.7...v0.5.8)
+## 2025-01-23 - [v0.5.8](https://github.com/aipack-ai/aipack/compare/v0.5.7...v0.5.8)
 
 - `^` genai - use genai v0.1.18 for local and remote deepseek support
 
-## 2025-01-23 - [v0.5.7](https://github.com/jeremychone/rust-devai/compare/v0.5.6...v0.5.7)
+## 2025-01-23 - [v0.5.7](https://github.com/aipack-ai/aipack/compare/v0.5.6...v0.5.7)
 
 - `-` (#24) fix - Compile - does not compile in non macos
 
-## 2025-01-20 - [v0.5.6](https://github.com/jeremychone/rust-devai/compare/v0.5.4...v0.5.6)
+## 2025-01-20 - [v0.5.6](https://github.com/aipack-ai/aipack/compare/v0.5.4...v0.5.6)
 
 IMPORTANT: Can't compile on non-Mac. See v0.5.7 for fix.
 
@@ -780,13 +776,13 @@ IMPORTANT: Can't compile on non-Mac. See v0.5.7 for fix.
 
 Thanks to [Kees Jongenburger](https://github.com/keesj) for reporting
 
-- `-` Fix critical bug - [#23 cli issue - devai init fails when the .devai directory does not exits](https://github.com/jeremychone/rust-devai/issues/23)
+- `-` Fix critical bug - [#23 cli issue - devai init fails when the .devai directory does not exits](https://github.com/aipack-ai/aipack/issues/23)
 
 ## 2024-12-11 - `0.5.2`
 
 > NOTE - This version introduced a critical bug (when .devai/ did not exist).
 
-         See [#23](https://github.com/jeremychone/rust-devai/issues/23)
+         See [#23](https://github.com/aipack-ai/aipack/issues/23)
          Use `0.5.3` and above
 
 - `+` lua - add `aip.file.ensure_exists(path, optional_content)`
