@@ -18,6 +18,13 @@
 # !.aipack/pack/custom/
 # !.aipack/pack/custom/**
 
+# -- Web dev
+*.js.map
+*.css.map
+## typically, do not want those compiled files (uncomment)
+#**/web-content/**/*.js
+#**/web-content/**/*.css
+
 # -- Dev default
 tmp/
 dist/
