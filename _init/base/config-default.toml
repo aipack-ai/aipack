@@ -78,4 +78,4 @@ f-gpt-oss-20b   = "fireworks::gpt-oss-20b"
 f-dflash        = "fireworks::deepseek-v4-flash-0731"
 f-dpro          = "fireworks::deepseek-v4-pro"
 # -- xai
-grok            = "grok-4.5"
+grok            = "grok-4.6"
