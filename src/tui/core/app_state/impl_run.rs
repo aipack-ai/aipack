@@ -29,6 +29,39 @@ impl AppState {
 		self.core.selected_loop_id
 	}
 
+	#[allow(unused)]
+	pub fn is_selected_on_top_loop(&self) -> bool {
+		if let Some(selected_loop_id) = self.selected_loop_id()
+			&& let Some(top_loop_id) = self.core.run_item_store.top_loop_id()
+		{
+			selected_loop_id == top_loop_id
+		} else {
+			false
+		}
+	}
+
+	#[allow(unused)]
+	pub fn is_selected_on_top_run(&self) -> bool {
+		if let Some(current_run) = self.current_run_item()
+			&& let Some(top_run_id) = self.core.run_item_store.top_run_id()
+		{
+			current_run.id() == top_run_id
+		} else {
+			false
+		}
+	}
+
+	#[allow(unused)]
+	pub fn is_selected_on_top_run_of_top_loop(&self) -> bool {
+		if let Some(current_run) = self.current_run_item()
+			&& let Some(top_loop_run_id) = self.core.run_item_store.top_run_id_of_top_loop()
+		{
+			current_run.id() == top_loop_run_id
+		} else {
+			false
+		}
+	}
+
 	pub fn set_loop_id(&mut self, loop_id: Id) {
 		self.core.set_loop_by_id(loop_id);
 	}
@@ -294,6 +327,49 @@ mod tests {
 		state.offset_run_idx_in_visible_nav(-1);
 		assert_eq!(state.selected_loop_id(), Some(loop_id));
 		assert!(state.current_run_item().is_none());
+
+		Ok(())
+	}
+
+	#[tokio::test]
+	async fn test_app_state_selection_position_helpers() -> Result<()> {
+		// -- Setup & Fixtures
+		let mm = ModelManager::new().await?;
+		let first_run_id = RunBmc::create(&mm, run_for_test("first"))?;
+		let loop_id = LoopBmc::create_for_first_member(&mm, first_run_id)?;
+		let member_run_id = LoopBmc::create_member(&mm, loop_id, run_for_test("member"))?;
+		LoopBmc::set_pending(&mm, loop_id, false)?;
+
+		let loop_info = LoopBmc::get(&mm, loop_id)?;
+		let runs = vec![RunBmc::get(&mm, member_run_id)?, RunBmc::get(&mm, first_run_id)?];
+		let store = RunItemStore::new_with_loops(
+			runs,
+			vec![RunNavGroup {
+				loop_info,
+				member_ids: vec![member_run_id, first_run_id],
+			}],
+		);
+
+		let mut state = AppState::new(mm, LastAppEvent::default())?;
+		state.core_mut().run_item_store = store;
+
+		// -- Check loop header selection
+		state.set_loop_id(loop_id);
+		assert!(state.is_selected_on_top_loop());
+		assert!(!state.is_selected_on_top_run());
+		assert!(!state.is_selected_on_top_run_of_top_loop());
+
+		// -- Check top run of top loop selection
+		state.set_run_id(member_run_id);
+		assert!(!state.is_selected_on_top_loop());
+		assert!(state.is_selected_on_top_run());
+		assert!(state.is_selected_on_top_run_of_top_loop());
+
+		// -- Check older run selection
+		state.set_run_id(first_run_id);
+		assert!(!state.is_selected_on_top_loop());
+		assert!(!state.is_selected_on_top_run());
+		assert!(!state.is_selected_on_top_run_of_top_loop());
 
 		Ok(())
 	}

@@ -20,6 +20,25 @@ impl RunItemStore {
 		&self.nav_rows
 	}
 
+	#[allow(unused)]
+	pub fn top_loop_id(&self) -> Option<Id> {
+		self.nav_rows.iter().find_map(|row| row.loop_info().map(|l| l.id))
+	}
+
+	#[allow(unused)]
+	pub fn top_run_id(&self) -> Option<Id> {
+		self.nav_rows.iter().find_map(|row| row.run_id())
+	}
+
+	#[allow(unused)]
+	pub fn top_run_id_of_top_loop(&self) -> Option<Id> {
+		let top_loop_id = self.top_loop_id()?;
+		self.nav_rows.iter().find_map(|row| match row {
+			RunNavRow::Run { item, loop_id: Some(lid) } if *lid == top_loop_id => Some(item.id()),
+			_ => None,
+		})
+	}
+
 	pub fn visible_nav_rows(&self, root_id: Option<Id>) -> Vec<&RunNavRow> {
 		self.nav_rows
 			.iter()
@@ -699,6 +718,39 @@ mod tests {
 		assert_eq!(dash_data.models.len(), 2);
 		let gpt4o_model = dash_data.models.iter().find(|m| m.name == "gpt-4o").ok_or("GPT-4o model missing")?;
 		assert_eq!(gpt4o_model.total_duration_us, Some(1_000_000));
+
+		Ok(())
+	}
+
+	#[tokio::test]
+	async fn test_tui_core_types_run_item_store_top_positions() -> Result<()> {
+		// -- Setup & Fixtures
+		let mm = ModelManager::new().await?;
+		let standalone_id = RunBmc::create(&mm, run_for_test("standalone"))?;
+		let first_run_id = RunBmc::create(&mm, run_for_test("first"))?;
+		let loop_id = LoopBmc::create_for_first_member(&mm, first_run_id)?;
+		let member_run_id = LoopBmc::create_member(&mm, loop_id, run_for_test("member"))?;
+		LoopBmc::set_pending(&mm, loop_id, false)?;
+
+		let loop_info = LoopBmc::get(&mm, loop_id)?;
+		let runs = vec![
+			RunBmc::get(&mm, member_run_id)?,
+			RunBmc::get(&mm, first_run_id)?,
+			RunBmc::get(&mm, standalone_id)?,
+		];
+
+		let store = RunItemStore::new_with_loops(
+			runs,
+			vec![RunNavGroup {
+				loop_info,
+				member_ids: vec![member_run_id, first_run_id],
+			}],
+		);
+
+		// -- Exec & Check
+		assert_eq!(store.top_loop_id(), Some(loop_id));
+		assert_eq!(store.top_run_id(), Some(member_run_id));
+		assert_eq!(store.top_run_id_of_top_loop(), Some(member_run_id));
 
 		Ok(())
 	}

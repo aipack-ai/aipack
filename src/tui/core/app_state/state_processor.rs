@@ -395,10 +395,14 @@ fn refresh_data(state: &mut AppState, refresh: RefreshDecision) {
 }
 
 fn refresh_runs(state: &mut AppState) {
-	// -- Load runs and keep previous idx for later comparison
+	// -- Capture previous selection state before updating store
 	let prev_run_id = state.core().run_id;
+	let prev_loop_id = state.selected_loop_id();
+	let prev_run_idx = state.core().run_idx;
+	let was_on_top_loop = state.is_selected_on_top_loop();
+	let was_on_top_run = state.is_selected_on_top_run();
+
 	let new_runs = RunBmc::list_for_display(state.mm(), None).unwrap_or_default();
-	let has_new_runs = new_runs.len() != state.run_items().len();
 	let loop_groups = LoopBmc::list(state.mm(), None)
 		.unwrap_or_default()
 		.into_iter()
@@ -414,45 +418,28 @@ fn refresh_runs(state: &mut AppState) {
 	let run_item_store = RunItemStore::new_with_loops(new_runs, loop_groups);
 	state.core_mut().run_item_store = run_item_store;
 
-	// only change if we have new runs
-	if has_new_runs {
-		let prev_run_idx = state.core().run_idx;
+	{
+		let inner = state.core_mut();
 
-		{
-			let inner = state.core_mut();
-
-			// When the runs panel is hidden, always pin the latest run (first run index) run.
-			if !inner.show_runs {
-				inner.set_run_by_idx(0);
-			} else {
-				// if the prev_run_idx was at 0, then, we keep it at 0
-				if prev_run_idx == Some(0) {
-					inner.set_run_by_idx(0);
-				}
-				// otherwise, we preserve the previous id
-				else if let Some(prev_run_id) = prev_run_id {
-					inner.set_run_by_id(prev_run_id);
-				} else {
-					inner.set_run_by_idx(0);
-				}
-			}
-		}
-
-		// -- Reset some view state if run selection changed
-		// TODO: Need to check if still needed.
-		if state.core().run_idx != prev_run_idx {
-			let inner = state.core_mut();
-			inner.task_idx = None;
+		// When the runs panel is hidden, always pin the latest run (first run index) run.
+		if !inner.show_runs {
+			inner.set_run_by_idx(0);
+		} else if was_on_top_loop && let Some(prev_loop_id) = prev_loop_id {
+			inner.set_loop_by_id(prev_loop_id);
+		} else if was_on_top_run {
+			inner.set_run_by_idx(0);
+		} else if let Some(prev_run_id) = prev_run_id {
+			inner.set_run_by_id(prev_run_id);
+		} else if let Some(prev_loop_id) = prev_loop_id {
+			inner.set_loop_by_id(prev_loop_id);
+		} else {
+			inner.set_run_by_idx(0);
 		}
 	}
 
-	// Preserve the selected run when loop metadata changes without changing the run count.
-	if !has_new_runs && let Some(prev_run_id) = prev_run_id {
-		let prev_run_idx = state.core().run_idx;
-		state.core_mut().set_run_by_id(prev_run_id);
-		if state.core().run_idx != prev_run_idx {
-			state.core_mut().task_idx = None;
-		}
+	// Reset task_idx if selected run or loop changed
+	if state.core().run_idx != prev_run_idx || state.core().selected_loop_id != prev_loop_id {
+		state.core_mut().task_idx = None;
 	}
 }
 
@@ -726,3 +713,136 @@ fn process_actions(state: &mut AppState) {
 }
 
 // endregion: --- Action Processing
+
+// region:    --- Tests
+
+#[cfg(test)]
+mod tests {
+	use super::*;
+	use crate::model::{LoopBmc, ModelManager, RunBmc, RunForCreate, RunForUpdate};
+	use crate::tui::core::event::LastAppEvent;
+
+	type Result<T> = core::result::Result<T, Box<dyn std::error::Error>>;
+
+	#[tokio::test]
+	async fn test_state_processor_refresh_runs_keeps_top_loop_selection() -> Result<()> {
+		// -- Setup & Fixtures
+		let mm = ModelManager::new().await?;
+		let first_run_id = RunBmc::create(&mm, run_for_test("first"))?;
+		let loop_id = LoopBmc::create_for_first_member(&mm, first_run_id)?;
+		let _second_run_id = LoopBmc::create_member(&mm, loop_id, run_for_test("second"))?;
+		LoopBmc::set_pending(&mm, loop_id, false)?;
+
+		let mut state = AppState::new(mm.clone(), LastAppEvent::default())?;
+		process_app_state(&mut state, ProcessAppStateOpts::default());
+
+		// Select the loop header
+		state.set_loop_id(loop_id);
+		assert_eq!(state.selected_loop_id(), Some(loop_id));
+
+		// -- Exec: Add another member run to the loop
+		let third_run_id = LoopBmc::reopen_and_create_member(&mm, loop_id, run_for_test("third"))?;
+		process_app_state(&mut state, ProcessAppStateOpts::default());
+
+		// -- Check
+		assert_eq!(state.selected_loop_id(), Some(loop_id));
+		assert!(state.current_run_item().is_none());
+
+		// Complete the run
+		RunBmc::update(
+			&mm,
+			third_run_id,
+			RunForUpdate {
+				end: Some(now_micro().into()),
+				..Default::default()
+			},
+		)?;
+		process_app_state(&mut state, ProcessAppStateOpts::default());
+
+		assert_eq!(state.selected_loop_id(), Some(loop_id));
+		assert!(state.current_run_item().is_none());
+
+		Ok(())
+	}
+
+	#[tokio::test]
+	async fn test_state_processor_refresh_runs_advances_top_run_selection() -> Result<()> {
+		// -- Setup & Fixtures
+		let mm = ModelManager::new().await?;
+		let first_run_id = RunBmc::create(&mm, run_for_test("first"))?;
+		let loop_id = LoopBmc::create_for_first_member(&mm, first_run_id)?;
+
+		let mut state = AppState::new(mm.clone(), LastAppEvent::default())?;
+		process_app_state(&mut state, ProcessAppStateOpts::default());
+
+		// Initial selection is on the top run
+		assert_eq!(state.current_run_item().map(|r| r.id()), Some(first_run_id));
+		assert!(state.selected_loop_id().is_none());
+
+		// -- Exec: Add second member run
+		let second_run_id = LoopBmc::create_member(&mm, loop_id, run_for_test("second"))?;
+		process_app_state(&mut state, ProcessAppStateOpts::default());
+
+		// -- Check: Selection auto-advances to the new top run
+		assert_eq!(state.current_run_item().map(|r| r.id()), Some(second_run_id));
+		assert!(state.selected_loop_id().is_none());
+
+		Ok(())
+	}
+
+	#[tokio::test]
+	async fn test_state_processor_refresh_runs_preserves_historical_selection() -> Result<()> {
+		// -- Setup & Fixtures
+		let mm = ModelManager::new().await?;
+		let first_run_id = RunBmc::create(&mm, run_for_test("first"))?;
+		let loop_1_id = LoopBmc::create_for_first_member(&mm, first_run_id)?;
+		let _second_run_id = LoopBmc::create_member(&mm, loop_1_id, run_for_test("second"))?;
+		LoopBmc::set_pending(&mm, loop_1_id, false)?;
+
+		let mut state = AppState::new(mm.clone(), LastAppEvent::default())?;
+		process_app_state(&mut state, ProcessAppStateOpts::default());
+
+		// Select historical run (first_run_id)
+		state.set_run_id(first_run_id);
+		assert_eq!(state.current_run_item().map(|r| r.id()), Some(first_run_id));
+
+		// -- Exec: Create a new standalone run and loop
+		let third_run_id = RunBmc::create(&mm, run_for_test("third"))?;
+		let loop_2_id = LoopBmc::create_for_first_member(&mm, third_run_id)?;
+		process_app_state(&mut state, ProcessAppStateOpts::default());
+
+		// -- Check: Selection remains on historical first_run_id
+		assert_eq!(state.current_run_item().map(|r| r.id()), Some(first_run_id));
+		assert!(state.selected_loop_id().is_none());
+
+		// Select older loop_1_id
+		state.set_loop_id(loop_1_id);
+		assert_eq!(state.selected_loop_id(), Some(loop_1_id));
+
+		// Add a new member to loop 2
+		let _fourth_run_id = LoopBmc::create_member(&mm, loop_2_id, run_for_test("fourth"))?;
+		process_app_state(&mut state, ProcessAppStateOpts::default());
+
+		// -- Check: Selection remains on loop_1_id
+		assert_eq!(state.selected_loop_id(), Some(loop_1_id));
+		assert!(state.current_run_item().is_none());
+
+		Ok(())
+	}
+
+	// region:    --- Support
+
+	fn run_for_test(label: &str) -> RunForCreate {
+		RunForCreate {
+			parent_id: None,
+			agent_name: Some(label.to_string()),
+			agent_path: Some(format!("path/{label}")),
+			has_task_stages: None,
+			has_prompt_parts: None,
+		}
+	}
+
+	// endregion: --- Support
+}
+
+// endregion: --- Tests
