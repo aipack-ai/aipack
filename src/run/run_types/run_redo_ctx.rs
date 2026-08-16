@@ -106,6 +106,7 @@ impl RunRedoCtx {
 		self.inner.flow_redo_count
 	}
 
+	#[allow(dead_code)]
 	pub fn retryable(&self) -> bool {
 		self.inner.retryable
 	}
@@ -117,9 +118,35 @@ impl RunRedoCtx {
 		Self { inner: Arc::new(inner) }
 	}
 
+	#[allow(dead_code)]
 	pub fn with_retryable(self, retryable: bool) -> Self {
 		let mut inner = (*self.inner).clone();
 		inner.retryable = retryable;
+		Self { inner: Arc::new(inner) }
+	}
+
+	#[allow(dead_code)]
+	pub fn with_loop_id(self, loop_id: Option<Id>) -> Self {
+		let mut inner = (*self.inner).clone();
+		inner.loop_id = loop_id;
+		Self { inner: Arc::new(inner) }
+	}
+
+	#[allow(dead_code)]
+	pub fn with_redo_requested(self, redo_requested: bool) -> Self {
+		let mut inner = (*self.inner).clone();
+		inner.redo_requested = redo_requested;
+		Self { inner: Arc::new(inner) }
+	}
+
+	#[allow(dead_code)]
+	pub fn reset_loop_and_redo(self) -> Self {
+		let mut inner = (*self.inner).clone();
+		inner.loop_id = None;
+		inner.redo_requested = false;
+		inner.flow_redo_count = 0;
+		inner.run_options = inner.run_options.clone().with_flow_redo_count(0);
+		inner.retryable = false;
 		Self { inner: Arc::new(inner) }
 	}
 }
@@ -137,3 +164,52 @@ struct CtxInner {
 	flow_redo_count: i32,
 	retryable: bool,
 }
+
+// region:    --- Tests
+
+#[cfg(test)]
+mod tests {
+	type Result<T> = core::result::Result<T, Box<dyn std::error::Error>>; // For tests.
+
+	use super::*;
+	use clap::Parser;
+
+	#[tokio::test]
+	async fn test_run_redo_ctx_reset_loop_and_redo() -> Result<()> {
+		// -- Setup & Fixtures
+		let runtime = Runtime::new_test_runtime_sandbox_01().await?;
+		let agent = Agent::mock_from_content(
+			r#"
+# Data
+```lua
+return "ok"
+```
+"#,
+		)?;
+		let run_args = crate::exec::cli::RunArgs::try_parse_from(["aip", "test-agent"])?;
+		let run_options = RunTopAgentParams::new(run_args)?;
+
+		let ctx = RunRedoCtx::with_identity(
+			runtime,
+			agent,
+			run_options,
+			1.into(),
+			Some(10.into()),
+			true,
+			3,
+		);
+
+		// -- Exec
+		let reset_ctx = ctx.reset_loop_and_redo();
+
+		// -- Check
+		assert!(reset_ctx.loop_id().is_none());
+		assert!(!reset_ctx.redo_requested());
+		assert_eq!(reset_ctx.flow_redo_count(), 0);
+		assert!(!reset_ctx.retryable());
+
+		Ok(())
+	}
+}
+
+// endregion: --- Tests

@@ -464,3 +464,106 @@ return data
 
 	Ok(())
 }
+
+#[tokio::test]
+async fn test_run_agent_script_redo_reset_after_failure() -> Result<()> {
+	// -- Setup & Fixtures
+	let runtime = Runtime::new_test_runtime_sandbox_01().await?;
+	let redo_agent = Agent::mock_from_content(
+		r#"
+# Before All
+```lua
+return aip.flow.redo_run()
+```
+
+# Data
+```lua
+return "redo"
+```
+
+# Output
+```lua
+return data
+```
+	"#,
+	)?;
+	let failing_agent = Agent::mock_from_content(
+		r#"
+# Data
+```lua
+error("Intentional failure")
+```
+	"#,
+	)?;
+	let normal_agent = Agent::mock_from_content(
+		r#"
+# Data
+```lua
+return "done"
+```
+
+# Output
+```lua
+return data
+```
+	"#,
+	)?;
+	let run_options = RunBaseOptions::default();
+
+	// -- Exec
+	// 1. First run creates a loop with redo
+	let first = crate::run::run_agent_with_identity(
+		&runtime,
+		None,
+		redo_agent,
+		None,
+		&run_options,
+		true,
+		None,
+		false,
+	)
+	.await?;
+	let loop_id = first.loop_id.ok_or("The first redo should create a loop")?;
+
+	// 2. Second run fails inside the loop
+	let second_res = crate::run::run_agent_with_identity(
+		&runtime,
+		None,
+		failing_agent,
+		None,
+		&run_options,
+		true,
+		Some(loop_id),
+		false,
+	)
+	.await;
+	assert!(second_res.is_err(), "Second run should fail");
+
+	// 3. Verify loop is marked pending = false on failure
+	let loop_info = crate::model::LoopBmc::get(runtime.mm(), loop_id)?;
+	assert!(!loop_info.pending, "Failed loop should not remain pending");
+
+	// 4. Third run is a fresh manual rerun (loop_id: None)
+	let third = crate::run::run_agent_with_identity(
+		&runtime,
+		None,
+		normal_agent,
+		None,
+		&run_options,
+		true,
+		None,
+		false,
+	)
+	.await?;
+
+	let third_run = crate::model::RunBmc::get(runtime.mm(), third.run_id)?;
+
+	// -- Check
+	assert!(third_run.loop_id.is_none(), "Manual rerun after failure should not be part of the old loop");
+	assert_eq!(third.loop_id, None);
+
+	let members = crate::model::LoopBmc::list_members(runtime.mm(), loop_id)?;
+	assert_eq!(members.len(), 2, "Failed loop should contain only the first 2 runs");
+
+	Ok(())
+}

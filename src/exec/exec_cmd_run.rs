@@ -103,14 +103,13 @@ pub async fn exec_run_redo(run_redo_ctx: &RunRedoCtx) -> Option<RunRedoCtx> {
 		}
 	};
 
-	let retryable = run_redo_ctx.retryable();
-	let loop_id = if run_redo_ctx.redo_requested() || retryable {
+	let loop_id = if run_redo_ctx.redo_requested() {
 		run_redo_ctx.loop_id()
 	} else {
 		None
 	};
 
-	match do_run(&run_options, runtime, &agent, loop_id, retryable).await {
+	match do_run(&run_options, runtime, &agent, loop_id, false).await {
 		Ok(execution) => Some(RunRedoCtx::with_identity(
 			runtime.clone(),
 			agent,
