@@ -4,7 +4,7 @@ use crate::model::{Id, ModelEvent, ModelManager, Task};
 use crate::support::time::now_micro;
 use crate::tui::core::event::{AppActionEvent, LastAppEvent};
 use crate::tui::core::{
-	AppStage, ConfigTab, MouseEvt, OverviewTasksMode, RunItemStore, RunTab, RunTasksInfo, ScrollZones,
+	AppStage, ConfigTab, GroupDashTab, MouseEvt, OverviewTasksMode, RunItemStore, RunTab, RunTasksInfo, ScrollZones,
 };
 use crate::tui::view::PopupView;
 use crossterm::event::MouseEvent;
@@ -45,6 +45,9 @@ impl AppState {
 
 			// -- RunMainView
 			run_tab: RunTab::Tasks, // Tasks tab by default
+
+			// -- GroupDashView
+			group_dash_tab: GroupDashTab::default(),
 
 			// -- RunOverview
 			overview_tasks_mode: OverviewTasksMode::Auto,

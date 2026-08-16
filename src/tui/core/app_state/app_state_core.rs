@@ -2,8 +2,8 @@ use super::SysState;
 use crate::model::{ErrRec, Id, ModelManager, Task};
 use crate::tui::core::event::{AppActionEvent, LastAppEvent};
 use crate::tui::core::{
-	AppStage, ConfigTab, GroupDashData, MouseEvt, OverviewTasksMode, RunItemStore, RunTab, RunTasksInfo, ScrollIden,
-	ScrollZone, ScrollZones, UiAction,
+	AppStage, ConfigTab, GroupDashData, GroupDashTab, MouseEvt, OverviewTasksMode, RunItemStore, RunTab, RunTasksInfo,
+	ScrollIden, ScrollZone, ScrollZones, UiAction,
 };
 use crate::tui::view::PopupView;
 use arboard::Clipboard;
@@ -44,6 +44,10 @@ pub(in crate::tui::core) struct AppStateCore {
 
 	// -- RunMainView
 	pub run_tab: RunTab,
+
+	// -- GroupDashView
+	#[allow(unused)]
+	pub group_dash_tab: GroupDashTab,
 
 	// -- RunOverview
 	pub overview_tasks_mode: OverviewTasksMode,

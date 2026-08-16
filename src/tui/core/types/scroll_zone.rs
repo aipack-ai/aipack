@@ -7,6 +7,7 @@ pub enum ScrollIden {
 	TasksNav,
 	TaskContent,
 	OverviewContent,
+	GroupDashContent,
 }
 
 #[derive(Debug, Default)]
@@ -72,6 +73,7 @@ impl Default for ScrollZones {
 		zones.insert(ScrollIden::TasksNav, ScrollZone::default());
 		zones.insert(ScrollIden::TaskContent, ScrollZone::default());
 		zones.insert(ScrollIden::OverviewContent, ScrollZone::default());
+		zones.insert(ScrollIden::GroupDashContent, ScrollZone::default());
 
 		Self { zones }
 	}

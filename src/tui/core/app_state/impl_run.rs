@@ -1,6 +1,6 @@
 use crate::model::Id;
 use crate::support::time::tick_count;
-use crate::tui::core::{AppState, GroupDashData, GroupDashTarget, RunItem, RunNavRow, RunTab};
+use crate::tui::core::{AppState, GroupDashData, GroupDashTab, GroupDashTarget, RunItem, RunNavRow, RunTab};
 use crate::tui::support::offset_and_clamp_option_idx_in_len;
 
 /// RunsView
@@ -122,6 +122,16 @@ impl AppState {
 
 	pub fn set_run_tab(&mut self, run_tab: RunTab) {
 		self.core.run_tab = run_tab;
+	}
+
+	#[allow(unused)]
+	pub fn group_dash_tab(&self) -> GroupDashTab {
+		self.core.group_dash_tab
+	}
+
+	#[allow(unused)]
+	pub fn set_group_dash_tab(&mut self, tab: GroupDashTab) {
+		self.core.group_dash_tab = tab;
 	}
 
 	#[allow(unused)]

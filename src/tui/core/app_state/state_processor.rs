@@ -249,17 +249,32 @@ pub fn process_app_state(state: &mut AppState, opts: ProcessAppStateOpts) {
 
 	// -- Tabs navigation (Run view)
 	if let Some(code) = state.last_app_event().as_key_code() {
-		let current_run_tab = state.run_tab();
-		match code {
-			KeyCode::Char('j') => {
-				state.set_run_tab(current_run_tab.prev());
-				state.core_mut().do_redraw = true;
+		if state.selected_loop_id().is_some() {
+			let current_group_tab = state.group_dash_tab();
+			match code {
+				KeyCode::Char('j') => {
+					state.set_group_dash_tab(current_group_tab.prev());
+					state.core_mut().do_redraw = true;
+				}
+				KeyCode::Char('l') => {
+					state.set_group_dash_tab(current_group_tab.next());
+					state.core_mut().do_redraw = true;
+				}
+				_ => (),
 			}
-			KeyCode::Char('l') => {
-				state.set_run_tab(current_run_tab.next());
-				state.core_mut().do_redraw = true;
+		} else {
+			let current_run_tab = state.run_tab();
+			match code {
+				KeyCode::Char('j') => {
+					state.set_run_tab(current_run_tab.prev());
+					state.core_mut().do_redraw = true;
+				}
+				KeyCode::Char('l') => {
+					state.set_run_tab(current_run_tab.next());
+					state.core_mut().do_redraw = true;
+				}
+				_ => (),
 			}
-			_ => (),
 		}
 	};
 

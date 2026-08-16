@@ -65,6 +65,14 @@ impl Run {
 	pub fn is_done(&self) -> bool {
 		self.end.is_some()
 	}
+
+	pub fn duration_us(&self) -> Option<i64> {
+		if let (Some(start), Some(end)) = (self.start, self.end) {
+			Some(end.as_i64() - start.as_i64())
+		} else {
+			None
+		}
+	}
 	// pub fn has_before_all(&self) -> bool {
 	// 	self.ba_start.is_some()
 	// }

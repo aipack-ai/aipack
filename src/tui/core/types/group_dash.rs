@@ -4,6 +4,14 @@ use crate::model::{EpochUs, Id};
 
 // region:    --- Types
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub enum GroupDashTab {
+	#[default]
+	TopRuns,
+	Agents,
+	Models,
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum GroupDashTarget {
 	Loops(Vec<Id>),
@@ -16,6 +24,7 @@ pub struct GroupDashCostEntry {
 	pub name: String,
 	pub cost: f64,
 	pub count: usize,
+	pub total_duration_us: Option<i64>,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -23,6 +32,9 @@ pub struct GroupDashRunEntry {
 	pub run_id: Id,
 	pub label: String,
 	pub cost: f64,
+	pub top_cost: f64,
+	pub total_duration_us: Option<i64>,
+	pub top_duration_us: Option<i64>,
 	pub child_count: usize,
 }
 
@@ -39,6 +51,28 @@ pub struct GroupDashData {
 }
 
 // endregion: --- Types
+
+// region:    --- GroupDashTab Impl
+
+impl GroupDashTab {
+	pub fn next(self) -> Self {
+		match self {
+			Self::TopRuns => Self::Agents,
+			Self::Agents => Self::Models,
+			Self::Models => Self::TopRuns,
+		}
+	}
+
+	pub fn prev(self) -> Self {
+		match self {
+			Self::TopRuns => Self::Models,
+			Self::Agents => Self::TopRuns,
+			Self::Models => Self::Agents,
+		}
+	}
+}
+
+// endregion: --- GroupDashTab Impl
 
 // region:    --- GroupDashTarget Impl
 
@@ -98,11 +132,12 @@ impl GroupDashTarget {
 
 /// Constructors
 impl GroupDashCostEntry {
-	pub fn new(name: impl Into<String>, cost: f64, count: usize) -> Self {
+	pub fn new(name: impl Into<String>, cost: f64, count: usize, total_duration_us: Option<i64>) -> Self {
 		Self {
 			name: name.into(),
 			cost,
 			count,
+			total_duration_us,
 		}
 	}
 }
@@ -113,11 +148,22 @@ impl GroupDashCostEntry {
 
 /// Constructors
 impl GroupDashRunEntry {
-	pub fn new(run_id: Id, label: impl Into<String>, cost: f64, child_count: usize) -> Self {
+	pub fn new(
+		run_id: Id,
+		label: impl Into<String>,
+		cost: f64,
+		top_cost: f64,
+		total_duration_us: Option<i64>,
+		top_duration_us: Option<i64>,
+		child_count: usize,
+	) -> Self {
 		Self {
 			run_id,
 			label: label.into(),
 			cost,
+			top_cost,
+			total_duration_us,
+			top_duration_us,
 			child_count,
 		}
 	}
@@ -162,6 +208,18 @@ mod tests {
 	use super::*;
 
 	#[test]
+	fn test_group_dash_tab_cycling() {
+		let tab = GroupDashTab::TopRuns;
+		assert_eq!(tab.next(), GroupDashTab::Agents);
+		assert_eq!(tab.next().next(), GroupDashTab::Models);
+		assert_eq!(tab.next().next().next(), GroupDashTab::TopRuns);
+
+		assert_eq!(tab.prev(), GroupDashTab::Models);
+		assert_eq!(tab.prev().prev(), GroupDashTab::Agents);
+		assert_eq!(tab.prev().prev().prev(), GroupDashTab::TopRuns);
+	}
+
+	#[test]
 	fn test_group_dash_target_accessors() {
 		let loop_id_1: Id = 10.into();
 		let loop_id_2: Id = 11.into();
@@ -186,9 +244,9 @@ mod tests {
 	fn test_group_dash_data_constructor() {
 		let target = GroupDashTarget::from_loop(1.into());
 		let mtime: EpochUs = 1000.into();
-		let top_run = GroupDashRunEntry::new(1.into(), "run-1", 0.05, 2);
-		let agent = GroupDashCostEntry::new("agent-a", 0.03, 1);
-		let model = GroupDashCostEntry::new("gpt-4o", 0.05, 2);
+		let top_run = GroupDashRunEntry::new(1.into(), "run-1", 0.05, 0.03, Some(500), Some(300), 2);
+		let agent = GroupDashCostEntry::new("agent-a", 0.03, 1, Some(300));
+		let model = GroupDashCostEntry::new("gpt-4o", 0.05, 2, Some(500));
 
 		let data = GroupDashData::new(
 			target.clone(),

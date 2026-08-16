@@ -138,13 +138,19 @@ impl RunItemStore {
 			}
 
 			let mut subtree_cost = root.run().total_cost.unwrap_or(0.0);
+			let top_cost = subtree_cost;
 			let mut child_count = 0;
+			let top_duration_us = root.run().duration_us();
+			let mut total_duration_us = top_duration_us;
 
 			for child_id in root.all_children_ids() {
 				if let Some(child) = self.items_by_id.get(child_id) {
 					all_unique_run_ids.insert(child.id());
 					subtree_cost += child.run().total_cost.unwrap_or(0.0);
 					child_count += 1;
+					if let Some(child_dur) = child.run().duration_us() {
+						total_duration_us = Some(total_duration_us.unwrap_or(0) + child_dur);
+					}
 					if child.run().mtime > max_mtime {
 						max_mtime = child.run().mtime;
 					}
@@ -158,34 +164,49 @@ impl RunItemStore {
 				.or_else(|| root.run().agent_name.clone())
 				.unwrap_or_else(|| format!("Run {}", root.id()));
 
-			top_runs.push(GroupDashRunEntry::new(root.id(), label, subtree_cost, child_count));
+			top_runs.push(GroupDashRunEntry::new(
+				root.id(),
+				label,
+				subtree_cost,
+				top_cost,
+				total_duration_us,
+				top_duration_us,
+				child_count,
+			));
 		}
 
 		let mut total_cost = 0.0;
-		let mut agent_map: HashMap<String, (f64, usize)> = HashMap::new();
-		let mut model_map: HashMap<String, (f64, usize)> = HashMap::new();
+		let mut agent_map: HashMap<String, (f64, usize, Option<i64>)> = HashMap::new();
+		let mut model_map: HashMap<String, (f64, usize, Option<i64>)> = HashMap::new();
 
 		for run_id in &all_unique_run_ids {
 			if let Some(item) = self.items_by_id.get(run_id) {
 				let run = item.run();
 				let cost = run.total_cost.unwrap_or(0.0);
+				let duration = run.duration_us();
 				total_cost += cost;
 
 				let agent_name = run.agent_name.clone().unwrap_or_else(|| "Unknown".to_string());
-				let agent_entry = agent_map.entry(agent_name).or_insert((0.0, 0));
+				let agent_entry = agent_map.entry(agent_name).or_insert((0.0, 0, None));
 				agent_entry.0 += cost;
 				agent_entry.1 += 1;
+				if let Some(dur) = duration {
+					agent_entry.2 = Some(agent_entry.2.unwrap_or(0) + dur);
+				}
 
 				let model_name = run.model.clone().unwrap_or_else(|| "Unknown".to_string());
-				let model_entry = model_map.entry(model_name).or_insert((0.0, 0));
+				let model_entry = model_map.entry(model_name).or_insert((0.0, 0, None));
 				model_entry.0 += cost;
 				model_entry.1 += 1;
+				if let Some(dur) = duration {
+					model_entry.2 = Some(model_entry.2.unwrap_or(0) + dur);
+				}
 			}
 		}
 
 		let mut agents: Vec<GroupDashCostEntry> = agent_map
 			.into_iter()
-			.map(|(name, (cost, count))| GroupDashCostEntry::new(name, cost, count))
+			.map(|(name, (cost, count, dur))| GroupDashCostEntry::new(name, cost, count, dur))
 			.collect();
 		agents.sort_by(|a, b| {
 			b.cost
@@ -196,7 +217,7 @@ impl RunItemStore {
 
 		let mut models: Vec<GroupDashCostEntry> = model_map
 			.into_iter()
-			.map(|(name, (cost, count))| GroupDashCostEntry::new(name, cost, count))
+			.map(|(name, (cost, count, dur))| GroupDashCostEntry::new(name, cost, count, dur))
 			.collect();
 		models.sort_by(|a, b| {
 			b.cost
@@ -618,6 +639,8 @@ mod tests {
 				total_cost: Some(0.12),
 				model: Some("gpt-4o".to_string()),
 				agent_name: Some("agent-alpha".to_string()),
+				start: Some(0.into()),
+				end: Some(1_000_000.into()),
 				..Default::default()
 			},
 		)?;
@@ -630,6 +653,8 @@ mod tests {
 				total_cost: Some(0.08),
 				model: Some("gpt-4o-mini".to_string()),
 				agent_name: Some("agent-beta".to_string()),
+				start: Some(0.into()),
+				end: Some(500_000.into()),
 				..Default::default()
 			},
 		)?;
@@ -662,9 +687,18 @@ mod tests {
 		let member_top = dash_data.top_runs.iter().find(|r| r.run_id == loop_member_id).ok_or("Member top run missing")?;
 		assert_eq!(member_top.child_count, 1);
 		assert!((member_top.cost - 0.20).abs() < 1e-6);
+		assert!((member_top.top_cost - 0.12).abs() < 1e-6);
+		assert_eq!(member_top.top_duration_us, Some(1_000_000));
+		assert_eq!(member_top.total_duration_us, Some(1_500_000));
 
 		assert_eq!(dash_data.agents.len(), 2);
+		let alpha_agent = dash_data.agents.iter().find(|a| a.name == "agent-alpha").ok_or("Alpha agent missing")?;
+		assert_eq!(alpha_agent.total_duration_us, Some(1_000_000));
+		assert_eq!(alpha_agent.count, 1);
+
 		assert_eq!(dash_data.models.len(), 2);
+		let gpt4o_model = dash_data.models.iter().find(|m| m.name == "gpt-4o").ok_or("GPT-4o model missing")?;
+		assert_eq!(gpt4o_model.total_duration_us, Some(1_000_000));
 
 		Ok(())
 	}
