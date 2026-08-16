@@ -4,6 +4,7 @@ mod facade;
 
 mod action_view;
 mod config_view;
+mod group_dash_view;
 mod install_view;
 mod main_view;
 mod popup_view;
@@ -18,6 +19,7 @@ mod task_view;
 
 pub use action_view::*;
 pub use config_view::*;
+pub use group_dash_view::*;
 pub use install_view::*;
 pub use main_view::*;
 pub use popup_view::*;

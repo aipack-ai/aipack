@@ -1,5 +1,6 @@
 // region:    --- Modules
 
+mod group_dash;
 mod link_zone;
 mod mouse_evt;
 mod nav_dir;
@@ -12,6 +13,8 @@ mod run_tasks_info;
 mod scroll_zone;
 mod ui_action;
 
+#[allow(unused_imports)]
+pub use group_dash::*;
 pub use link_zone::*;
 pub use mouse_evt::*;
 pub use nav_dir::*;

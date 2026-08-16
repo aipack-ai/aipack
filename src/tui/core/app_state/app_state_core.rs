@@ -2,8 +2,8 @@ use super::SysState;
 use crate::model::{ErrRec, Id, ModelManager, Task};
 use crate::tui::core::event::{AppActionEvent, LastAppEvent};
 use crate::tui::core::{
-	AppStage, ConfigTab, MouseEvt, OverviewTasksMode, RunItemStore, RunTab, RunTasksInfo, ScrollIden, ScrollZone,
-	ScrollZones, UiAction,
+	AppStage, ConfigTab, GroupDashData, MouseEvt, OverviewTasksMode, RunItemStore, RunTab, RunTasksInfo, ScrollIden,
+	ScrollZone, ScrollZones, UiAction,
 };
 use crate::tui::view::PopupView;
 use arboard::Clipboard;
@@ -40,6 +40,7 @@ pub(in crate::tui::core) struct AppStateCore {
 	// -- RunsView
 	pub run_idx: Option<i32>,
 	pub run_id: Option<Id>,
+	pub selected_loop_id: Option<Id>,
 
 	// -- RunMainView
 	pub run_tab: RunTab,
@@ -54,6 +55,9 @@ pub(in crate::tui::core) struct AppStateCore {
 	pub run_item_store: RunItemStore,
 	pub tasks: Vec<Task>,
 	pub run_tasks_info: Option<RunTasksInfo>,
+
+	// -- Group Dashboard Cache
+	pub group_dash_data: Option<GroupDashData>,
 
 	/// Time of when the current run started
 	pub running_tick_start: Option<i64>,
@@ -87,15 +91,25 @@ pub(in crate::tui::core) struct AppStateCore {
 
 impl AppStateCore {
 	pub fn set_run_by_idx(&mut self, idx: i32) {
+		self.group_dash_data = None;
+		self.selected_loop_id = None;
 		self.run_idx = Some(idx);
 		self.run_id = self.run_item_store.items().get(idx as usize).map(|r| r.id());
 	}
 
 	pub fn set_run_by_id(&mut self, run_id: Id) {
+		self.group_dash_data = None;
+		self.selected_loop_id = None;
 		let run_idx = self.run_item_store.items().iter().position(|r| r.id() == run_id);
 		self.run_idx = run_idx.map(|v| v as i32);
 		// For now, we set it a None if not found (need to revise strategy, can syncup with the by_idx)
 		self.run_id = run_idx.map(|_| run_id);
+	}
+
+	pub fn set_loop_by_id(&mut self, loop_id: Id) {
+		self.selected_loop_id = Some(loop_id);
+		self.run_idx = None;
+		self.run_id = None;
 	}
 
 	pub fn next_overview_tasks_mode(&mut self) -> OverviewTasksMode {

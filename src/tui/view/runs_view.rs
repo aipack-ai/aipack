@@ -1,5 +1,6 @@
-use super::{RunMainView, RunsNavView};
+use super::{GroupDashView, RunMainView, RunsNavView};
 use crate::tui::AppState;
+use crate::tui::core::GroupDashTarget;
 use ratatui::buffer::Buffer;
 use ratatui::layout::{Constraint, Direction, Layout, Rect};
 use ratatui::widgets::StatefulWidget;
@@ -39,6 +40,12 @@ impl StatefulWidget for RunsView {
 		}
 
 		// -- Display the Content block
-		RunMainView.render(main_a, buf, state);
+		if let Some(loop_id) = state.selected_loop_id() {
+			let target = GroupDashTarget::from_loop(loop_id);
+			state.get_or_compute_group_dash_data(&target);
+			GroupDashView.render(main_a, buf, state);
+		} else {
+			RunMainView.render(main_a, buf, state);
+		}
 	}
 }

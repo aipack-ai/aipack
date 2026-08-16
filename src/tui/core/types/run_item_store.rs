@@ -1,5 +1,5 @@
-use crate::model::{Id, Loop, Run};
-use crate::tui::core::{RunItem, RunNavGroup, RunNavRow};
+use crate::model::{EpochUs, Id, Loop, Run};
+use crate::tui::core::{GroupDashCostEntry, GroupDashData, GroupDashRunEntry, GroupDashTarget, RunItem, RunNavGroup, RunNavRow};
 use std::collections::{HashMap, HashSet};
 
 #[derive(Debug, Default, Clone)]
@@ -64,6 +64,160 @@ impl RunItemStore {
 		}
 
 		self.items.iter().filter(|item| children_ids.contains(&item.id())).collect()
+	}
+
+	#[allow(unused)]
+	pub fn target_root_items(&self, target: &GroupDashTarget) -> Vec<&RunItem> {
+		let loop_ids = target.loop_ids();
+		let run_ids = target.run_ids();
+
+		let mut roots = Vec::new();
+		let mut seen_ids = HashSet::new();
+
+		for row in &self.nav_rows {
+			if let RunNavRow::Run { item, loop_id } = row
+				&& item.is_root()
+			{
+				let matches_loop = loop_id.is_some_and(|lid| loop_ids.contains(&lid))
+					|| item.run().loop_id.is_some_and(|lid| loop_ids.contains(&lid));
+				let matches_run = run_ids.contains(&item.id());
+
+				if (matches_loop || matches_run) && seen_ids.insert(item.id()) {
+					roots.push(item);
+				}
+			}
+		}
+
+		for &run_id in run_ids {
+			if let Some(item) = self.items_by_id.get(&run_id)
+				&& seen_ids.insert(item.id())
+			{
+				roots.push(item);
+			}
+		}
+
+		roots
+	}
+
+	#[allow(unused)]
+	pub fn latest_mtime_for_target(&self, target: &GroupDashTarget) -> EpochUs {
+		let roots = self.target_root_items(target);
+		let mut max_mtime = EpochUs::from(0i64);
+
+		for root in roots {
+			if root.run().mtime > max_mtime {
+				max_mtime = root.run().mtime;
+			}
+			for child_id in root.all_children_ids() {
+				if let Some(child) = self.items_by_id.get(child_id)
+					&& child.run().mtime > max_mtime
+				{
+					max_mtime = child.run().mtime;
+				}
+			}
+		}
+
+		max_mtime
+	}
+
+	#[allow(unused)]
+	pub fn compute_group_dash_data(&self, target: &GroupDashTarget) -> Option<GroupDashData> {
+		let roots = self.target_root_items(target);
+		if roots.is_empty() && target.is_empty() {
+			return None;
+		}
+
+		let mut all_unique_run_ids = HashSet::new();
+		let mut top_runs = Vec::new();
+		let mut max_mtime = EpochUs::from(0i64);
+
+		for root in &roots {
+			all_unique_run_ids.insert(root.id());
+			if root.run().mtime > max_mtime {
+				max_mtime = root.run().mtime;
+			}
+
+			let mut subtree_cost = root.run().total_cost.unwrap_or(0.0);
+			let mut child_count = 0;
+
+			for child_id in root.all_children_ids() {
+				if let Some(child) = self.items_by_id.get(child_id) {
+					all_unique_run_ids.insert(child.id());
+					subtree_cost += child.run().total_cost.unwrap_or(0.0);
+					child_count += 1;
+					if child.run().mtime > max_mtime {
+						max_mtime = child.run().mtime;
+					}
+				}
+			}
+
+			let label = root
+				.run()
+				.label
+				.clone()
+				.or_else(|| root.run().agent_name.clone())
+				.unwrap_or_else(|| format!("Run {}", root.id()));
+
+			top_runs.push(GroupDashRunEntry::new(root.id(), label, subtree_cost, child_count));
+		}
+
+		let mut total_cost = 0.0;
+		let mut agent_map: HashMap<String, (f64, usize)> = HashMap::new();
+		let mut model_map: HashMap<String, (f64, usize)> = HashMap::new();
+
+		for run_id in &all_unique_run_ids {
+			if let Some(item) = self.items_by_id.get(run_id) {
+				let run = item.run();
+				let cost = run.total_cost.unwrap_or(0.0);
+				total_cost += cost;
+
+				let agent_name = run.agent_name.clone().unwrap_or_else(|| "Unknown".to_string());
+				let agent_entry = agent_map.entry(agent_name).or_insert((0.0, 0));
+				agent_entry.0 += cost;
+				agent_entry.1 += 1;
+
+				let model_name = run.model.clone().unwrap_or_else(|| "Unknown".to_string());
+				let model_entry = model_map.entry(model_name).or_insert((0.0, 0));
+				model_entry.0 += cost;
+				model_entry.1 += 1;
+			}
+		}
+
+		let mut agents: Vec<GroupDashCostEntry> = agent_map
+			.into_iter()
+			.map(|(name, (cost, count))| GroupDashCostEntry::new(name, cost, count))
+			.collect();
+		agents.sort_by(|a, b| {
+			b.cost
+				.partial_cmp(&a.cost)
+				.unwrap_or(std::cmp::Ordering::Equal)
+				.then_with(|| a.name.cmp(&b.name))
+		});
+
+		let mut models: Vec<GroupDashCostEntry> = model_map
+			.into_iter()
+			.map(|(name, (cost, count))| GroupDashCostEntry::new(name, cost, count))
+			.collect();
+		models.sort_by(|a, b| {
+			b.cost
+				.partial_cmp(&a.cost)
+				.unwrap_or(std::cmp::Ordering::Equal)
+				.then_with(|| a.name.cmp(&b.name))
+		});
+
+		let top_runs_count = top_runs.len();
+		let all_runs_count = all_unique_run_ids.len();
+
+		Some(GroupDashData::new(
+			target.clone(),
+			max_mtime,
+			total_cost,
+			top_runs_count,
+			all_runs_count,
+			top_runs,
+			agents,
+			models,
+		))
 	}
 }
 
@@ -442,6 +596,75 @@ mod tests {
 		assert!(visible_standalone_ids.contains(&standalone_child_id));
 		assert!(!visible_standalone_ids.contains(&loop_member_child_id));
 		assert!(!visible_standalone_ids.contains(&first_child_id));
+
+		Ok(())
+	}
+
+	#[tokio::test]
+	async fn test_tui_core_types_run_item_store_compute_group_dash_data() -> Result<()> {
+		// -- Setup & Fixtures
+		let mm = ModelManager::new().await?;
+		let first_run_id = RunBmc::create(&mm, run_for_test("first"))?;
+		let loop_id = LoopBmc::create_for_first_member(&mm, first_run_id)?;
+		let loop_member_id = LoopBmc::create_member(&mm, loop_id, run_for_test("member"))?;
+		let loop_member_child_id = RunBmc::create(&mm, child_run_for_test(loop_member_id, "member-child"))?;
+		LoopBmc::set_pending(&mm, loop_id, false)?;
+
+		// Set cost and model on member run
+		crate::model::RunBmc::update(
+			&mm,
+			loop_member_id,
+			crate::model::RunForUpdate {
+				total_cost: Some(0.12),
+				model: Some("gpt-4o".to_string()),
+				agent_name: Some("agent-alpha".to_string()),
+				..Default::default()
+			},
+		)?;
+
+		// Set cost and model on child run
+		crate::model::RunBmc::update(
+			&mm,
+			loop_member_child_id,
+			crate::model::RunForUpdate {
+				total_cost: Some(0.08),
+				model: Some("gpt-4o-mini".to_string()),
+				agent_name: Some("agent-beta".to_string()),
+				..Default::default()
+			},
+		)?;
+
+		let loop_info = LoopBmc::get(&mm, loop_id)?;
+		let runs = vec![
+			RunBmc::get(&mm, loop_member_child_id)?,
+			RunBmc::get(&mm, loop_member_id)?,
+			RunBmc::get(&mm, first_run_id)?,
+		];
+
+		let store = RunItemStore::new_with_loops(
+			runs,
+			vec![RunNavGroup {
+				loop_info,
+				member_ids: vec![loop_member_id, first_run_id],
+			}],
+		);
+
+		// -- Exec
+		let target = GroupDashTarget::from_loop(loop_id);
+		let dash_data = store.compute_group_dash_data(&target).ok_or("Should compute dash data")?;
+
+		// -- Check
+		assert_eq!(dash_data.top_runs_count, 2);
+		assert_eq!(dash_data.all_runs_count, 3);
+		assert!((dash_data.total_cost - 0.20).abs() < 1e-6);
+		assert_eq!(dash_data.top_runs.len(), 2);
+
+		let member_top = dash_data.top_runs.iter().find(|r| r.run_id == loop_member_id).ok_or("Member top run missing")?;
+		assert_eq!(member_top.child_count, 1);
+		assert!((member_top.cost - 0.20).abs() < 1e-6);
+
+		assert_eq!(dash_data.agents.len(), 2);
+		assert_eq!(dash_data.models.len(), 2);
 
 		Ok(())
 	}

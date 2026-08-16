@@ -59,6 +59,7 @@ impl StatefulWidget for RunsNavView {
 		// -- Build Runs UI
 		let visible_rows = state.visible_run_nav_rows();
 		let current_run_id = state.current_run_item().map(|r| r.id());
+		let selected_loop_id = state.selected_loop_id();
 		let is_mouse_in_nav = state.is_last_mouse_over(list_a);
 		let items: Vec<ListItem> = visible_rows
 			.iter()
@@ -77,7 +78,10 @@ impl StatefulWidget for RunsNavView {
 							),
 						]);
 
-						if is_mouse_in_nav && state.is_last_mouse_over(list_a.x_row((idx + 1) as u16 - scroll)) {
+						if selected_loop_id == Some(loop_info.id) {
+							line = line.style(style::STL_NAV_ITEM_HIGHLIGHT);
+							line = line.x_fg(style::CLR_TXT_BLACK);
+						} else if is_mouse_in_nav && state.is_last_mouse_over(list_a.x_row((idx + 1) as u16 - scroll)) {
 							line = line.fg(style::CLR_TXT_HOVER);
 						}
 
@@ -156,22 +160,31 @@ fn process_mouse_for_run_nav(state: &mut AppState, nav_a: Rect, scroll: u16) -> 
 		// NOTE: Here not using clamp_idx_in_len to fix issue about last item selected
 		//       when clicking on end of nav panel
 		let current_run_id = state.current_run_item().map(|r| r.id());
+		let selected_loop_id = state.selected_loop_id();
 
 		let new_idx = mouse_evt.y() - nav_a.y + scroll;
 		let new_idx = new_idx as usize;
 
 		let visible_rows = state.visible_run_nav_rows();
-		let Some(target_run_id) = visible_rows.get(new_idx).and_then(|row| row.click_run_id()) else {
+		let Some(target_row) = visible_rows.get(new_idx) else {
 			return false;
 		};
 
-		if Some(target_run_id) != current_run_id {
-			state.set_run_id(target_run_id);
-			// Clear the mouse event so the same click is not reprocessed on the
-			// next render, which would remap the same y-coordinate against a new
-			// visible list (now expanding the clicked root) and select a descendant.
-			state.clear_mouse_evts(true);
-			return true;
+		match target_row {
+			RunNavRow::LoopHeader { loop_info } => {
+				if selected_loop_id != Some(loop_info.id) {
+					state.set_loop_id(loop_info.id);
+					state.clear_mouse_evts(true);
+					return true;
+				}
+			}
+			RunNavRow::Run { item, .. } => {
+				if current_run_id != Some(item.id()) || selected_loop_id.is_some() {
+					state.set_run_id(item.id());
+					state.clear_mouse_evts(true);
+					return true;
+				}
+			}
 		}
 	}
 	false

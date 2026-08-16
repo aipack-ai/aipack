@@ -39,6 +39,7 @@ impl AppState {
 			// -- RunsView
 			run_idx: None,
 			run_id: None,
+			selected_loop_id: None,
 
 			running_tick_start: None,
 
@@ -55,6 +56,7 @@ impl AppState {
 			run_item_store: RunItemStore::default(),
 			tasks: Vec::new(),
 			run_tasks_info: None,
+			group_dash_data: None,
 
 			// -- Stage & Work
 			stage: AppStage::Normal,

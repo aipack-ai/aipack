@@ -34,11 +34,13 @@ impl RunNavRow {
 		}
 	}
 
+	#[allow(unused)]
 	/// Returns the selectable real run ID, excluding non-selectable loop headers.
 	pub fn run_id(&self) -> Option<Id> {
 		self.run_item().map(RunItem::id)
 	}
 
+	#[allow(unused)]
 	/// Returns the real run selected when this row is clicked.
 	pub fn click_run_id(&self) -> Option<Id> {
 		match self {
