@@ -149,6 +149,8 @@ impl RunItemStore {
 		let mut all_unique_run_ids = HashSet::new();
 		let mut top_runs = Vec::new();
 		let mut max_mtime = EpochUs::from(0i64);
+		let mut total_duration_us: Option<i64> = None;
+		let mut cumul_task_duration_us: Option<i64> = None;
 
 		for root in &roots {
 			all_unique_run_ids.insert(root.id());
@@ -156,11 +158,15 @@ impl RunItemStore {
 				max_mtime = root.run().mtime;
 			}
 
+			if let Some(dur) = root.run().duration_us() {
+				total_duration_us = Some(total_duration_us.unwrap_or(0) + dur);
+			}
+
 			let mut subtree_cost = root.run().total_cost.unwrap_or(0.0);
 			let top_cost = subtree_cost;
 			let mut child_count = 0;
 			let top_duration_us = root.run().duration_us();
-			let mut total_duration_us = top_duration_us;
+			let mut root_total_duration_us = top_duration_us;
 
 			for child_id in root.all_children_ids() {
 				if let Some(child) = self.items_by_id.get(child_id) {
@@ -168,7 +174,7 @@ impl RunItemStore {
 					subtree_cost += child.run().total_cost.unwrap_or(0.0);
 					child_count += 1;
 					if let Some(child_dur) = child.run().duration_us() {
-						total_duration_us = Some(total_duration_us.unwrap_or(0) + child_dur);
+						root_total_duration_us = Some(root_total_duration_us.unwrap_or(0) + child_dur);
 					}
 					if child.run().mtime > max_mtime {
 						max_mtime = child.run().mtime;
@@ -188,7 +194,7 @@ impl RunItemStore {
 				label,
 				subtree_cost,
 				top_cost,
-				total_duration_us,
+				root_total_duration_us,
 				top_duration_us,
 				child_count,
 			));
@@ -204,6 +210,10 @@ impl RunItemStore {
 				let cost = run.total_cost.unwrap_or(0.0);
 				let duration = run.duration_us();
 				total_cost += cost;
+
+				if let Some(task_ms) = run.total_task_ms {
+					cumul_task_duration_us = Some(cumul_task_duration_us.unwrap_or(0) + task_ms * 1000);
+				}
 
 				let agent_name = run.agent_name.clone().unwrap_or_else(|| "Unknown".to_string());
 				let agent_entry = agent_map.entry(agent_name).or_insert((0.0, 0, None));
@@ -252,6 +262,8 @@ impl RunItemStore {
 			target.clone(),
 			max_mtime,
 			total_cost,
+			total_duration_us,
+			cumul_task_duration_us,
 			top_runs_count,
 			all_runs_count,
 			top_runs,
@@ -660,6 +672,7 @@ mod tests {
 				agent_name: Some("agent-alpha".to_string()),
 				start: Some(0.into()),
 				end: Some(1_000_000.into()),
+				total_task_ms: Some(800),
 				..Default::default()
 			},
 		)?;
@@ -674,6 +687,7 @@ mod tests {
 				agent_name: Some("agent-beta".to_string()),
 				start: Some(0.into()),
 				end: Some(500_000.into()),
+				total_task_ms: Some(400),
 				..Default::default()
 			},
 		)?;
@@ -701,6 +715,8 @@ mod tests {
 		assert_eq!(dash_data.top_runs_count, 2);
 		assert_eq!(dash_data.all_runs_count, 3);
 		assert!((dash_data.total_cost - 0.20).abs() < 1e-6);
+		assert_eq!(dash_data.total_duration_us, Some(1_000_000));
+		assert_eq!(dash_data.cumul_task_duration_us, Some(1_200_000));
 		assert_eq!(dash_data.top_runs.len(), 2);
 
 		let member_top = dash_data.top_runs.iter().find(|r| r.run_id == loop_member_id).ok_or("Member top run missing")?;
@@ -718,6 +734,40 @@ mod tests {
 		assert_eq!(dash_data.models.len(), 2);
 		let gpt4o_model = dash_data.models.iter().find(|m| m.name == "gpt-4o").ok_or("GPT-4o model missing")?;
 		assert_eq!(gpt4o_model.total_duration_us, Some(1_000_000));
+
+		Ok(())
+	}
+
+	#[tokio::test]
+	async fn test_tui_core_types_run_item_store_compute_group_dash_data_without_task_ms() -> Result<()> {
+		// -- Setup & Fixtures
+		let mm = ModelManager::new().await?;
+		let standalone_id = RunBmc::create(&mm, run_for_test("standalone"))?;
+
+		crate::model::RunBmc::update(
+			&mm,
+			standalone_id,
+			crate::model::RunForUpdate {
+				total_cost: Some(0.05),
+				start: Some(100.into()),
+				end: Some(500_100.into()),
+				total_task_ms: None,
+				..Default::default()
+			},
+		)?;
+
+		let runs = vec![RunBmc::get(&mm, standalone_id)?];
+		let store = RunItemStore::new(runs);
+
+		// -- Exec
+		let target = GroupDashTarget::from_run(standalone_id);
+		let dash_data = store.compute_group_dash_data(&target).ok_or("Should compute dash data")?;
+
+		// -- Check
+		assert_eq!(dash_data.top_runs_count, 1);
+		assert_eq!(dash_data.all_runs_count, 1);
+		assert_eq!(dash_data.total_duration_us, Some(500_000));
+		assert_eq!(dash_data.cumul_task_duration_us, None);
 
 		Ok(())
 	}

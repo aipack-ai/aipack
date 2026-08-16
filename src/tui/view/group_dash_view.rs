@@ -33,7 +33,7 @@ impl StatefulWidget for GroupDashView {
 		let [header_a, _space_1, tabs_a, tabs_line_a, tab_content_a] = Layout::default()
 			.direction(Direction::Vertical)
 			.constraints(vec![
-				Constraint::Length(2), // Summary Header
+				Constraint::Length(3), // Summary Header
 				Constraint::Max(1),    // Space 1
 				Constraint::Length(1), // Tabs
 				Constraint::Max(1),    // Tab Line
@@ -145,10 +145,10 @@ fn render_header(area: Rect, buf: &mut Buffer, data: &crate::tui::core::GroupDas
 	let [lbl_cost, val_cost, lbl_top_runs, val_top_runs, lbl_all_runs, val_all_runs] = Layout::default()
 		.direction(Direction::Horizontal)
 		.constraints(vec![
-			Constraint::Length(13), // "Total Cost:"
-			Constraint::Length(12), // "$X.XX"
-			Constraint::Length(11), // "Top Runs:"
-			Constraint::Length(8),  // "N"
+			Constraint::Length(13), // "Total Cost:" / "Total Dur:"
+			Constraint::Length(12), // "$X.XX" / "X.Xs"
+			Constraint::Length(11), // "Top Runs:" / "Cumul Dur:"
+			Constraint::Length(10), // "N" / "X.Xs"
 			Constraint::Length(11), // "All Runs:"
 			Constraint::Fill(1),    // "M"
 		])
@@ -179,6 +179,25 @@ fn render_header(area: Rect, buf: &mut Buffer, data: &crate::tui::core::GroupDas
 	Paragraph::new(data.all_runs_count.to_string())
 		.style(style::STL_FIELD_VAL)
 		.render(val_all_runs.x_row(1), buf);
+
+	// Row 2: Duration KPIs
+	Paragraph::new("Total Dur:")
+		.style(style::STL_FIELD_LBL)
+		.right_aligned()
+		.render(lbl_cost.x_row(2), buf);
+	Paragraph::new(ui_fmt_duration_us(data.total_duration_us))
+		.style(style::STL_FIELD_VAL)
+		.render(val_cost.x_row(2), buf);
+
+	if let Some(cumul_dur) = data.cumul_task_duration_us {
+		Paragraph::new("Cumul Dur:")
+			.style(style::STL_FIELD_LBL)
+			.right_aligned()
+			.render(lbl_top_runs.x_row(2), buf);
+		Paragraph::new(ui_fmt_duration_us(Some(cumul_dur)))
+			.style(style::STL_FIELD_VAL)
+			.render(val_top_runs.x_row(2), buf);
+	}
 }
 
 fn render_top_runs_view(area: Rect, buf: &mut Buffer, data: &crate::tui::core::GroupDashData, state: &mut AppState) {

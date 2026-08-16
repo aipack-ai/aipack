@@ -43,6 +43,8 @@ pub struct GroupDashData {
 	pub target: GroupDashTarget,
 	pub mtime: EpochUs,
 	pub total_cost: f64,
+	pub total_duration_us: Option<i64>,
+	pub cumul_task_duration_us: Option<i64>,
 	pub top_runs_count: usize,
 	pub all_runs_count: usize,
 	pub top_runs: Vec<GroupDashRunEntry>,
@@ -180,6 +182,8 @@ impl GroupDashData {
 		target: GroupDashTarget,
 		mtime: EpochUs,
 		total_cost: f64,
+		total_duration_us: Option<i64>,
+		cumul_task_duration_us: Option<i64>,
 		top_runs_count: usize,
 		all_runs_count: usize,
 		top_runs: Vec<GroupDashRunEntry>,
@@ -190,6 +194,8 @@ impl GroupDashData {
 			target,
 			mtime,
 			total_cost,
+			total_duration_us,
+			cumul_task_duration_us,
 			top_runs_count,
 			all_runs_count,
 			top_runs,
@@ -252,6 +258,8 @@ mod tests {
 			target.clone(),
 			mtime,
 			0.05,
+			Some(500),
+			Some(400),
 			1,
 			3,
 			vec![top_run],
@@ -262,6 +270,8 @@ mod tests {
 		assert_eq!(data.target, target);
 		assert_eq!(data.mtime, mtime);
 		assert_eq!(data.total_cost, 0.05);
+		assert_eq!(data.total_duration_us, Some(500));
+		assert_eq!(data.cumul_task_duration_us, Some(400));
 		assert_eq!(data.top_runs_count, 1);
 		assert_eq!(data.all_runs_count, 3);
 		assert_eq!(data.top_runs.len(), 1);
