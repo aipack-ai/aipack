@@ -197,28 +197,37 @@ fn render_top_runs_view(area: Rect, buf: &mut Buffer, data: &crate::tui::core::G
 	let start_idx = scroll as usize;
 	let end_idx = (start_idx + visible_height).min(items_len);
 
+	let header_label = "Run / Label";
+	let max_name_len = data
+		.top_runs
+		.iter()
+		.map(|e| e.label.chars().count())
+		.max()
+		.unwrap_or(0);
+	let first_col_w = (header_label.len().max(max_name_len) + 3) as u16;
+
 	// Column layout definition
 	let cols_layout = Layout::default()
 		.direction(Direction::Horizontal)
 		.constraints([
-			Constraint::Fill(1),    // Run / Label
-			Constraint::Length(10), // Sub-runs
-			Constraint::Length(12), // Total Cost
-			Constraint::Length(14), // Top Run Cost
-			Constraint::Length(14), // Total Duration
-			Constraint::Length(14), // Top Duration
+			Constraint::Length(first_col_w), // Run / Label
+			Constraint::Length(10),          // Sub-runs
+			Constraint::Length(12),          // Total Cost
+			Constraint::Length(14),          // Total Duration
+			Constraint::Length(12),          // Top Run Cost
+			Constraint::Length(14),          // Top Duration
 		])
 		.spacing(1);
 
 	// Render Table Header (Row 1)
 	let header_area = area.x_row(1).x_h_margin(1);
-	let [h_label, h_subruns, h_tot_cost, h_top_cost, h_tot_dur, h_top_dur] = cols_layout.areas(header_area);
+	let [h_label, h_subruns, h_tot_cost, h_tot_dur, h_top_cost, h_top_dur] = cols_layout.areas(header_area);
 
 	Paragraph::new("Run / Label").style(style::STL_FIELD_LBL).render(h_label, buf);
 	Paragraph::new("Sub-runs").style(style::STL_FIELD_LBL).right_aligned().render(h_subruns, buf);
 	Paragraph::new("Total Cost").style(style::STL_FIELD_LBL).right_aligned().render(h_tot_cost, buf);
-	Paragraph::new("Top Cost").style(style::STL_FIELD_LBL).right_aligned().render(h_top_cost, buf);
 	Paragraph::new("Total Dur").style(style::STL_FIELD_LBL).right_aligned().render(h_tot_dur, buf);
+	Paragraph::new("Top Cost").style(style::STL_FIELD_LBL).right_aligned().render(h_top_cost, buf);
 	Paragraph::new("Top Dur").style(style::STL_FIELD_LBL).right_aligned().render(h_top_dur, buf);
 
 	// Process mouse click on visible row
@@ -246,7 +255,7 @@ fn render_top_runs_view(area: Rect, buf: &mut Buffer, data: &crate::tui::core::G
 			Block::new().bg(style::CLR_BKG_400).render(row_area, buf);
 		}
 
-		let [r_label, r_subruns, r_tot_cost, r_top_cost, r_tot_dur, r_top_dur] = cols_layout.areas(row_area);
+		let [r_label, r_subruns, r_tot_cost, r_tot_dur, r_top_cost, r_top_dur] = cols_layout.areas(row_area);
 
 		let label_style = if is_hovered {
 			style::STL_TXT_ACT.fg(style::CLR_TXT_HOVER)
@@ -272,14 +281,14 @@ fn render_top_runs_view(area: Rect, buf: &mut Buffer, data: &crate::tui::core::G
 			.style(val_style)
 			.right_aligned()
 			.render(r_tot_cost, buf);
-		Paragraph::new(ui_fmt_cost(Some(entry.top_cost)))
-			.style(val_style)
-			.right_aligned()
-			.render(r_top_cost, buf);
 		Paragraph::new(ui_fmt_duration_us(entry.total_duration_us))
 			.style(val_style)
 			.right_aligned()
 			.render(r_tot_dur, buf);
+		Paragraph::new(ui_fmt_cost(Some(entry.top_cost)))
+			.style(val_style)
+			.right_aligned()
+			.render(r_top_cost, buf);
 		Paragraph::new(ui_fmt_duration_us(entry.top_duration_us))
 			.style(val_style)
 			.right_aligned()
@@ -320,15 +329,24 @@ fn render_agents_view(area: Rect, buf: &mut Buffer, data: &crate::tui::core::Gro
 	let start_idx = scroll as usize;
 	let end_idx = (start_idx + visible_height).min(items_len);
 
+	let header_label = "Agent";
+	let max_name_len = data
+		.agents
+		.iter()
+		.map(|e| e.name.chars().count())
+		.max()
+		.unwrap_or(0);
+	let first_col_w = (header_label.len().max(max_name_len) + 3) as u16;
+
 	// Column layout definition
 	let cols_layout = Layout::default()
 		.direction(Direction::Horizontal)
 		.constraints([
-			Constraint::Fill(1),    // Agent
-			Constraint::Length(10), // Runs
-			Constraint::Length(12), // Total Cost
-			Constraint::Length(12), // Avg Cost
-			Constraint::Length(14), // Total Duration
+			Constraint::Length(first_col_w), // Agent
+			Constraint::Length(10),          // Runs
+			Constraint::Length(12),          // Total Cost
+			Constraint::Length(12),          // Avg Cost
+			Constraint::Length(14),          // Total Duration
 		])
 		.spacing(1);
 
@@ -422,15 +440,24 @@ fn render_models_view(area: Rect, buf: &mut Buffer, data: &crate::tui::core::Gro
 	let start_idx = scroll as usize;
 	let end_idx = (start_idx + visible_height).min(items_len);
 
+	let header_label = "Model";
+	let max_name_len = data
+		.models
+		.iter()
+		.map(|e| e.name.chars().count())
+		.max()
+		.unwrap_or(0);
+	let first_col_w = (header_label.len().max(max_name_len) + 3) as u16;
+
 	// Column layout definition
 	let cols_layout = Layout::default()
 		.direction(Direction::Horizontal)
 		.constraints([
-			Constraint::Fill(1),    // Model
-			Constraint::Length(10), // Runs
-			Constraint::Length(12), // Total Cost
-			Constraint::Length(12), // Avg Cost
-			Constraint::Length(14), // Total Duration
+			Constraint::Length(first_col_w), // Model
+			Constraint::Length(10),          // Runs
+			Constraint::Length(12),          // Total Cost
+			Constraint::Length(12),          // Avg Cost
+			Constraint::Length(14),          // Total Duration
 		])
 		.spacing(1);
 
