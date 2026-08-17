@@ -1,4 +1,4 @@
-use crate::tui::core::{GroupDashTab, ScrollIden};
+use crate::tui::core::{GroupDashTab, GroupDashTarget, ScrollIden};
 use crate::tui::support::{ui_fmt_cost, ui_fmt_duration_us};
 use crate::tui::view::comp;
 use crate::tui::view::support::RectExt as _;
@@ -21,7 +21,15 @@ impl StatefulWidget for GroupDashView {
 	fn render(self, area: Rect, buf: &mut Buffer, state: &mut Self::State) {
 		Block::new().bg(style::CLR_BKG_GRAY_DARKER).render(area, buf);
 
-		let Some(data) = state.group_dash_data().cloned() else {
+		let target = if let Some(loop_id) = state.selected_loop_id() {
+			GroupDashTarget::from_loop(loop_id)
+		} else if let Some(root_id) = state.current_root_run_id() {
+			GroupDashTarget::from_run(root_id)
+		} else {
+			GroupDashTarget::from_runs(Vec::new())
+		};
+
+		let Some(data) = state.get_or_compute_group_dash_data(&target).cloned() else {
 			let empty_msg = Paragraph::new("No group dashboard data available")
 				.style(style::STL_FIELD_VAL)
 				.centered();
@@ -220,7 +228,7 @@ fn render_top_runs_view(area: Rect, buf: &mut Buffer, data: &crate::tui::core::G
 	let max_name_len = data
 		.top_runs
 		.iter()
-		.map(|e| e.label.chars().count())
+		.map(|e| e.label.chars().count() + 2)
 		.max()
 		.unwrap_or(0);
 	let first_col_w = (header_label.len().max(max_name_len) + 3) as u16;
@@ -287,7 +295,22 @@ fn render_top_runs_view(area: Rect, buf: &mut Buffer, data: &crate::tui::core::G
 			style::STL_FIELD_VAL
 		};
 
-		Paragraph::new(entry.label.clone()).style(label_style).render(r_label, buf);
+		let ico_span = if entry.is_running {
+			if state.running_tick_flag().unwrap_or(true) {
+				Span::styled("▶", style::CLR_TXT_RUNNING)
+			} else {
+				Span::styled(" ", style::STL_TXT)
+			}
+		} else {
+			Span::styled("✔", style::CLR_TXT_700)
+		};
+
+		let label_line = Line::from(vec![
+			ico_span,
+			Span::raw(" "),
+			Span::styled(entry.label.clone(), label_style),
+		]);
+		Paragraph::new(label_line).render(r_label, buf);
 
 		let subruns_str = if entry.child_count > 0 {
 			entry.child_count.to_string()

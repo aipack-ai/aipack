@@ -186,11 +186,11 @@ impl AppState {
 	pub fn get_or_compute_group_dash_data(&mut self, target: &GroupDashTarget) -> Option<&GroupDashData> {
 		let latest_mtime = self.core.run_item_store.latest_mtime_for_target(target);
 		let needs_recompute = match &self.core.group_dash_data {
-			Some(cached) => cached.target != *target || cached.mtime < latest_mtime,
+			Some(cached) => cached.target != *target || cached.mtime < latest_mtime || cached.has_active_runs,
 			None => true,
 		};
 		if needs_recompute {
-			self.core.group_dash_data = self.core.run_item_store.compute_group_dash_data(target);
+			self.core.group_dash_data = self.core.run_item_store.compute_group_dash_data(target, self.core.time);
 		}
 		self.core.group_dash_data.as_ref()
 	}

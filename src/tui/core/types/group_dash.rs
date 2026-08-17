@@ -31,6 +31,7 @@ pub struct GroupDashCostEntry {
 pub struct GroupDashRunEntry {
 	pub run_id: Id,
 	pub label: String,
+	pub is_running: bool,
 	pub cost: f64,
 	pub top_cost: f64,
 	pub total_duration_us: Option<i64>,
@@ -47,6 +48,7 @@ pub struct GroupDashData {
 	pub cumul_task_duration_us: Option<i64>,
 	pub top_runs_count: usize,
 	pub all_runs_count: usize,
+	pub has_active_runs: bool,
 	pub top_runs: Vec<GroupDashRunEntry>,
 	pub agents: Vec<GroupDashCostEntry>,
 	pub models: Vec<GroupDashCostEntry>,
@@ -150,9 +152,11 @@ impl GroupDashCostEntry {
 
 /// Constructors
 impl GroupDashRunEntry {
+	#[allow(clippy::too_many_arguments)]
 	pub fn new(
 		run_id: Id,
 		label: impl Into<String>,
+		is_running: bool,
 		cost: f64,
 		top_cost: f64,
 		total_duration_us: Option<i64>,
@@ -162,6 +166,7 @@ impl GroupDashRunEntry {
 		Self {
 			run_id,
 			label: label.into(),
+			is_running,
 			cost,
 			top_cost,
 			total_duration_us,
@@ -186,6 +191,7 @@ impl GroupDashData {
 		cumul_task_duration_us: Option<i64>,
 		top_runs_count: usize,
 		all_runs_count: usize,
+		has_active_runs: bool,
 		top_runs: Vec<GroupDashRunEntry>,
 		agents: Vec<GroupDashCostEntry>,
 		models: Vec<GroupDashCostEntry>,
@@ -198,6 +204,7 @@ impl GroupDashData {
 			cumul_task_duration_us,
 			top_runs_count,
 			all_runs_count,
+			has_active_runs,
 			top_runs,
 			agents,
 			models,
@@ -250,7 +257,7 @@ mod tests {
 	fn test_group_dash_data_constructor() {
 		let target = GroupDashTarget::from_loop(1.into());
 		let mtime: EpochUs = 1000.into();
-		let top_run = GroupDashRunEntry::new(1.into(), "run-1", 0.05, 0.03, Some(500), Some(300), 2);
+		let top_run = GroupDashRunEntry::new(1.into(), "run-1", false, 0.05, 0.03, Some(500), Some(300), 2);
 		let agent = GroupDashCostEntry::new("agent-a", 0.03, 1, Some(300));
 		let model = GroupDashCostEntry::new("gpt-4o", 0.05, 2, Some(500));
 
@@ -262,6 +269,7 @@ mod tests {
 			Some(400),
 			1,
 			3,
+			false,
 			vec![top_run],
 			vec![agent],
 			vec![model],
@@ -274,6 +282,7 @@ mod tests {
 		assert_eq!(data.cumul_task_duration_us, Some(400));
 		assert_eq!(data.top_runs_count, 1);
 		assert_eq!(data.all_runs_count, 3);
+		assert!(!data.has_active_runs);
 		assert_eq!(data.top_runs.len(), 1);
 		assert_eq!(data.agents.len(), 1);
 		assert_eq!(data.models.len(), 1);

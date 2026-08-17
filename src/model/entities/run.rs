@@ -66,9 +66,19 @@ impl Run {
 		self.end.is_some()
 	}
 
+	#[allow(unused)]
 	pub fn duration_us(&self) -> Option<i64> {
 		if let (Some(start), Some(end)) = (self.start, self.end) {
 			Some(end.as_i64() - start.as_i64())
+		} else {
+			None
+		}
+	}
+
+	pub fn duration_us_or_now(&self, now_us: i64) -> Option<i64> {
+		if let Some(start) = self.start {
+			let end = self.end.map(|e| e.as_i64()).unwrap_or(now_us);
+			Some((end - start.as_i64()).max(0))
 		} else {
 			None
 		}

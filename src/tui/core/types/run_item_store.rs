@@ -140,7 +140,7 @@ impl RunItemStore {
 	}
 
 	#[allow(unused)]
-	pub fn compute_group_dash_data(&self, target: &GroupDashTarget) -> Option<GroupDashData> {
+	pub fn compute_group_dash_data(&self, target: &GroupDashTarget, now_us: i64) -> Option<GroupDashData> {
 		let roots = self.target_root_items(target);
 		if roots.is_empty() && target.is_empty() {
 			return None;
@@ -151,29 +151,36 @@ impl RunItemStore {
 		let mut max_mtime = EpochUs::from(0i64);
 		let mut total_duration_us: Option<i64> = None;
 		let mut cumul_task_duration_us: Option<i64> = None;
+		let mut has_active_runs = false;
 
 		for root in &roots {
 			all_unique_run_ids.insert(root.id());
+			if !root.run().is_done() {
+				has_active_runs = true;
+			}
 			if root.run().mtime > max_mtime {
 				max_mtime = root.run().mtime;
 			}
 
-			if let Some(dur) = root.run().duration_us() {
+			let top_duration_us = root.run().duration_us_or_now(now_us);
+			if let Some(dur) = top_duration_us {
 				total_duration_us = Some(total_duration_us.unwrap_or(0) + dur);
 			}
 
 			let mut subtree_cost = root.run().total_cost.unwrap_or(0.0);
 			let top_cost = subtree_cost;
 			let mut child_count = 0;
-			let top_duration_us = root.run().duration_us();
 			let mut root_total_duration_us = top_duration_us;
 
 			for child_id in root.all_children_ids() {
 				if let Some(child) = self.items_by_id.get(child_id) {
 					all_unique_run_ids.insert(child.id());
+					if !child.run().is_done() {
+						has_active_runs = true;
+					}
 					subtree_cost += child.run().total_cost.unwrap_or(0.0);
 					child_count += 1;
-					if let Some(child_dur) = child.run().duration_us() {
+					if let Some(child_dur) = child.run().duration_us_or_now(now_us) {
 						root_total_duration_us = Some(root_total_duration_us.unwrap_or(0) + child_dur);
 					}
 					if child.run().mtime > max_mtime {
@@ -192,6 +199,7 @@ impl RunItemStore {
 			top_runs.push(GroupDashRunEntry::new(
 				root.id(),
 				label,
+				!root.run().is_done(),
 				subtree_cost,
 				top_cost,
 				root_total_duration_us,
@@ -208,7 +216,7 @@ impl RunItemStore {
 			if let Some(item) = self.items_by_id.get(run_id) {
 				let run = item.run();
 				let cost = run.total_cost.unwrap_or(0.0);
-				let duration = run.duration_us();
+				let duration = run.duration_us_or_now(now_us);
 				total_cost += cost;
 
 				if let Some(task_ms) = run.total_task_ms {
@@ -266,6 +274,7 @@ impl RunItemStore {
 			cumul_task_duration_us,
 			top_runs_count,
 			all_runs_count,
+			has_active_runs,
 			top_runs,
 			agents,
 			models,
@@ -709,7 +718,7 @@ mod tests {
 
 		// -- Exec
 		let target = GroupDashTarget::from_loop(loop_id);
-		let dash_data = store.compute_group_dash_data(&target).ok_or("Should compute dash data")?;
+		let dash_data = store.compute_group_dash_data(&target, 2_000_000).ok_or("Should compute dash data")?;
 
 		// -- Check
 		assert_eq!(dash_data.top_runs_count, 2);
@@ -761,13 +770,47 @@ mod tests {
 
 		// -- Exec
 		let target = GroupDashTarget::from_run(standalone_id);
-		let dash_data = store.compute_group_dash_data(&target).ok_or("Should compute dash data")?;
+		let dash_data = store.compute_group_dash_data(&target, 600_000).ok_or("Should compute dash data")?;
 
 		// -- Check
 		assert_eq!(dash_data.top_runs_count, 1);
 		assert_eq!(dash_data.all_runs_count, 1);
 		assert_eq!(dash_data.total_duration_us, Some(500_000));
 		assert_eq!(dash_data.cumul_task_duration_us, None);
+
+		Ok(())
+	}
+
+	#[tokio::test]
+	async fn test_tui_core_types_run_item_store_compute_group_dash_data_live_duration() -> Result<()> {
+		// -- Setup & Fixtures
+		let mm = ModelManager::new().await?;
+		let running_run_id = RunBmc::create(&mm, run_for_test("running-run"))?;
+
+		crate::model::RunBmc::update(
+			&mm,
+			running_run_id,
+			crate::model::RunForUpdate {
+				start: Some(1_000_000.into()),
+				end: None,
+				..Default::default()
+			},
+		)?;
+
+		let runs = vec![RunBmc::get(&mm, running_run_id)?];
+		let store = RunItemStore::new(runs);
+
+		// -- Exec: Compute with now = 3_500_000 us (2.5s elapsed)
+		let target = GroupDashTarget::from_run(running_run_id);
+		let dash_data = store.compute_group_dash_data(&target, 3_500_000).ok_or("Should compute dash data")?;
+
+		// -- Check
+		assert!(dash_data.has_active_runs);
+		assert_eq!(dash_data.total_duration_us, Some(2_500_000));
+		let top_run = dash_data.top_runs.first().ok_or("Should have top run")?;
+		assert!(top_run.is_running);
+		assert_eq!(top_run.top_duration_us, Some(2_500_000));
+		assert_eq!(top_run.total_duration_us, Some(2_500_000));
 
 		Ok(())
 	}
