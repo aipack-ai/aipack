@@ -87,6 +87,9 @@ cdk.out/
 *.eps
 *.ai
 *.sketch
+*.psd
+*.af
+
 
 # Videos
 *.mov
