@@ -1,13 +1,12 @@
 use crate::tui::core::{GroupDashTab, GroupDashTarget, ScrollIden};
 use crate::tui::support::{ui_fmt_cost, ui_fmt_duration_us};
-use crate::tui::view::comp;
 use crate::tui::view::support::RectExt as _;
 use crate::tui::{AppState, style};
 use ratatui::buffer::Buffer;
 use ratatui::layout::{Constraint, Direction, Layout, Rect};
 use ratatui::style::Stylize as _;
 use ratatui::text::{Line, Span};
-use ratatui::widgets::{Block, Paragraph, StatefulWidget, Widget as _};
+use ratatui::widgets::{Block, Paragraph, Scrollbar, ScrollbarOrientation, ScrollbarState, StatefulWidget, Widget as _};
 
 pub struct GroupDashView;
 
@@ -19,6 +18,8 @@ impl StatefulWidget for GroupDashView {
 	type State = AppState;
 
 	fn render(self, area: Rect, buf: &mut Buffer, state: &mut Self::State) {
+		state.set_scroll_area(Self::SCROLL_IDEN, area);
+
 		Block::new().bg(style::CLR_BKG_GRAY_DARKER).render(area, buf);
 
 		let target = if let Some(loop_id) = state.selected_loop_id() {
@@ -215,12 +216,16 @@ fn render_top_runs_view(area: Rect, buf: &mut Buffer, data: &crate::tui::core::G
 		return;
 	}
 
-	const SCROLL_IDEN: ScrollIden = GroupDashView::SCROLL_IDEN;
-	state.set_scroll_area(SCROLL_IDEN, area);
-
 	let items_len = data.top_runs.len();
-	let scroll = state.clamp_scroll(SCROLL_IDEN, items_len);
 	let visible_height = area.height.saturating_sub(1) as usize;
+	let max_scroll = items_len.saturating_sub(visible_height) as u16;
+	let current_scroll = state.get_scroll(GroupDashView::SCROLL_IDEN);
+	let scroll = if current_scroll > max_scroll {
+		state.set_scroll(GroupDashView::SCROLL_IDEN, max_scroll);
+		max_scroll
+	} else {
+		current_scroll
+	};
 	let start_idx = scroll as usize;
 	let end_idx = (start_idx + visible_height).min(items_len);
 
@@ -343,15 +348,14 @@ fn render_top_runs_view(area: Rect, buf: &mut Buffer, data: &crate::tui::core::G
 		state.clear_mouse_evts(true);
 	}
 
-	// Render scroll indicator icons
-	let item_count = items_len as u16;
-	if item_count.saturating_sub(scroll) > visible_height as u16 {
-		let bottom_ico = area.x_bottom_right(1, 1);
-		comp::ico_scroll_down().render(bottom_ico, buf);
-	}
-	if scroll > 0 {
-		let top_ico = area.x_top_right(1, 1);
-		comp::ico_scroll_up().render(top_ico, buf);
+	// Render scrollbar
+	if items_len > visible_height {
+		let mut scrollbar_state =
+			ScrollbarState::new(items_len.saturating_sub(visible_height)).position(scroll as usize);
+		let scrollbar = Scrollbar::new(ScrollbarOrientation::VerticalRight)
+			.begin_symbol(Some("▲"))
+			.end_symbol(Some("▼"));
+		scrollbar.render(area, buf, &mut scrollbar_state);
 	}
 }
 
@@ -362,12 +366,16 @@ fn render_agents_view(area: Rect, buf: &mut Buffer, data: &crate::tui::core::Gro
 		return;
 	}
 
-	const SCROLL_IDEN: ScrollIden = GroupDashView::SCROLL_IDEN;
-	state.set_scroll_area(SCROLL_IDEN, area);
-
 	let items_len = data.agents.len();
-	let scroll = state.clamp_scroll(SCROLL_IDEN, items_len);
 	let visible_height = area.height.saturating_sub(1) as usize;
+	let max_scroll = items_len.saturating_sub(visible_height) as u16;
+	let current_scroll = state.get_scroll(GroupDashView::SCROLL_IDEN);
+	let scroll = if current_scroll > max_scroll {
+		state.set_scroll(GroupDashView::SCROLL_IDEN, max_scroll);
+		max_scroll
+	} else {
+		current_scroll
+	};
 	let start_idx = scroll as usize;
 	let end_idx = (start_idx + visible_height).min(items_len);
 
@@ -454,15 +462,14 @@ fn render_agents_view(area: Rect, buf: &mut Buffer, data: &crate::tui::core::Gro
 			.render(r_tot_dur, buf);
 	}
 
-	// Render scroll indicator icons
-	let item_count = items_len as u16;
-	if item_count.saturating_sub(scroll) > visible_height as u16 {
-		let bottom_ico = area.x_bottom_right(1, 1);
-		comp::ico_scroll_down().render(bottom_ico, buf);
-	}
-	if scroll > 0 {
-		let top_ico = area.x_top_right(1, 1);
-		comp::ico_scroll_up().render(top_ico, buf);
+	// Render scrollbar
+	if items_len > visible_height {
+		let mut scrollbar_state =
+			ScrollbarState::new(items_len.saturating_sub(visible_height)).position(scroll as usize);
+		let scrollbar = Scrollbar::new(ScrollbarOrientation::VerticalRight)
+			.begin_symbol(Some("▲"))
+			.end_symbol(Some("▼"));
+		scrollbar.render(area, buf, &mut scrollbar_state);
 	}
 }
 
@@ -473,12 +480,16 @@ fn render_models_view(area: Rect, buf: &mut Buffer, data: &crate::tui::core::Gro
 		return;
 	}
 
-	const SCROLL_IDEN: ScrollIden = GroupDashView::SCROLL_IDEN;
-	state.set_scroll_area(SCROLL_IDEN, area);
-
 	let items_len = data.models.len();
-	let scroll = state.clamp_scroll(SCROLL_IDEN, items_len);
 	let visible_height = area.height.saturating_sub(1) as usize;
+	let max_scroll = items_len.saturating_sub(visible_height) as u16;
+	let current_scroll = state.get_scroll(GroupDashView::SCROLL_IDEN);
+	let scroll = if current_scroll > max_scroll {
+		state.set_scroll(GroupDashView::SCROLL_IDEN, max_scroll);
+		max_scroll
+	} else {
+		current_scroll
+	};
 	let start_idx = scroll as usize;
 	let end_idx = (start_idx + visible_height).min(items_len);
 
@@ -565,14 +576,13 @@ fn render_models_view(area: Rect, buf: &mut Buffer, data: &crate::tui::core::Gro
 			.render(r_tot_dur, buf);
 	}
 
-	// Render scroll indicator icons
-	let item_count = items_len as u16;
-	if item_count.saturating_sub(scroll) > visible_height as u16 {
-		let bottom_ico = area.x_bottom_right(1, 1);
-		comp::ico_scroll_down().render(bottom_ico, buf);
-	}
-	if scroll > 0 {
-		let top_ico = area.x_top_right(1, 1);
-		comp::ico_scroll_up().render(top_ico, buf);
+	// Render scrollbar
+	if items_len > visible_height {
+		let mut scrollbar_state =
+			ScrollbarState::new(items_len.saturating_sub(visible_height)).position(scroll as usize);
+		let scrollbar = Scrollbar::new(ScrollbarOrientation::VerticalRight)
+			.begin_symbol(Some("▲"))
+			.end_symbol(Some("▼"));
+		scrollbar.render(area, buf, &mut scrollbar_state);
 	}
 }

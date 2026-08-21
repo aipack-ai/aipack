@@ -106,9 +106,13 @@ pub fn process_app_state(state: &mut AppState, opts: ProcessAppStateOpts) {
 		// If it is a key scroll and we have the SCROLL_KEY_MAIN_VIEW set to true
 		// then, we override/fallback to the main view scroll zone.
 		if is_key_scroll && SCROLL_KEY_MAIN_VIEW {
-			zone_iden = match state.run_tab() {
-				RunTab::Overview => Some(ScrollIden::OverviewContent),
-				RunTab::Tasks => Some(ScrollIden::TaskContent),
+			zone_iden = if state.selected_loop_id().is_some() {
+				Some(ScrollIden::GroupDashContent)
+			} else {
+				match state.run_tab() {
+					RunTab::Overview => Some(ScrollIden::OverviewContent),
+					RunTab::Tasks => Some(ScrollIden::TaskContent),
+				}
 			};
 		}
 
