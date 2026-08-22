@@ -50,6 +50,7 @@ pub fn process_app_state(state: &mut AppState, opts: ProcessAppStateOpts) {
 		&& key_event.modifiers.contains(crossterm::event::KeyModifiers::SHIFT)
 	{
 		state.toggle_show_sys_states();
+		state.trigger_redraw();
 	}
 
 	// -- Refresh system metrics
