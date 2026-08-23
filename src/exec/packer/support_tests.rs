@@ -310,8 +310,7 @@ fn test_packer_support_resolve_install_provenance_source_variants() -> Result<()
 	let repo_source = resolve_install_provenance_source(repo_reference, &repo_uri, None)?;
 	let http_source = resolve_install_provenance_source(http_reference, &http_uri, None)?;
 	let git_source = resolve_install_provenance_source(git_reference, &git_uri, None)?;
-	let local_source =
-		resolve_install_provenance_source(local_reference, &local_uri, Some(&resolved_local_path))?;
+	let local_source = resolve_install_provenance_source(local_reference, &local_uri, Some(&resolved_local_path))?;
 	let scp_source = resolve_install_provenance_source(scp_reference, &scp_uri, None)?;
 
 	// -- Check
@@ -340,7 +339,10 @@ fn test_packer_support_pack_uri_parse_scp_root() -> Result<()> {
 			subpath: None,
 		})
 	);
-	assert_eq!(pack_uri.to_string(), "Git URL 'git+ssh://git@github.com/rust10x/rust10x.git'");
+	assert_eq!(
+		pack_uri.to_string(),
+		"Git URL 'git+ssh://git@github.com/rust10x/rust10x.git'"
+	);
 
 	Ok(())
 }

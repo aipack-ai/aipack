@@ -189,15 +189,7 @@ return "ok"
 		let run_args = crate::exec::cli::RunArgs::try_parse_from(["aip", "test-agent"])?;
 		let run_options = RunTopAgentParams::new(run_args)?;
 
-		let ctx = RunRedoCtx::with_identity(
-			runtime,
-			agent,
-			run_options,
-			1.into(),
-			Some(10.into()),
-			true,
-			3,
-		);
+		let ctx = RunRedoCtx::with_identity(runtime, agent, run_options, 1.into(), Some(10.into()), true, 3);
 
 		// -- Exec
 		let reset_ctx = ctx.reset_loop_and_redo();

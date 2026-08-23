@@ -125,7 +125,11 @@ source = "old-source"
 		)?;
 
 		// -- Exec
-		update_installation_provenance(&pack_toml_path, "2026-08-04T14:05:54-07:00", "https://example.com/pack.aipack")?;
+		update_installation_provenance(
+			&pack_toml_path,
+			"2026-08-04T14:05:54-07:00",
+			"https://example.com/pack.aipack",
+		)?;
 
 		// -- Check
 		let updated = std::fs::read_to_string(pack_toml_path.path())?;
@@ -200,7 +204,11 @@ description = "Keep this metadata"
 		)?;
 
 		// -- Exec
-		update_installation_provenance(&pack_toml_path, "2026-08-04T14:05:54-07:00", "git://example.com/pack.git")?;
+		update_installation_provenance(
+			&pack_toml_path,
+			"2026-08-04T14:05:54-07:00",
+			"git://example.com/pack.git",
+		)?;
 
 		// -- Check
 		let updated = std::fs::read_to_string(pack_toml_path.path())?;

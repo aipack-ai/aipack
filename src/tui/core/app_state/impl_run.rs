@@ -202,8 +202,8 @@ impl AppState {
 mod tests {
 	use super::*;
 	use crate::model::{EpochUs, LoopBmc, ModelManager, RunBmc, RunForCreate, RunForUpdate};
-	use crate::tui::core::{RunItemStore, RunNavGroup};
 	use crate::tui::core::event::LastAppEvent;
+	use crate::tui::core::{RunItemStore, RunNavGroup};
 
 	type Result<T> = core::result::Result<T, Box<dyn std::error::Error>>;
 

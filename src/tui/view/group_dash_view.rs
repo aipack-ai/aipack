@@ -6,7 +6,9 @@ use ratatui::buffer::Buffer;
 use ratatui::layout::{Constraint, Direction, Layout, Rect};
 use ratatui::style::Stylize as _;
 use ratatui::text::{Line, Span};
-use ratatui::widgets::{Block, Paragraph, Scrollbar, ScrollbarOrientation, ScrollbarState, StatefulWidget, Widget as _};
+use ratatui::widgets::{
+	Block, Paragraph, Scrollbar, ScrollbarOrientation, ScrollbarState, StatefulWidget, Widget as _,
+};
 
 pub struct GroupDashView;
 
@@ -90,7 +92,10 @@ fn render_tabs(tabs_a: Rect, tabs_line_a: Rect, buf: &mut Buffer, state: &mut Ap
 	let current_tab = state.group_dash_tab();
 
 	// Render Top Runs Tab
-	let tab_1_style = match (current_tab == GroupDashTab::TopRuns, state.is_last_mouse_over(tab_top_runs_a)) {
+	let tab_1_style = match (
+		current_tab == GroupDashTab::TopRuns,
+		state.is_last_mouse_over(tab_top_runs_a),
+	) {
 		(true, true) => style::STL_TAB_ACTIVE_HOVER,
 		(true, false) => style::STL_TAB_ACTIVE,
 		(false, true) => style::STL_TAB_DEFAULT_HOVER,
@@ -102,28 +107,28 @@ fn render_tabs(tabs_a: Rect, tabs_line_a: Rect, buf: &mut Buffer, state: &mut Ap
 		.render(tab_top_runs_a, buf);
 
 	// Render Agents Tab
-	let tab_2_style = match (current_tab == GroupDashTab::Agents, state.is_last_mouse_over(tab_agents_a)) {
+	let tab_2_style = match (
+		current_tab == GroupDashTab::Agents,
+		state.is_last_mouse_over(tab_agents_a),
+	) {
 		(true, true) => style::STL_TAB_ACTIVE_HOVER,
 		(true, false) => style::STL_TAB_ACTIVE,
 		(false, true) => style::STL_TAB_DEFAULT_HOVER,
 		(false, false) => style::STL_TAB_DEFAULT,
 	};
-	Paragraph::new("Agents")
-		.centered()
-		.style(tab_2_style)
-		.render(tab_agents_a, buf);
+	Paragraph::new("Agents").centered().style(tab_2_style).render(tab_agents_a, buf);
 
 	// Render Models Tab
-	let tab_3_style = match (current_tab == GroupDashTab::Models, state.is_last_mouse_over(tab_models_a)) {
+	let tab_3_style = match (
+		current_tab == GroupDashTab::Models,
+		state.is_last_mouse_over(tab_models_a),
+	) {
 		(true, true) => style::STL_TAB_ACTIVE_HOVER,
 		(true, false) => style::STL_TAB_ACTIVE,
 		(false, true) => style::STL_TAB_DEFAULT_HOVER,
 		(false, false) => style::STL_TAB_DEFAULT,
 	};
-	Paragraph::new("Models")
-		.centered()
-		.style(tab_3_style)
-		.render(tab_models_a, buf);
+	Paragraph::new("Models").centered().style(tab_3_style).render(tab_models_a, buf);
 
 	// -- Render Line
 	let repeated = "▔".repeat(tabs_line_a.width as usize);
@@ -230,12 +235,7 @@ fn render_top_runs_view(area: Rect, buf: &mut Buffer, data: &crate::tui::core::G
 	let end_idx = (start_idx + visible_height).min(items_len);
 
 	let header_label = "Run / Label";
-	let max_name_len = data
-		.top_runs
-		.iter()
-		.map(|e| e.label.chars().count() + 2)
-		.max()
-		.unwrap_or(0);
+	let max_name_len = data.top_runs.iter().map(|e| e.label.chars().count() + 2).max().unwrap_or(0);
 	let first_col_w = (header_label.len().max(max_name_len) + 3) as u16;
 
 	// Column layout definition
@@ -256,11 +256,26 @@ fn render_top_runs_view(area: Rect, buf: &mut Buffer, data: &crate::tui::core::G
 	let [h_label, h_subruns, h_tot_cost, h_tot_dur, h_top_cost, h_top_dur] = cols_layout.areas(header_area);
 
 	Paragraph::new("Run / Label").style(style::STL_FIELD_LBL).render(h_label, buf);
-	Paragraph::new("Sub-runs").style(style::STL_FIELD_LBL).right_aligned().render(h_subruns, buf);
-	Paragraph::new("Total Cost").style(style::STL_FIELD_LBL).right_aligned().render(h_tot_cost, buf);
-	Paragraph::new("Total Dur").style(style::STL_FIELD_LBL).right_aligned().render(h_tot_dur, buf);
-	Paragraph::new("Top Cost").style(style::STL_FIELD_LBL).right_aligned().render(h_top_cost, buf);
-	Paragraph::new("Top Dur").style(style::STL_FIELD_LBL).right_aligned().render(h_top_dur, buf);
+	Paragraph::new("Sub-runs")
+		.style(style::STL_FIELD_LBL)
+		.right_aligned()
+		.render(h_subruns, buf);
+	Paragraph::new("Total Cost")
+		.style(style::STL_FIELD_LBL)
+		.right_aligned()
+		.render(h_tot_cost, buf);
+	Paragraph::new("Total Dur")
+		.style(style::STL_FIELD_LBL)
+		.right_aligned()
+		.render(h_tot_dur, buf);
+	Paragraph::new("Top Cost")
+		.style(style::STL_FIELD_LBL)
+		.right_aligned()
+		.render(h_top_cost, buf);
+	Paragraph::new("Top Dur")
+		.style(style::STL_FIELD_LBL)
+		.right_aligned()
+		.render(h_top_dur, buf);
 
 	// Process mouse click on visible row
 	let mut clicked_run_id = None;
@@ -322,7 +337,10 @@ fn render_top_runs_view(area: Rect, buf: &mut Buffer, data: &crate::tui::core::G
 		} else {
 			"-".to_string()
 		};
-		Paragraph::new(subruns_str).style(val_style).right_aligned().render(r_subruns, buf);
+		Paragraph::new(subruns_str)
+			.style(val_style)
+			.right_aligned()
+			.render(r_subruns, buf);
 
 		Paragraph::new(ui_fmt_cost(Some(entry.cost)))
 			.style(val_style)
@@ -380,12 +398,7 @@ fn render_agents_view(area: Rect, buf: &mut Buffer, data: &crate::tui::core::Gro
 	let end_idx = (start_idx + visible_height).min(items_len);
 
 	let header_label = "Agent";
-	let max_name_len = data
-		.agents
-		.iter()
-		.map(|e| e.name.chars().count())
-		.max()
-		.unwrap_or(0);
+	let max_name_len = data.agents.iter().map(|e| e.name.chars().count()).max().unwrap_or(0);
 	let first_col_w = (header_label.len().max(max_name_len) + 3) as u16;
 
 	// Column layout definition
@@ -405,10 +418,22 @@ fn render_agents_view(area: Rect, buf: &mut Buffer, data: &crate::tui::core::Gro
 	let [h_agent, h_runs, h_tot_cost, h_avg_cost, h_tot_dur] = cols_layout.areas(header_area);
 
 	Paragraph::new("Agent").style(style::STL_FIELD_LBL).render(h_agent, buf);
-	Paragraph::new("Runs").style(style::STL_FIELD_LBL).right_aligned().render(h_runs, buf);
-	Paragraph::new("Total Cost").style(style::STL_FIELD_LBL).right_aligned().render(h_tot_cost, buf);
-	Paragraph::new("Avg Cost").style(style::STL_FIELD_LBL).right_aligned().render(h_avg_cost, buf);
-	Paragraph::new("Total Dur").style(style::STL_FIELD_LBL).right_aligned().render(h_tot_dur, buf);
+	Paragraph::new("Runs")
+		.style(style::STL_FIELD_LBL)
+		.right_aligned()
+		.render(h_runs, buf);
+	Paragraph::new("Total Cost")
+		.style(style::STL_FIELD_LBL)
+		.right_aligned()
+		.render(h_tot_cost, buf);
+	Paragraph::new("Avg Cost")
+		.style(style::STL_FIELD_LBL)
+		.right_aligned()
+		.render(h_avg_cost, buf);
+	Paragraph::new("Total Dur")
+		.style(style::STL_FIELD_LBL)
+		.right_aligned()
+		.render(h_tot_dur, buf);
 
 	// Render visible data rows
 	for (visible_row_idx, item_idx) in (start_idx..end_idx).enumerate() {
@@ -494,12 +519,7 @@ fn render_models_view(area: Rect, buf: &mut Buffer, data: &crate::tui::core::Gro
 	let end_idx = (start_idx + visible_height).min(items_len);
 
 	let header_label = "Model";
-	let max_name_len = data
-		.models
-		.iter()
-		.map(|e| e.name.chars().count())
-		.max()
-		.unwrap_or(0);
+	let max_name_len = data.models.iter().map(|e| e.name.chars().count()).max().unwrap_or(0);
 	let first_col_w = (header_label.len().max(max_name_len) + 3) as u16;
 
 	// Column layout definition
@@ -519,10 +539,22 @@ fn render_models_view(area: Rect, buf: &mut Buffer, data: &crate::tui::core::Gro
 	let [h_model, h_runs, h_tot_cost, h_avg_cost, h_tot_dur] = cols_layout.areas(header_area);
 
 	Paragraph::new("Model").style(style::STL_FIELD_LBL).render(h_model, buf);
-	Paragraph::new("Runs").style(style::STL_FIELD_LBL).right_aligned().render(h_runs, buf);
-	Paragraph::new("Total Cost").style(style::STL_FIELD_LBL).right_aligned().render(h_tot_cost, buf);
-	Paragraph::new("Avg Cost").style(style::STL_FIELD_LBL).right_aligned().render(h_avg_cost, buf);
-	Paragraph::new("Total Dur").style(style::STL_FIELD_LBL).right_aligned().render(h_tot_dur, buf);
+	Paragraph::new("Runs")
+		.style(style::STL_FIELD_LBL)
+		.right_aligned()
+		.render(h_runs, buf);
+	Paragraph::new("Total Cost")
+		.style(style::STL_FIELD_LBL)
+		.right_aligned()
+		.render(h_tot_cost, buf);
+	Paragraph::new("Avg Cost")
+		.style(style::STL_FIELD_LBL)
+		.right_aligned()
+		.render(h_avg_cost, buf);
+	Paragraph::new("Total Dur")
+		.style(style::STL_FIELD_LBL)
+		.right_aligned()
+		.render(h_tot_dur, buf);
 
 	// Render visible data rows
 	for (visible_row_idx, item_idx) in (start_idx..end_idx).enumerate() {

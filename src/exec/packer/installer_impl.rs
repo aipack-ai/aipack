@@ -22,10 +22,7 @@ pub struct InstalledPack {
 
 enum PackSource {
 	Archive(SPath),
-	Git {
-		clone_dir: SPath,
-		commit: String,
-	},
+	Git { clone_dir: SPath, commit: String },
 }
 
 impl PackSource {
@@ -84,11 +81,8 @@ pub async fn install_pack(dir_context: &DirContext, pack_uri: &str, force: bool)
 		(PackUri::LocalPath(_), PackSource::Archive(path)) => Some(path),
 		_ => None,
 	};
-	let provenance_source = support::resolve_install_provenance_source(
-		&original_pack_uri,
-		&pack_uri,
-		resolved_local_path,
-	)?;
+	let provenance_source =
+		support::resolve_install_provenance_source(&original_pack_uri, &pack_uri, resolved_local_path)?;
 
 	// Validate file exists and has correct extension
 	let zip_size = if let PackSource::Archive(aipack_zipped_file) = &source {
@@ -103,16 +97,12 @@ pub async fn install_pack(dir_context: &DirContext, pack_uri: &str, force: bool)
 		PackSource::Archive(_) => {
 			install_pack_source_with_provenance(dir_context, &source, &pack_uri, force, &provenance_source)
 		}
-		PackSource::Git { clone_dir, .. } => install_git_source_with_provenance(
-			dir_context,
-			&source,
-			clone_dir,
-			&pack_uri,
-			force,
-			&provenance_source,
-		),
+		PackSource::Git { clone_dir, .. } => {
+			install_git_source_with_provenance(dir_context, &source, clone_dir, &pack_uri, force, &provenance_source)
+		}
 	};
-	let mut install_res = install_result.map_err(|error| preserve_install_error_reference(error, &original_pack_uri))?;
+	let mut install_res =
+		install_result.map_err(|error| preserve_install_error_reference(error, &original_pack_uri))?;
 
 	match install_res {
 		InstallResponse::Installed(ref mut p) | InstallResponse::UpToDate(ref mut p) => {
@@ -138,7 +128,6 @@ fn preserve_install_error_reference(error: Error, reference: &str) -> Error {
 	}
 }
 
-
 fn install_git_source_with_provenance(
 	dir_context: &DirContext,
 	source: &PackSource,
@@ -151,20 +140,17 @@ fn install_git_source_with_provenance(
 		PackSource::Git { commit, .. } => Some(commit.as_str()),
 		PackSource::Archive(_) => None,
 	};
-	let install_result = install_pack_source_with_provenance_and_commit(
-		dir_context,
-		source,
-		pack_uri,
-		force,
-		provenance_source,
-		commit,
-	);
+	let install_result =
+		install_pack_source_with_provenance_and_commit(dir_context, source, pack_uri, force, provenance_source, commit);
 
 	match support::cleanup_git_clone(clone_dir) {
 		Ok(()) => install_result,
 		Err(cleanup_error) => {
 			let cause = match install_result {
-				Ok(_) => format!("Failed to clean up temporary Git clone '{}': {cleanup_error}", clone_dir.as_str()),
+				Ok(_) => format!(
+					"Failed to clean up temporary Git clone '{}': {cleanup_error}",
+					clone_dir.as_str()
+				),
 				Err(install_error) => format!(
 					"Failed to install Git pack: {install_error}\nFailed to clean up temporary Git clone '{}': {cleanup_error}",
 					clone_dir.as_str()
@@ -179,7 +165,6 @@ fn install_git_source_with_provenance(
 	}
 }
 
-
 #[cfg(test)]
 fn install_git_source(
 	dir_context: &DirContext,
@@ -189,16 +174,8 @@ fn install_git_source(
 	force: bool,
 ) -> Result<InstallResponse> {
 	let provenance_source = pack_uri.to_string();
-	install_git_source_with_provenance(
-		dir_context,
-		source,
-		clone_dir,
-		pack_uri,
-		force,
-		&provenance_source,
-	)
+	install_git_source_with_provenance(dir_context, source, clone_dir, pack_uri, force, &provenance_source)
 }
-
 
 fn install_pack_source_with_provenance(
 	dir_context: &DirContext,
@@ -209,7 +186,6 @@ fn install_pack_source_with_provenance(
 ) -> Result<InstallResponse> {
 	install_pack_source_with_provenance_and_commit(dir_context, source, pack_uri, force, provenance_source, None)
 }
-
 
 /// Common installation logic for both local and remote aipack files
 /// Return the InstalledPack containing pack information and installation details
@@ -322,11 +298,9 @@ fn install_pack_source_with_provenance_and_commit(
 
 	let installed_pack_toml_path = pack_target_dir.join("pack.toml");
 	let provenance_result = match commit {
-		Some(commit) => provenance::write_installation_provenance_with_commit(
-			&installed_pack_toml_path,
-			provenance_source,
-			commit,
-		),
+		Some(commit) => {
+			provenance::write_installation_provenance_with_commit(&installed_pack_toml_path, provenance_source, commit)
+		}
 		None => provenance::write_installation_provenance(&installed_pack_toml_path, provenance_source),
 	};
 	if let Err(provenance_error) = provenance_result {

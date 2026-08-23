@@ -29,8 +29,8 @@ pub async fn exec_install(dir_context: DirContext, install_args: InstallArgs) ->
 		}
 	};
 
-	let is_git_source = install_args.aipack_ref.starts_with("git://")
-		|| install_args.aipack_ref.starts_with("git+ssh://");
+	let is_git_source =
+		install_args.aipack_ref.starts_with("git://") || install_args.aipack_ref.starts_with("git+ssh://");
 
 	// Format the zip size using the size crate
 	let formatted_zip_size = Size::from_bytes(installed_pack.zip_size as u64).to_string();

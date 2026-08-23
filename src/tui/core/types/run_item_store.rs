@@ -1,5 +1,7 @@
 use crate::model::{EpochUs, Id, Loop, Run};
-use crate::tui::core::{GroupDashCostEntry, GroupDashData, GroupDashRunEntry, GroupDashTarget, RunItem, RunNavGroup, RunNavRow};
+use crate::tui::core::{
+	GroupDashCostEntry, GroupDashData, GroupDashRunEntry, GroupDashTarget, RunItem, RunNavGroup, RunNavRow,
+};
 use std::collections::{HashMap, HashSet};
 
 #[derive(Debug, Default, Clone)]
@@ -34,7 +36,10 @@ impl RunItemStore {
 	pub fn top_run_id_of_top_loop(&self) -> Option<Id> {
 		let top_loop_id = self.top_loop_id()?;
 		self.nav_rows.iter().find_map(|row| match row {
-			RunNavRow::Run { item, loop_id: Some(lid) } if *lid == top_loop_id => Some(item.id()),
+			RunNavRow::Run {
+				item,
+				loop_id: Some(lid),
+			} if *lid == top_loop_id => Some(item.id()),
 			_ => None,
 		})
 	}
@@ -45,8 +50,7 @@ impl RunItemStore {
 			.filter(|row| match row {
 				RunNavRow::LoopHeader { .. } => true,
 				RunNavRow::Run { item, .. } => {
-					item.is_root()
-						|| root_id.is_some_and(|root_id| item.belongs_to_root_branch(root_id))
+					item.is_root() || root_id.is_some_and(|root_id| item.belongs_to_root_branch(root_id))
 				}
 			})
 			.collect()
@@ -592,8 +596,7 @@ mod tests {
 		// -- Setup & Fixtures
 		let mm = ModelManager::new().await?;
 		let standalone_root_id = RunBmc::create(&mm, run_for_test("standalone-root"))?;
-		let standalone_child_id =
-			RunBmc::create(&mm, child_run_for_test(standalone_root_id, "standalone-child"))?;
+		let standalone_child_id = RunBmc::create(&mm, child_run_for_test(standalone_root_id, "standalone-child"))?;
 		let first_run_id = RunBmc::create(&mm, run_for_test("first"))?;
 		let loop_id = LoopBmc::create_for_first_member(&mm, first_run_id)?;
 		let loop_member_id = LoopBmc::create_member(&mm, loop_id, run_for_test("member"))?;
@@ -628,10 +631,7 @@ mod tests {
 
 		// -- Check
 		assert_eq!(
-			visible_loop_member_rows
-				.iter()
-				.filter(|row| row.loop_info().is_some())
-				.count(),
+			visible_loop_member_rows.iter().filter(|row| row.loop_info().is_some()).count(),
 			1
 		);
 		assert_eq!(visible_loop_member_ids.len(), 4);
@@ -718,7 +718,9 @@ mod tests {
 
 		// -- Exec
 		let target = GroupDashTarget::from_loop(loop_id);
-		let dash_data = store.compute_group_dash_data(&target, 2_000_000).ok_or("Should compute dash data")?;
+		let dash_data = store
+			.compute_group_dash_data(&target, 2_000_000)
+			.ok_or("Should compute dash data")?;
 
 		// -- Check
 		assert_eq!(dash_data.top_runs_count, 2);
@@ -728,7 +730,11 @@ mod tests {
 		assert_eq!(dash_data.cumul_task_duration_us, Some(1_200_000));
 		assert_eq!(dash_data.top_runs.len(), 2);
 
-		let member_top = dash_data.top_runs.iter().find(|r| r.run_id == loop_member_id).ok_or("Member top run missing")?;
+		let member_top = dash_data
+			.top_runs
+			.iter()
+			.find(|r| r.run_id == loop_member_id)
+			.ok_or("Member top run missing")?;
 		assert_eq!(member_top.child_count, 1);
 		assert!((member_top.cost - 0.20).abs() < 1e-6);
 		assert!((member_top.top_cost - 0.12).abs() < 1e-6);
@@ -736,12 +742,20 @@ mod tests {
 		assert_eq!(member_top.total_duration_us, Some(1_500_000));
 
 		assert_eq!(dash_data.agents.len(), 2);
-		let alpha_agent = dash_data.agents.iter().find(|a| a.name == "agent-alpha").ok_or("Alpha agent missing")?;
+		let alpha_agent = dash_data
+			.agents
+			.iter()
+			.find(|a| a.name == "agent-alpha")
+			.ok_or("Alpha agent missing")?;
 		assert_eq!(alpha_agent.total_duration_us, Some(1_000_000));
 		assert_eq!(alpha_agent.count, 1);
 
 		assert_eq!(dash_data.models.len(), 2);
-		let gpt4o_model = dash_data.models.iter().find(|m| m.name == "gpt-4o").ok_or("GPT-4o model missing")?;
+		let gpt4o_model = dash_data
+			.models
+			.iter()
+			.find(|m| m.name == "gpt-4o")
+			.ok_or("GPT-4o model missing")?;
 		assert_eq!(gpt4o_model.total_duration_us, Some(1_000_000));
 
 		Ok(())
@@ -770,7 +784,9 @@ mod tests {
 
 		// -- Exec
 		let target = GroupDashTarget::from_run(standalone_id);
-		let dash_data = store.compute_group_dash_data(&target, 600_000).ok_or("Should compute dash data")?;
+		let dash_data = store
+			.compute_group_dash_data(&target, 600_000)
+			.ok_or("Should compute dash data")?;
 
 		// -- Check
 		assert_eq!(dash_data.top_runs_count, 1);
@@ -802,7 +818,9 @@ mod tests {
 
 		// -- Exec: Compute with now = 3_500_000 us (2.5s elapsed)
 		let target = GroupDashTarget::from_run(running_run_id);
-		let dash_data = store.compute_group_dash_data(&target, 3_500_000).ok_or("Should compute dash data")?;
+		let dash_data = store
+			.compute_group_dash_data(&target, 3_500_000)
+			.ok_or("Should compute dash data")?;
 
 		// -- Check
 		assert!(dash_data.has_active_runs);

@@ -2,10 +2,8 @@ use crate::dir_context::DirContext;
 use crate::exec::packer::PackToml;
 use crate::exec::packer::pack_toml::{PartialPackToml, parse_validate_pack_toml};
 use crate::support::files::{DeleteCheck, safer_trash_dir};
-use crate::support::{
-	proc::{proc_exec, proc_exec_to_output, ProcOptions},
-	webc, zip,
-};
+use crate::support::proc::{ProcOptions, proc_exec, proc_exec_to_output};
+use crate::support::{webc, zip};
 use crate::types::PackIdentity;
 use crate::{Error, Result};
 use lazy_regex::regex;
@@ -88,7 +86,9 @@ impl PackUri {
 			.map_or((uri, None), |(repository, selector)| (repository, Some(selector)));
 
 		if repository.is_empty() {
-			return Err(Error::custom(format!("Invalid Git source '{uri}': repository URL is empty")));
+			return Err(Error::custom(format!(
+				"Invalid Git source '{uri}': repository URL is empty"
+			)));
 		}
 
 		let subpath = selector.map(Self::normalize_git_subpath).transpose()?;
@@ -310,12 +310,7 @@ pub(super) async fn clone_from_git_with_commit(
 
 	let clone_dir = download_dir.join(Uuid::now_v7().to_string());
 	let clone_dir_str = clone_dir.as_str();
-	let clone_result = proc_exec(
-		"git",
-		&["clone", git_source.repository.as_str(), clone_dir_str],
-		None,
-	)
-	.await;
+	let clone_result = proc_exec("git", &["clone", git_source.repository.as_str(), clone_dir_str], None).await;
 
 	if let Err(error) = clone_result {
 		let cause = match cleanup_git_clone(&clone_dir) {
@@ -527,7 +522,8 @@ pub(super) fn extract_pack_toml_from_pack_dir(path_to_pack: &SPath, reference: &
 }
 
 pub(super) fn copy_git_pack(source_dir: &SPath, target_dir: &SPath) -> Result<()> {
-	std::fs::create_dir_all(target_dir.path()).map_err(|e| Error::custom(format!("Failed to create Git pack directory: {e}")))?;
+	std::fs::create_dir_all(target_dir.path())
+		.map_err(|e| Error::custom(format!("Failed to create Git pack directory: {e}")))?;
 
 	let mut entries = walkdir::WalkDir::new(source_dir.path()).min_depth(1).into_iter();
 	while let Some(entry) = entries.next() {
@@ -548,25 +544,34 @@ pub(super) fn copy_git_pack(source_dir: &SPath, target_dir: &SPath) -> Result<()
 			continue;
 		}
 
-		let relative_path = relative_path.to_str().ok_or_else(|| {
-			Error::custom(format!(
-				"Git pack path '{}' is not valid UTF-8",
-				entry.path().display()
-			))
-		})?;
+		let relative_path = relative_path
+			.to_str()
+			.ok_or_else(|| Error::custom(format!("Git pack path '{}' is not valid UTF-8", entry.path().display())))?;
 
 		let target_path = target_dir.join(relative_path);
 		if entry.file_type().is_dir() {
-			std::fs::create_dir_all(&target_path)
-				.map_err(|e| Error::custom(format!("Failed to create Git pack directory '{}': {e}", target_path.as_str())))?;
+			std::fs::create_dir_all(&target_path).map_err(|e| {
+				Error::custom(format!(
+					"Failed to create Git pack directory '{}': {e}",
+					target_path.as_str()
+				))
+			})?;
 		} else if entry.file_type().is_file() {
 			if let Some(parent) = target_path.parent() {
-				std::fs::create_dir_all(&parent)
-					.map_err(|e| Error::custom(format!("Failed to create Git pack directory '{}': {e}", parent.as_str())))?;
+				std::fs::create_dir_all(&parent).map_err(|e| {
+					Error::custom(format!(
+						"Failed to create Git pack directory '{}': {e}",
+						parent.as_str()
+					))
+				})?;
 			}
 
-			std::fs::copy(entry.path(), &target_path)
-				.map_err(|e| Error::custom(format!("Failed to copy Git pack file '{}': {e}", entry.path().display())))?;
+			std::fs::copy(entry.path(), &target_path).map_err(|e| {
+				Error::custom(format!(
+					"Failed to copy Git pack file '{}': {e}",
+					entry.path().display()
+				))
+			})?;
 		} else {
 			return Err(Error::custom(format!(
 				"Unsupported file type in Git pack '{}'",

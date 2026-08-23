@@ -512,17 +512,8 @@ return data
 
 	// -- Exec
 	// 1. First run creates a loop with redo
-	let first = crate::run::run_agent_with_identity(
-		&runtime,
-		None,
-		redo_agent,
-		None,
-		&run_options,
-		true,
-		None,
-		false,
-	)
-	.await?;
+	let first =
+		crate::run::run_agent_with_identity(&runtime, None, redo_agent, None, &run_options, true, None, false).await?;
 	let loop_id = first.loop_id.ok_or("The first redo should create a loop")?;
 
 	// 2. Second run fails inside the loop
@@ -544,22 +535,17 @@ return data
 	assert!(!loop_info.pending, "Failed loop should not remain pending");
 
 	// 4. Third run is a fresh manual rerun (loop_id: None)
-	let third = crate::run::run_agent_with_identity(
-		&runtime,
-		None,
-		normal_agent,
-		None,
-		&run_options,
-		true,
-		None,
-		false,
-	)
-	.await?;
+	let third =
+		crate::run::run_agent_with_identity(&runtime, None, normal_agent, None, &run_options, true, None, false)
+			.await?;
 
 	let third_run = crate::model::RunBmc::get(runtime.mm(), third.run_id)?;
 
 	// -- Check
-	assert!(third_run.loop_id.is_none(), "Manual rerun after failure should not be part of the old loop");
+	assert!(
+		third_run.loop_id.is_none(),
+		"Manual rerun after failure should not be part of the old loop"
+	);
 	assert_eq!(third.loop_id, None);
 
 	let members = crate::model::LoopBmc::list_members(runtime.mm(), loop_id)?;

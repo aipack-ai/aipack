@@ -231,16 +231,12 @@ async fn test_installer_impl_git_local_pack_installation() -> Result<()> {
 	assert!(!expected_install_path.join(".git").exists());
 	assert!(installed_pack.size > 0);
 	assert_eq!(installed_pack.zip_size, 0);
-	let (installed_time, installed_source) =
-		read_installed_provenance(&expected_install_path.join("pack.toml"))?;
+	let (installed_time, installed_source) = read_installed_provenance(&expected_install_path.join("pack.toml"))?;
 	assert!(!installed_time.is_empty(), "installed.time should be populated");
 	assert_eq!(installed_source, provenance_source);
 	let installed_commit = read_installed_commit(&expected_install_path.join("pack.toml"))?;
 	assert_eq!(installed_commit, expected_commit);
-	assert_eq!(
-		std::fs::read_to_string(repo_dir.join("pack.toml").path())?,
-		pack_toml
-	);
+	assert_eq!(std::fs::read_to_string(repo_dir.join("pack.toml").path())?, pack_toml);
 	assert!(!clone_dir.exists());
 
 	// -- Cleanup
@@ -255,11 +251,7 @@ async fn test_installer_impl_git_missing_pack_toml_err() -> Result<()> {
 	let runtime = Runtime::new_test_runtime_for_temp_dir().await?;
 	let dir_context = runtime.dir_context();
 	let repo_dir = dir_context.current_dir().join("git-source/missing-pack-toml");
-	create_git_repository(
-		&repo_dir,
-		None,
-		&[("main.aip", "A Git pack without a root manifest.")],
-	)?;
+	create_git_repository(&repo_dir, None, &[("main.aip", "A Git pack without a root manifest.")])?;
 
 	let (clone_dir, pack_uri, commit) = clone_git_repository(dir_context, &repo_dir).await?;
 	let source = PackSource::Git {
@@ -366,7 +358,11 @@ async fn test_installer_impl_git_lower_version_err() -> Result<()> {
 
 	let new_repo_dir = dir_context.current_dir().join("git-source/new-version");
 	let new_pack_toml = git_pack_toml("git", "versioned-pack", "0.1.0");
-	create_git_repository(&new_repo_dir, Some(&new_pack_toml), &[("main.aip", "New lower version.")])?;
+	create_git_repository(
+		&new_repo_dir,
+		Some(&new_pack_toml),
+		&[("main.aip", "New lower version.")],
+	)?;
 
 	// -- Exec
 	let result = install_git_repository(dir_context, &new_repo_dir, false).await;
@@ -430,8 +426,7 @@ async fn test_installer_impl_git_equal_version_up_to_date() -> Result<()> {
 		std::fs::read_to_string(installed_pack.path.join("main.aip").path())?,
 		"First version."
 	);
-	let (up_to_date_time, up_to_date_source) =
-		read_installed_provenance(&installed_pack.path.join("pack.toml"))?;
+	let (up_to_date_time, up_to_date_source) = read_installed_provenance(&installed_pack.path.join("pack.toml"))?;
 	assert_eq!(up_to_date_time, first_time);
 	assert_eq!(up_to_date_source, first_source);
 	let up_to_date_commit = read_installed_commit(&installed_pack.path.join("pack.toml"))?;
@@ -455,8 +450,7 @@ async fn test_installer_impl_git_force_replaces_equal_version() -> Result<()> {
 	create_git_repository(&first_repo_dir, Some(&pack_toml), &[("main.aip", "Original content.")])?;
 	let first_commit = git_repository_commit(&first_repo_dir)?;
 	let first_provenance = "git://example.com/team/force-first.git";
-	let _ =
-		install_git_repository_with_provenance(dir_context, &first_repo_dir, false, first_provenance).await?;
+	let _ = install_git_repository_with_provenance(dir_context, &first_repo_dir, false, first_provenance).await?;
 
 	let second_repo_dir = dir_context.current_dir().join("git-source/second-force");
 	create_git_repository(
@@ -468,8 +462,7 @@ async fn test_installer_impl_git_force_replaces_equal_version() -> Result<()> {
 
 	// -- Exec
 	let second_provenance = "git://example.com/team/force-second.git";
-	let result =
-		install_git_repository_with_provenance(dir_context, &second_repo_dir, true, second_provenance).await?;
+	let result = install_git_repository_with_provenance(dir_context, &second_repo_dir, true, second_provenance).await?;
 
 	// -- Check
 	let installed_pack = match result {
@@ -480,8 +473,7 @@ async fn test_installer_impl_git_force_replaces_equal_version() -> Result<()> {
 		std::fs::read_to_string(installed_pack.path.join("main.aip").path())?,
 		"Forced replacement content."
 	);
-	let (installed_time, installed_source) =
-		read_installed_provenance(&installed_pack.path.join("pack.toml"))?;
+	let (installed_time, installed_source) = read_installed_provenance(&installed_pack.path.join("pack.toml"))?;
 	assert!(!installed_time.is_empty(), "installed.time should be populated");
 	assert_eq!(installed_source, second_provenance);
 	let installed_commit = read_installed_commit(&installed_pack.path.join("pack.toml"))?;
@@ -591,14 +583,8 @@ async fn test_installer_impl_git_selected_subdirectory_installation() -> Result<
 
 	// -- Exec
 	let provenance_source = "git+ssh://git@example.com/team/selected-pack.git#packs/nested";
-	let result = install_git_source_with_provenance(
-		dir_context,
-		&source,
-		&clone_dir,
-		&pack_uri,
-		false,
-		provenance_source,
-	)?;
+	let result =
+		install_git_source_with_provenance(dir_context, &source, &clone_dir, &pack_uri, false, provenance_source)?;
 
 	// -- Check
 	let installed_pack = match result {
@@ -624,8 +610,7 @@ async fn test_installer_impl_git_selected_subdirectory_installation() -> Result<
 	assert!(!expected_install_path.join(".git").exists());
 	assert!(installed_pack.size > 0);
 	assert_eq!(installed_pack.zip_size, 0);
-	let (installed_time, installed_source) =
-		read_installed_provenance(&expected_install_path.join("pack.toml"))?;
+	let (installed_time, installed_source) = read_installed_provenance(&expected_install_path.join("pack.toml"))?;
 	assert!(!installed_time.is_empty(), "installed.time should be populated");
 	assert_eq!(installed_source, provenance_source);
 	let installed_commit = read_installed_commit(&expected_install_path.join("pack.toml"))?;
@@ -663,7 +648,10 @@ async fn test_installer_impl_git_selected_directory_missing_err() -> Result<()> 
 	let error = result.err().ok_or("Missing selected Git directory should fail installation")?;
 	match error {
 		Error::FailToInstall { cause, .. } => {
-			assert!(cause.contains("Git pack directory"), "Unexpected installation cause: {cause}");
+			assert!(
+				cause.contains("Git pack directory"),
+				"Unexpected installation cause: {cause}"
+			);
 		}
 		other => return Err(format!("Expected missing Git directory error, got: {other:?}").into()),
 	}
@@ -746,7 +734,10 @@ name = "invalid"
 	let error = result.err().ok_or("Invalid selected Git manifest should fail installation")?;
 	match error {
 		Error::FailToInstall { cause, .. } => {
-			assert!(cause.contains("Invalid root pack.toml"), "Unexpected installation cause: {cause}");
+			assert!(
+				cause.contains("Invalid root pack.toml"),
+				"Unexpected installation cause: {cause}"
+			);
 		}
 		other => return Err(format!("Expected invalid Git manifest error, got: {other:?}").into()),
 	}
@@ -761,16 +752,10 @@ name = "invalid"
 // region:    --- Support
 
 fn git_pack_toml(namespace: &str, name: &str, version: &str) -> String {
-	format!(
-		"[pack]\nnamespace = \"{namespace}\"\nname = \"{name}\"\nversion = \"{version}\"\n"
-	)
+	format!("[pack]\nnamespace = \"{namespace}\"\nname = \"{name}\"\nversion = \"{version}\"\n")
 }
 
-fn create_git_repository(
-	repo_dir: &SPath,
-	pack_toml: Option<&str>,
-	files: &[(&str, &str)],
-) -> Result<()> {
+fn create_git_repository(repo_dir: &SPath, pack_toml: Option<&str>, files: &[(&str, &str)]) -> Result<()> {
 	ensure_dir(repo_dir)?;
 
 	if let Some(pack_toml) = pack_toml {
@@ -843,14 +828,7 @@ async fn install_git_repository_with_provenance(
 		commit,
 	};
 
-	install_git_source_with_provenance(
-		dir_context,
-		&source,
-		&clone_dir,
-		&pack_uri,
-		force,
-		provenance_source,
-	)
+	install_git_source_with_provenance(dir_context, &source, &clone_dir, &pack_uri, force, provenance_source)
 }
 
 fn read_installed_provenance(pack_toml_path: &SPath) -> Result<(String, String)> {

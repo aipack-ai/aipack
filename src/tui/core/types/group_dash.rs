@@ -243,8 +243,7 @@ mod tests {
 		assert_eq!(loop_target.run_ids(), &[]);
 		assert!(!loop_target.is_empty());
 
-		let mixed_target =
-			GroupDashTarget::from_mixed(vec![loop_id_1, loop_id_2], vec![run_id_1]);
+		let mixed_target = GroupDashTarget::from_mixed(vec![loop_id_1, loop_id_2], vec![run_id_1]);
 		assert_eq!(mixed_target.loop_ids(), &[loop_id_1, loop_id_2]);
 		assert_eq!(mixed_target.run_ids(), &[run_id_1]);
 		assert!(!mixed_target.is_empty());
