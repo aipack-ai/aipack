@@ -485,7 +485,7 @@ second heading content"#;
 		let MdSection { heading, content } = sections.into_iter().next().ok_or("Should have returned a result")?;
 		// check heading
 		let heading = heading.ok_or("Should have a heading")?;
-		assert_eq!(heading.content(), format!("{}", fx_headings[0]));
+		assert_eq!(heading.content(), fx_headings[0].to_string());
 		assert_eq!(heading.level(), 1);
 		// Should contain
 		assert_contains(&content, "heading-1-content");
@@ -517,7 +517,7 @@ second heading content"#;
 		let MdSection { heading, content } = sections.into_iter().next().ok_or("Should have returned a result")?;
 		// check heading
 		let heading = heading.ok_or("Should have a heading")?;
-		assert_eq!(heading.content(), format!("{}", fx_headings[0]));
+		assert_eq!(heading.content(), fx_headings[0].to_string());
 		assert_eq!(heading.level(), 2);
 		// Should contain
 		assert_contains(&content, "Some heading-1-a-content");
