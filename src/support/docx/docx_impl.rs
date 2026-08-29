@@ -39,7 +39,7 @@ impl Styles {
 	}
 }
 
-fn get_attr(e: &quick_xml::events::BytesStart, key: &[u8]) -> Option<String> {
+fn get_attr(e: &quick_xml::events::BytesStart, key: &str) -> Option<String> {
 	for attr in e.attributes().with_checks(false).flatten() {
 		if attr.key.as_ref() == key {
 			let v = attr.normalized_value(XmlVersion::Implicit1_0);
@@ -127,14 +127,14 @@ pub fn docx_convert(path: &Path) -> Result<String, Box<dyn std::error::Error>> {
 	loop {
 		match reader.read_event_into(&mut buf) {
 			Ok(Event::Start(e)) => match e.name().as_ref() {
-				b"w:tbl" => styles.table = true,
+				"w:tbl" => styles.table = true,
 				_ => {
 					continue;
 				}
 			},
 			Ok(Event::Empty(e)) => match e.name().as_ref() {
-				b"w:b" => {
-					if let Some(val) = get_attr(&e, b"w:val") {
+				"w:b" => {
+					if let Some(val) = get_attr(&e, "w:val") {
 						if val == "true" {
 							styles.bold = true;
 						}
@@ -142,8 +142,8 @@ pub fn docx_convert(path: &Path) -> Result<String, Box<dyn std::error::Error>> {
 						styles.bold = true;
 					}
 				}
-				b"w:i" => {
-					if let Some(val) = get_attr(&e, b"w:val") {
+				"w:i" => {
+					if let Some(val) = get_attr(&e, "w:val") {
 						if val == "true" {
 							styles.italics = true;
 						}
@@ -151,8 +151,8 @@ pub fn docx_convert(path: &Path) -> Result<String, Box<dyn std::error::Error>> {
 						styles.italics = true;
 					}
 				}
-				b"w:strike" => {
-					if let Some(val) = get_attr(&e, b"w:val") {
+				"w:strike" => {
+					if let Some(val) = get_attr(&e, "w:val") {
 						if val == "true" {
 							styles.strike = true;
 						}
@@ -160,11 +160,11 @@ pub fn docx_convert(path: &Path) -> Result<String, Box<dyn std::error::Error>> {
 						styles.strike = true;
 					}
 				}
-				b"w:u" => {
+				"w:u" => {
 					styles.underline = true;
 				}
-				b"w:pStyle" => {
-					if let Some(val) = get_attr(&e, b"w:val") {
+				"w:pStyle" => {
+					if let Some(val) = get_attr(&e, "w:val") {
 						let val_lower = val.to_lowercase();
 						if val_lower.contains("subtitle") {
 							styles.subtitle = true;
@@ -184,11 +184,11 @@ pub fn docx_convert(path: &Path) -> Result<String, Box<dyn std::error::Error>> {
 						}
 					}
 				}
-				b"w:ilvl" => {
+				"w:ilvl" => {
 					if styles.header || styles.title {
 						continue;
 					}
-					if let Some(val) = get_attr(&e, b"w:val")
+					if let Some(val) = get_attr(&e, "w:val")
 						&& let Ok(val) = val.parse::<i8>()
 					{
 						styles.indent = val + 1
@@ -197,7 +197,7 @@ pub fn docx_convert(path: &Path) -> Result<String, Box<dyn std::error::Error>> {
 				_ => {}
 			},
 			Ok(Event::Text(e)) => {
-				let mut text = e.decode()?.into_owned();
+				let mut text = e.to_string();
 				if styles.bold {
 					text = format!("**{}** ", text.trim());
 					styles.bold = false;
@@ -253,7 +253,7 @@ pub fn docx_convert(path: &Path) -> Result<String, Box<dyn std::error::Error>> {
 				push_and_update(&mut markdown, &text, &mut trailing_newlines, &mut started);
 			}
 			Ok(Event::End(e)) => match e.name().as_ref() {
-				b"w:tbl" if !table_rows.is_empty() => {
+				"w:tbl" if !table_rows.is_empty() => {
 					let headers = table_rows[0].clone();
 					let data_rows = if table_rows.len() > 1 {
 						table_rows[1..].to_vec()
@@ -266,11 +266,11 @@ pub fn docx_convert(path: &Path) -> Result<String, Box<dyn std::error::Error>> {
 					table_rows = Vec::new();
 					styles = Styles::default();
 				}
-				b"w:tr" => {
+				"w:tr" => {
 					table_rows.push(current_row);
 					current_row = Vec::new();
 				}
-				b"w:p" => {
+				"w:p" => {
 					if styles.indent == -1 {
 						push_and_update(&mut markdown, "  \n", &mut trailing_newlines, &mut started);
 						styles.indent = 0;
