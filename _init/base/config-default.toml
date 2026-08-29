@@ -52,7 +52,8 @@ flash3        = "gemini-3-flash-preview" # older than flash 3.5, but 3x cheaper
 dflash        = "deepseek-v4-flash"
 dpro          = "deepseek-v4-pro"
 # -- z.ai
-glm           = "zai::glm-5.2"
+glm           = "zai::glm-5.3"
+glm-flash     = "zai::glm-5.3-flash"
 # -- kimi
 kimi          = "kimi::kimi-k3"
 kimi-fast     = "kimi::kimi-k2.7-code-highspeed"
