@@ -57,7 +57,7 @@ pub fn new_genai_client() -> Result<genai::Client> {
 				}
 			}
 		})
-		.build();
+		.build()?;
 
 	Ok(client)
 }
