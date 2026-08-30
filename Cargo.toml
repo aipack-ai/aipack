@@ -102,7 +102,6 @@ tracing-appender = "0.2"
 # -- Others
 derive_more = {version = "2.0.1", features = ["from","display","debug", "into", "deref"] }
 strum = { version = "0.28", features = ["derive"] }
-keyring = {version = "3", features = ["apple-native"]}
 strsim = "0.11"
 time = { version = "0.3.44", features = ["formatting", "local-offset"]}
 time-tz = {version = "2.0.0", features = ["system"]}

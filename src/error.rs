@@ -167,8 +167,6 @@ pub enum Error {
 	#[from]
 	SimpleFs(simple_fs::Error),
 	#[from]
-	Keyring(keyring::Error),
-	#[from]
 	Clap(clap::error::Error),
 	#[from]
 	Reqwest(reqwest::Error),
