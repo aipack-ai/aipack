@@ -38,7 +38,7 @@ futures-timer = "3.0.3"
 futures = "0.3.31"
 # -- AI
 genai = { version = "0.7.0-beta.20"}
-udiffx = { version = "0.3.0", features = ["prompt"]}
+udiffx = { version = "0.3.1", features = ["prompt"]}
 markex = { version = "0.3.0" }
 aicost = { version = "0.2.11" }
 # -- DB
