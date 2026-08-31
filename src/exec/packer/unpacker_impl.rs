@@ -75,7 +75,7 @@ pub async fn unpack_pack(dir_context: &DirContext, pack_ref_str: &str, force: bo
 	let installed_version = read_installed_version(&installed_dir);
 	let remote_version = fetch_repo_latest_version(&pack_identity).await?;
 
-	let source = determine_source(&installed_version, &remote_version, Some(&installed_dir));
+	let source = determine_source(&installed_version, &remote_version, Some(&installed_dir))?;
 
 	// -- Perform the unpack based on the selected source
 	match source {
@@ -154,10 +154,10 @@ fn determine_source(
 	installed_version: &Option<String>,
 	remote_version: &Option<String>,
 	installed_dir: Option<&SPath>,
-) -> UnpackSource {
+) -> Result<UnpackSource> {
 	let installed_exists = installed_dir.is_some_and(|p| p.exists());
 
-	match (installed_exists, installed_version, remote_version) {
+	let source = match (installed_exists, installed_version, remote_version) {
 		// Both installed and remote available: compare versions
 		(true, Some(inst_ver), Some(rem_ver)) => {
 			match support::validate_version_update(inst_ver, rem_ver) {
@@ -166,18 +166,24 @@ fn determine_source(
 					UnpackSource::Remote
 				}
 				_ => {
+					let installed_dir = installed_dir.ok_or("Does not have installed dir setup")?;
 					// Installed is same or newer, use installed
-					UnpackSource::Installed(installed_dir.unwrap().clone())
+					UnpackSource::Installed(installed_dir.clone())
 				}
 			}
 		}
 		// Installed exists but no remote info: use installed
-		(true, _, None) => UnpackSource::Installed(installed_dir.unwrap().clone()),
+		(true, _, None) => {
+			let installed_dir = installed_dir.ok_or("Does not have installed dir setup")?;
+			UnpackSource::Installed(installed_dir.clone())
+		}
 		// Installed exists (even without parseable version) but remote available: prefer remote for freshness
 		(true, None, Some(_)) => UnpackSource::Remote,
 		// Nothing installed: must download
 		(false, _, _) => UnpackSource::Remote,
-	}
+	};
+
+	Ok(source)
 }
 
 /// Recursively copy a directory tree from src to dest
@@ -238,7 +244,7 @@ mod tests {
 		std::fs::create_dir_all(installed_dir.path())?;
 
 		// -- Exec
-		let source = determine_source(&installed_version, &remote_version, Some(&installed_dir));
+		let source = determine_source(&installed_version, &remote_version, Some(&installed_dir))?;
 
 		// -- Check
 		assert!(
@@ -261,7 +267,7 @@ mod tests {
 		std::fs::create_dir_all(installed_dir.path())?;
 
 		// -- Exec
-		let source = determine_source(&installed_version, &remote_version, Some(&installed_dir));
+		let source = determine_source(&installed_version, &remote_version, Some(&installed_dir))?;
 
 		// -- Check
 		assert_eq!(
@@ -285,7 +291,7 @@ mod tests {
 		std::fs::create_dir_all(installed_dir.path())?;
 
 		// -- Exec
-		let source = determine_source(&installed_version, &remote_version, Some(&installed_dir));
+		let source = determine_source(&installed_version, &remote_version, Some(&installed_dir))?;
 
 		// -- Check
 		assert!(
@@ -308,7 +314,7 @@ mod tests {
 		std::fs::create_dir_all(installed_dir.path())?;
 
 		// -- Exec
-		let source = determine_source(&installed_version, &remote_version, Some(&installed_dir));
+		let source = determine_source(&installed_version, &remote_version, Some(&installed_dir))?;
 
 		// -- Check
 		assert!(
@@ -331,7 +337,7 @@ mod tests {
 		let installed_dir = gen_test_dir_path();
 
 		// -- Exec
-		let source = determine_source(&installed_version, &remote_version, Some(&installed_dir));
+		let source = determine_source(&installed_version, &remote_version, Some(&installed_dir))?;
 
 		// -- Check
 		assert_eq!(source, UnpackSource::Remote, "Should use remote when nothing installed");
@@ -347,7 +353,7 @@ mod tests {
 		let installed_dir = gen_test_dir_path();
 
 		// -- Exec
-		let source = determine_source(&installed_version, &remote_version, Some(&installed_dir));
+		let source = determine_source(&installed_version, &remote_version, Some(&installed_dir))?;
 
 		// -- Check
 		assert_eq!(
@@ -368,7 +374,7 @@ mod tests {
 		std::fs::create_dir_all(installed_dir.path())?;
 
 		// -- Exec
-		let source = determine_source(&installed_version, &remote_version, Some(&installed_dir));
+		let source = determine_source(&installed_version, &remote_version, Some(&installed_dir))?;
 
 		// -- Check
 		assert_eq!(

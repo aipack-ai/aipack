@@ -28,7 +28,7 @@ pub fn el_running_ico_with_flow(arg: impl Into<RunningState>, flow_redo_count: O
 		RunningState::Running => Span::styled("▶", style::CLR_TXT_RUNNING),
 		RunningState::Ended(end_state) => match end_state {
 			Some(EndState::Ok) => {
-				if flow_redo_count.is_some() && flow_redo_count.unwrap() > 0 {
+				if flow_redo_count.is_some() && flow_redo_count.unwrap_or_default() > 0 {
 					Span::styled("✔", style::CLR_TXT_DONE_LOOPED)
 				} else {
 					Span::styled("✔", style::CLR_TXT_DONE)
