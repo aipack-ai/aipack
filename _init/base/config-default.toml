@@ -29,7 +29,7 @@ input_concurrency = 2
 [options.model_aliases]
 # -- Anthropic
 mythos        = "claude-mythos-5"
-fable         = "claude-fable-5"
+fable         = "claude-fable-5-1"
 opus          = "claude-opus-5"
 claude        = "claude-sonnet-5"
 sonnet        = "claude-sonnet-5"
