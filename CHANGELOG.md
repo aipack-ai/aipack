@@ -1,5 +1,16 @@
 `.` minor | `-` Fix | `+` Addition | `^` improvement | `!` Change | `*` important | `>` Refactor
 
+- `+` tui - loop dashboard view run status and duration, with tuned auto-select rules
+- `^` models - add GPT-6 Astra, Gemini Flash 3.8 and 3.7, Claude Fable 5.1, Grok 4.6, and GLM 5.3 Flash
+- `^` cost - update DeepSeek to off-peak, Fireworks, and reduced Sol rates
+- `-` loop - fix run containment when looped run fails
+- `-` tui - fix group dashboard scroll and Shift+M refresh
+- `.` config-default - update Fireworks deepseek-v4-pro-0813
+- `.` deps - update genai to 0.7.0-beta.21, udiffx to 0.3.1, and quick-xml to 0.42
+- `.` template gitignore - add psd, af, and web dev (ignore js.map, css.map)
+- `>` code clean - remove remaining unwraps
+- `>` auth - remove unused keyring and credential storage
+
 ## 2026-08-05 [v0.8.33](https://github.com/aipack-ai/aipack/compare/v0.8.32...v0.8.33)
 
 - `+` loop - add first-pass loop support
