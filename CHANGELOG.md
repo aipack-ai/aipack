@@ -1,5 +1,7 @@
 `.` minor | `-` Fix | `+` Addition | `^` improvement | `!` Change | `*` important | `>` Refactor
 
+## 2026-09-04 [v0.8.34](https://github.com/aipack-ai/aipack/compare/v0.8.33...v0.8.34)
+
 - `+` tui - loop dashboard view run status and duration, with tuned auto-select rules
 - `^` models - add GPT-6 Astra, Gemini Flash 3.8 and 3.7, Claude Fable 5.1, Grok 4.6, and GLM 5.3 Flash
 - `^` cost - update DeepSeek to off-peak, Fireworks, and reduced Sol rates
