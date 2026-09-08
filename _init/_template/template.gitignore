@@ -36,6 +36,7 @@ out/
 # -- Nodejs
 node_modules/
 package-lock.json
+*-lock.yaml
 !.mocharc.yaml
 report.*.json
 
