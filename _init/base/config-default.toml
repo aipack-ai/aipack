@@ -50,7 +50,7 @@ lite          = "gemini-3.5-flash-lite"
 lite31        = "gemini-3.1-flash-lite"
 flash3        = "gemini-3-flash-preview" # older than flash 3.5, but 3x cheaper
 # -- DeepSeek
-dflash        = "deepseek-v4-flash"
+dflash        = "deepseek-flash"
 dpro          = "deepseek-v4-pro"
 # -- z.ai
 glm           = "zai::glm-5.3"
