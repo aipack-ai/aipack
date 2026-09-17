@@ -14,6 +14,10 @@ pub struct GroupDashView;
 
 impl GroupDashView {
 	pub const SCROLL_IDEN: ScrollIden = ScrollIden::GroupDashContent;
+
+	pub fn clear_scroll_idens(state: &mut AppState) {
+		state.clear_scroll_zone_area(&Self::SCROLL_IDEN);
+	}
 }
 
 impl StatefulWidget for GroupDashView {

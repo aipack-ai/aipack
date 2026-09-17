@@ -1,6 +1,6 @@
 use crate::tui::core::RunTab;
 use crate::tui::view::support::RectExt as _;
-use crate::tui::view::{RunOverviewView, RunTasksView, comp};
+use crate::tui::view::{GroupDashView, RunOverviewView, RunTasksView, comp};
 use crate::tui::{AppState, style};
 use ratatui::buffer::Buffer;
 use ratatui::layout::{Constraint, Direction, Layout, Rect};
@@ -14,6 +14,9 @@ impl RunMainView {
 	pub fn clear_scroll_idens(state: &mut AppState) {
 		RunTasksView::clear_scroll_idens(state);
 		RunOverviewView::clear_scroll_idens(state);
+		// The run main content pane is swapped with the group dashboard in the same region,
+		// so clear the group dashboard zone here as well (both MainView branches call this).
+		GroupDashView::clear_scroll_idens(state);
 	}
 }
 

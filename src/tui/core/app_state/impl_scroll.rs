@@ -38,7 +38,9 @@ impl AppState {
 			return 0;
 		};
 		let area_height = scroll_zone.area().map(|a| a.height).unwrap_or_default();
-		let max_scroll = line_count.saturating_sub(area_height as usize) as u16;
+		let max_scroll = line_count
+			.saturating_sub(area_height as usize)
+			.min(u16::MAX as usize) as u16;
 		let scroll = scroll_zone.scroll().unwrap_or_default();
 		if scroll > max_scroll {
 			scroll_zone.set_scroll(max_scroll);

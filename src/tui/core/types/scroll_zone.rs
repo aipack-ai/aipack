@@ -1,7 +1,7 @@
 use ratatui::layout::{Position, Rect};
 use std::collections::HashMap;
 
-#[derive(Debug, Clone, Copy, Eq, PartialEq, Hash)]
+#[derive(Debug, Clone, Copy, Eq, PartialEq, Hash, PartialOrd, Ord)]
 pub enum ScrollIden {
 	RunsNav,
 	TasksNav,
@@ -81,13 +81,32 @@ impl Default for ScrollZones {
 
 /// Immutable Getters & Finders
 impl ScrollZones {
+	/// Find the zone at the given position.
+	///
+	/// When several zones contain the position (overlapping areas), the
+	/// innermost zone (smallest containing area) wins, so a large enclosing
+	/// zone cannot shadow a more specific pane. Ties are broken by
+	/// `ScrollIden` order, so the result never depends on `HashMap` iteration order.
 	pub fn find_zone_for_pos(&self, position: impl Into<Position>) -> Option<ScrollIden> {
 		let position = position.into();
 		self.zones
 			.iter()
-			.find(|(_, zone)| zone.area().is_some_and(|area| area.contains(position)))
-			.map(|(iden, _)| *iden)
+			.filter_map(|(iden, zone)| {
+				let area = zone.area()?;
+				area.contains(position).then_some((*iden, area))
+			})
+			.min_by_key(|(iden, area)| (area_surface(*area), *iden))
+			.map(|(iden, _)| iden)
 	}
 }
 
 // endregion: --- ScrollZones
+
+// region:    --- Support
+
+/// The surface (in cells) of a zone area, used to pick the innermost containing zone.
+fn area_surface(area: Rect) -> u32 {
+	u32::from(area.width) * u32::from(area.height)
+}
+
+// endregion: --- Support
