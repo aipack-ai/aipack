@@ -1,4 +1,6 @@
-use crate::model::{EntityType, EpochUs, ErrBmc, InstallData, LoopBmc, ModelEvent, RunBmc, TaskBmc, WorkBmc};
+use crate::model::{
+	EntityType, EpochUs, ErrBmc, Id, InstallData, LoopBmc, ModelEvent, RunBmc, RunModelUsageBmc, TaskBmc, WorkBmc,
+};
 use crate::support::time::now_micro;
 use crate::tui::AppState;
 use crate::tui::core::event::{AppActionEvent, ScrollDir};
@@ -408,6 +410,8 @@ fn refresh_runs(state: &mut AppState) {
 	let was_on_top_run = state.is_selected_on_top_run();
 
 	let new_runs = RunBmc::list_for_display(state.mm(), None).unwrap_or_default();
+	let run_ids: Vec<Id> = new_runs.iter().map(|run| run.id).collect();
+	let run_model_usage = RunModelUsageBmc::list_for_runs(state.mm(), &run_ids).unwrap_or_default();
 	let loop_groups = LoopBmc::list(state.mm(), None)
 		.unwrap_or_default()
 		.into_iter()
@@ -420,7 +424,7 @@ fn refresh_runs(state: &mut AppState) {
 			RunNavGroup { loop_info, member_ids }
 		})
 		.collect();
-	let run_item_store = RunItemStore::new_with_loops(new_runs, loop_groups);
+	let run_item_store = RunItemStore::new_with_loops_and_usage(new_runs, loop_groups, run_model_usage);
 	state.core_mut().run_item_store = run_item_store;
 
 	{

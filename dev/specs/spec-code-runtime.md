@@ -34,6 +34,7 @@ High-level helpers for entity lifecycle:
 - `create_task` / `create_tasks_batch`: Initializes tasks with `TypedContent` handling.
 - `update_task_cost`: Updates task cost and recomputes the total run cost.
 - `rec_skip_run` / `rec_skip_task`: Handles skip logic, updating status and logging reasons.
+- `mark_run_ai_used`: Sets the run-level `ai_used` flag to `true`. It is idempotent and called from every real genai call site, including non-task stages (before-all, after-all, and auxiliary auto calls). It carries no cost change, so no loop cost recompute is done. The Group Dash Models and Agents subtabs filter on this flag, while the header totals and Top Runs do not.
 - **Work Tracking**: While not having a dedicated `RtWork` handle yet, the runtime layer uses the `WorkBmc` to track the lifecycle of background operations (like pack installation) to provide status updates to the TUI.
 
 ### RtLog (src/runtime/rt_log.rs)

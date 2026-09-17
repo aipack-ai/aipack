@@ -1,4 +1,4 @@
-use crate::model::{EpochUs, Id, Loop, Run};
+use crate::model::{EpochUs, Id, Loop, Run, RunModelUsage};
 use crate::tui::core::{
 	GroupDashCostEntry, GroupDashData, GroupDashRunEntry, GroupDashTarget, RunItem, RunNavGroup, RunNavRow,
 };
@@ -9,12 +9,18 @@ pub struct RunItemStore {
 	items: Vec<RunItem>,
 	items_by_id: HashMap<Id, RunItem>,
 	nav_rows: Vec<RunNavRow>,
+	usage_by_run_id: HashMap<Id, Vec<RunModelUsage>>,
 }
 
 impl RunItemStore {
 	/// Returns the flat list of `RunItem`s.
 	pub fn items(&self) -> &[RunItem] {
 		&self.items
+	}
+
+	/// Returns the recorded per-run model usage rows for the given run.
+	pub fn usage_for_run(&self, run_id: Id) -> &[RunModelUsage] {
+		self.usage_by_run_id.get(&run_id).map(Vec::as_slice).unwrap_or_default()
 	}
 
 	#[allow(unused)]
@@ -227,20 +233,41 @@ impl RunItemStore {
 					cumul_task_duration_us = Some(cumul_task_duration_us.unwrap_or(0) + task_ms * 1000);
 				}
 
-				let agent_name = run.agent_name.clone().unwrap_or_else(|| "Unknown".to_string());
-				let agent_entry = agent_map.entry(agent_name).or_insert((0.0, 0, None));
-				agent_entry.0 += cost;
-				agent_entry.1 += 1;
-				if let Some(dur) = duration {
-					agent_entry.2 = Some(agent_entry.2.unwrap_or(0) + dur);
+				// A configured `agent_name` or `model` is not evidence that genai was called,
+				// so only runs that actually invoked AI are attributed to the Agents and Models subtabs.
+				if !run.has_ai_used() {
+					continue;
 				}
 
-				let model_name = run.model.clone().unwrap_or_else(|| "Unknown".to_string());
-				let model_entry = model_map.entry(model_name).or_insert((0.0, 0, None));
-				model_entry.0 += cost;
-				model_entry.1 += 1;
-				if let Some(dur) = duration {
-					model_entry.2 = Some(model_entry.2.unwrap_or(0) + dur);
+				// Attribute the recorded per-call usage rather than the run configuration, so an
+				// auxiliary call (for example auto-context) shows under the model it really used.
+				let mut run_model_costs: HashMap<&str, f64> = HashMap::new();
+				let mut run_agent_costs: HashMap<&str, f64> = HashMap::new();
+				for usage in self.usage_for_run(run.id) {
+					let usage_cost = usage.cost.unwrap_or(0.0);
+					*run_model_costs.entry(usage.model_name.as_str()).or_insert(0.0) += usage_cost;
+					if let Some(agent_name) = usage.agent_name.as_deref() {
+						*run_agent_costs.entry(agent_name).or_insert(0.0) += usage_cost;
+					}
+				}
+
+				// Count a model or an agent once per run that used it, not once per usage row.
+				for (model_name, model_cost) in run_model_costs {
+					let model_entry = model_map.entry(model_name.to_string()).or_insert((0.0, 0, None));
+					model_entry.0 += model_cost;
+					model_entry.1 += 1;
+					if let Some(dur) = duration {
+						model_entry.2 = Some(model_entry.2.unwrap_or(0) + dur);
+					}
+				}
+
+				for (agent_name, agent_cost) in run_agent_costs {
+					let agent_entry = agent_map.entry(agent_name.to_string()).or_insert((0.0, 0, None));
+					agent_entry.0 += agent_cost;
+					agent_entry.1 += 1;
+					if let Some(dur) = duration {
+						agent_entry.2 = Some(agent_entry.2.unwrap_or(0) + dur);
+					}
 				}
 			}
 		}
@@ -294,6 +321,14 @@ impl RunItemStore {
 	}
 
 	pub fn new_with_loops(runs: Vec<Run>, loop_groups: Vec<RunNavGroup>) -> Self {
+		Self::new_with_loops_and_usage(runs, loop_groups, Vec::new())
+	}
+
+	pub fn new_with_loops_and_usage(
+		runs: Vec<Run>,
+		loop_groups: Vec<RunNavGroup>,
+		run_model_usage: Vec<RunModelUsage>,
+	) -> Self {
 		// -- Early Exit
 		if runs.is_empty() {
 			return RunItemStore::default();
@@ -392,10 +427,16 @@ impl RunItemStore {
 		let items_by_id = flat.iter().map(|item| (item.id(), item.clone())).collect();
 		let nav_rows = build_nav_rows(&flat, &items_by_id, loop_groups);
 
+		let mut usage_by_run_id: HashMap<Id, Vec<RunModelUsage>> = HashMap::new();
+		for usage in run_model_usage {
+			usage_by_run_id.entry(usage.run_id).or_default().push(usage);
+		}
+
 		RunItemStore {
 			items: flat,
 			items_by_id,
 			nav_rows,
+			usage_by_run_id,
 		}
 	}
 }
@@ -506,7 +547,7 @@ fn push_run_nav_item(
 #[cfg(test)]
 mod tests {
 	use super::*;
-	use crate::model::{LoopBmc, ModelManager, RunBmc, RunForCreate};
+	use crate::model::{LoopBmc, ModelManager, RunBmc, RunForCreate, RunModelUsageBmc};
 
 	type Result<T> = core::result::Result<T, Box<dyn std::error::Error>>;
 
@@ -682,6 +723,7 @@ mod tests {
 				start: Some(0.into()),
 				end: Some(1_000_000.into()),
 				total_task_ms: Some(800),
+					ai_used: Some(true),
 				..Default::default()
 			},
 		)?;
@@ -697,6 +739,7 @@ mod tests {
 				start: Some(0.into()),
 				end: Some(500_000.into()),
 				total_task_ms: Some(400),
+					ai_used: Some(true),
 				..Default::default()
 			},
 		)?;
@@ -708,12 +751,18 @@ mod tests {
 			RunBmc::get(&mm, first_run_id)?,
 		];
 
-		let store = RunItemStore::new_with_loops(
+		// Record the per-call usage that the Models and Agents subtabs are built from.
+		record_usage(&mm, loop_member_id, "agent-alpha", "gpt-4o", 0.12)?;
+		record_usage(&mm, loop_member_child_id, "agent-beta", "gpt-4o-mini", 0.08)?;
+		let usage = RunModelUsageBmc::list_for_runs(&mm, &[loop_member_id, loop_member_child_id])?;
+
+		let store = RunItemStore::new_with_loops_and_usage(
 			runs,
 			vec![RunNavGroup {
 				loop_info,
 				member_ids: vec![loop_member_id, first_run_id],
 			}],
+			usage,
 		);
 
 		// -- Exec
@@ -866,7 +915,201 @@ mod tests {
 		Ok(())
 	}
 
+	#[tokio::test]
+	async fn test_tui_core_types_run_item_store_compute_group_dash_data_non_ai_run_excluded() -> Result<()> {
+		// -- Setup & Fixtures
+		let mm = ModelManager::new().await?;
+		let standalone_id = RunBmc::create(&mm, run_for_test("no-ai"))?;
+
+		crate::model::RunBmc::update(
+			&mm,
+			standalone_id,
+			crate::model::RunForUpdate {
+				total_cost: Some(0.10),
+				model: Some("gpt-4o".to_string()),
+				agent_name: Some("agent-no-ai".to_string()),
+				..Default::default()
+			},
+		)?;
+
+		// Usage is recorded, but without `ai_used` the run must still be excluded from attribution.
+		record_usage(&mm, standalone_id, "agent-no-ai", "gpt-4o", 0.10)?;
+		let usage = RunModelUsageBmc::list_for_run(&mm, standalone_id)?;
+
+		let runs = vec![RunBmc::get(&mm, standalone_id)?];
+		let store = RunItemStore::new_with_loops_and_usage(runs, Vec::new(), usage);
+
+		// -- Exec
+		let target = GroupDashTarget::from_run(standalone_id);
+		let dash_data = store
+			.compute_group_dash_data(&target, 2_000_000)
+			.ok_or("Should compute dash data")?;
+
+		// -- Check
+		assert_eq!(dash_data.top_runs_count, 1);
+		assert_eq!(dash_data.all_runs_count, 1);
+		assert!((dash_data.total_cost - 0.10).abs() < 1e-6);
+		assert!(dash_data.agents.is_empty());
+		assert!(dash_data.models.is_empty());
+
+		Ok(())
+	}
+
+	#[tokio::test]
+	async fn test_tui_core_types_run_item_store_compute_group_dash_data_mixed_ai_and_non_ai() -> Result<()> {
+		// -- Setup & Fixtures
+		let mm = ModelManager::new().await?;
+		let parent_id = RunBmc::create(&mm, run_for_test("parent"))?;
+		let child_id = RunBmc::create(&mm, child_run_for_test(parent_id, "child"))?;
+
+		crate::model::RunBmc::update(
+			&mm,
+			parent_id,
+			crate::model::RunForUpdate {
+				total_cost: Some(0.10),
+				model: Some("gpt-4o".to_string()),
+				agent_name: Some("agent-parent".to_string()),
+				ai_used: Some(true),
+				..Default::default()
+			},
+		)?;
+
+		crate::model::RunBmc::update(
+			&mm,
+			child_id,
+			crate::model::RunForUpdate {
+				total_cost: Some(0.20),
+				model: Some("gpt-4o-mini".to_string()),
+				agent_name: Some("agent-child".to_string()),
+				..Default::default()
+			},
+		)?;
+
+		// Only the AI-used parent run recorded usage, so only it may be attributed.
+		record_usage(&mm, parent_id, "agent-parent", "gpt-4o", 0.10)?;
+		let usage = RunModelUsageBmc::list_for_run(&mm, parent_id)?;
+
+		let runs = vec![RunBmc::get(&mm, child_id)?, RunBmc::get(&mm, parent_id)?];
+		let store = RunItemStore::new_with_loops_and_usage(runs, Vec::new(), usage);
+
+		// -- Exec
+		let target = GroupDashTarget::from_run(parent_id);
+		let dash_data = store
+			.compute_group_dash_data(&target, 2_000_000)
+			.ok_or("Should compute dash data")?;
+
+		// -- Check
+		assert_eq!(dash_data.top_runs_count, 1);
+		assert_eq!(dash_data.all_runs_count, 2);
+		assert!((dash_data.total_cost - 0.30).abs() < 1e-6);
+
+		assert_eq!(dash_data.models.len(), 1);
+		let model = dash_data.models.first().ok_or("Should have a model entry")?;
+		assert_eq!(model.name, "gpt-4o");
+		assert_eq!(model.count, 1);
+
+		assert_eq!(dash_data.agents.len(), 1);
+		let agent = dash_data.agents.first().ok_or("Should have an agent entry")?;
+		assert_eq!(agent.name, "agent-parent");
+		assert_eq!(agent.count, 1);
+
+		Ok(())
+	}
+
+	#[tokio::test]
+	async fn test_tui_core_types_run_item_store_compute_group_dash_data_ai_used_zero_cost_kept() -> Result<()> {
+		// -- Setup & Fixtures
+		let mm = ModelManager::new().await?;
+		let standalone_id = RunBmc::create(&mm, run_for_test("zero-cost"))?;
+
+		crate::model::RunBmc::update(
+			&mm,
+			standalone_id,
+			crate::model::RunForUpdate {
+				total_cost: Some(0.0),
+				model: Some("gpt-4o".to_string()),
+				agent_name: Some("agent-zero-cost".to_string()),
+				ai_used: Some(true),
+				..Default::default()
+			},
+		)?;
+
+		// A cached or free call still records usage, so it stays attributed at $0.00.
+		record_usage(&mm, standalone_id, "agent-zero-cost", "gpt-4o", 0.0)?;
+		let usage = RunModelUsageBmc::list_for_run(&mm, standalone_id)?;
+
+		let runs = vec![RunBmc::get(&mm, standalone_id)?];
+		let store = RunItemStore::new_with_loops_and_usage(runs, Vec::new(), usage);
+
+		// -- Exec
+		let target = GroupDashTarget::from_run(standalone_id);
+		let dash_data = store
+			.compute_group_dash_data(&target, 2_000_000)
+			.ok_or("Should compute dash data")?;
+
+		// -- Check
+		assert_eq!(dash_data.total_cost, 0.0);
+		assert_eq!(dash_data.models.len(), 1);
+		let model = dash_data.models.first().ok_or("Should have a model entry")?;
+		assert_eq!(model.name, "gpt-4o");
+		assert_eq!(model.count, 1);
+		assert_eq!(model.cost, 0.0);
+		assert_eq!(dash_data.agents.len(), 1);
+
+		Ok(())
+	}
+
+	#[tokio::test]
+	async fn test_tui_core_types_run_item_store_compute_group_dash_data_distinct_model() -> Result<()> {
+		// -- Setup & Fixtures
+		let mm = ModelManager::new().await?;
+		let standalone_id = RunBmc::create(&mm, run_for_test("distinct-model"))?;
+
+		crate::model::RunBmc::update(
+			&mm,
+			standalone_id,
+			crate::model::RunForUpdate {
+				model: Some("gpt-4o".to_string()),
+				agent_name: Some("agent-alpha".to_string()),
+				ai_used: Some(true),
+				..Default::default()
+			},
+		)?;
+
+		// The run was configured with `gpt-4o`, but the recorded call used `luna`.
+		record_usage(&mm, standalone_id, "agent-alpha", "luna", 0.03)?;
+		let usage = RunModelUsageBmc::list_for_run(&mm, standalone_id)?;
+
+		let runs = vec![RunBmc::get(&mm, standalone_id)?];
+		let store = RunItemStore::new_with_loops_and_usage(runs, Vec::new(), usage);
+
+		// -- Exec
+		let target = GroupDashTarget::from_run(standalone_id);
+		let dash_data = store
+			.compute_group_dash_data(&target, 2_000_000)
+			.ok_or("Should compute dash data")?;
+
+		// -- Check
+		assert_eq!(dash_data.models.len(), 1);
+		let model = dash_data.models.first().ok_or("Should have a model entry")?;
+		assert_eq!(model.name, "luna");
+		assert_eq!(model.count, 1);
+		assert!((model.cost - 0.03).abs() < 1e-6);
+
+		assert_eq!(dash_data.agents.len(), 1);
+		let agent = dash_data.agents.first().ok_or("Should have an agent entry")?;
+		assert_eq!(agent.name, "agent-alpha");
+		assert_eq!(agent.count, 1);
+
+		Ok(())
+	}
+
 	// region:    --- Support
+
+	fn record_usage(mm: &ModelManager, run_id: Id, agent_name: &str, model_name: &str, cost: f64) -> Result<()> {
+		RunModelUsageBmc::record(mm, run_id, Some(agent_name), model_name, Some(cost), None, None)?;
+		Ok(())
+	}
 
 	fn run_for_test(label: &str) -> RunForCreate {
 		RunForCreate {

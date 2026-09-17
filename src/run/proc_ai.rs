@@ -259,6 +259,10 @@ async fn process_send_to_genai(
 		.await?;
 	let duration = start.elapsed();
 
+	// -- Rt Rec - Mark the run as having used AI
+	// Note: Non-fatal, a bookkeeping failure must never fail the run.
+	let _ = rt_model.mark_run_ai_used(run_id).await;
+
 	// region:    --- First Info Part
 
 	let duration_msg = format!("Duration: {duration_str}", duration_str = format_duration(duration));
@@ -314,6 +318,22 @@ async fn process_send_to_genai(
 	rt_model
 		.update_task_usage(run_id, task_id, &usage, &provider_model_iden)
 		.await?;
+
+	// -- Rt Rec - Record Model Usage
+	// Note: Non-fatal, a bookkeeping failure must never fail the run.
+	let cost = ai_price.as_ref().map(|ap| ap.cost);
+	let cost_cache_write = ai_price.as_ref().and_then(|ap| ap.cost_cache_write);
+	let cost_cache_saving = ai_price.as_ref().and_then(|ap| ap.cost_cache_saving);
+	let _ = rt_model
+		.record_model_usage(
+			run_id,
+			Some(agent.name()),
+			&res_model_iden.model_name,
+			cost,
+			cost_cache_write,
+			cost_cache_saving,
+		)
+		.await;
 
 	let ai_response_content = content.into_joined_texts().filter(|s| !s.is_empty());
 	let ai_response_reasoning_content = reasoning_content;

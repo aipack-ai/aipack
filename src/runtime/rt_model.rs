@@ -3,8 +3,8 @@ use crate::agent::Agent;
 use crate::hub::get_hub;
 use crate::model::base::DbBmc;
 use crate::model::{
-	EndState, Id, LogBmc, LogForCreate, LogKind, LoopBmc, ModelManager, RunBmc, RunForCreate, RunForUpdate, Stage,
-	TaskBmc, TaskForCreate, TaskForUpdate, TypedContent,
+	EndState, Id, LogBmc, LogForCreate, LogKind, LoopBmc, ModelManager, RunBmc, RunForCreate, RunForUpdate,
+	RunModelUsageBmc, Stage, TaskBmc, TaskForCreate, TaskForUpdate, TypedContent,
 };
 use crate::run::ModelPricing;
 use crate::runtime::Runtime;
@@ -134,6 +134,23 @@ impl<'a> RtModel<'a> {
 		};
 		RunBmc::update(self.mm(), run_id, run_u)?;
 
+		Ok(())
+	}
+
+	/// Marks this run as having actually used AI, that is, a genai call has returned.
+	///
+	/// NOTE: This call is idempotent, and must be invoked only after a genai call has
+	///       actually returned. It carries no cost change, so no loop cost recompute
+	///       is needed.
+	pub async fn mark_run_ai_used(&self, run_id: Id) -> Result<()> {
+		RunBmc::update(
+			self.mm(),
+			run_id,
+			RunForUpdate {
+				ai_used: Some(true),
+				..Default::default()
+			},
+		)?;
 		Ok(())
 	}
 
@@ -286,6 +303,32 @@ impl<'a> RtModel<'a> {
 			LoopBmc::recompute_cost(self.mm(), loop_id)?;
 		}
 
+		Ok(())
+	}
+
+	/// Records one genai call for a run and its resolved per-call model.
+	///
+	/// NOTE: Non-fatal at the call site by design, a bookkeeping failure must never fail a run.
+	///       The upsert increments the call count and sums the cost inside SQLite, so
+	///       concurrent tasks sharing a run and a model cannot lose an update.
+	pub async fn record_model_usage(
+		&self,
+		run_id: Id,
+		agent_name: Option<&str>,
+		model_name: &str,
+		cost: Option<f64>,
+		cost_cache_write: Option<f64>,
+		cost_cache_saving: Option<f64>,
+	) -> Result<()> {
+		RunModelUsageBmc::record(
+			self.mm(),
+			run_id,
+			agent_name,
+			model_name,
+			cost,
+			cost_cache_write,
+			cost_cache_saving,
+		)?;
 		Ok(())
 	}
 

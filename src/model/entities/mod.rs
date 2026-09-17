@@ -7,6 +7,7 @@ mod loop_entity;
 mod pin;
 mod prompt;
 mod run;
+mod run_model_usage;
 mod task;
 mod ucontent;
 mod work;
@@ -21,6 +22,8 @@ pub use pin::*;
 #[allow(unused)]
 pub use prompt::*;
 pub use run::*;
+#[allow(unused)]
+pub use run_model_usage::*;
 pub use task::*;
 pub use ucontent::*;
 pub use work::*;

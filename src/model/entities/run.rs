@@ -52,6 +52,7 @@ pub struct Run {
 	pub total_cost: Option<f64>,
 	pub total_task_ms: Option<i64>,
 	pub flow_redo_count: Option<i32>,
+	pub ai_used: Option<bool>,
 }
 
 #[derive(Debug, Clone, Fields, SqliteFromRow)]
@@ -64,6 +65,10 @@ pub struct RunForIds {
 impl Run {
 	pub fn is_done(&self) -> bool {
 		self.end.is_some()
+	}
+
+	pub fn has_ai_used(&self) -> bool {
+		self.ai_used.unwrap_or(false)
 	}
 
 	#[allow(unused)]
@@ -139,6 +144,7 @@ pub struct RunForUpdate {
 	pub total_cost: Option<f64>,
 	pub total_task_ms: Option<i64>,
 	pub flow_redo_count: Option<i32>,
+	pub ai_used: Option<bool>,
 }
 
 // endregion: --- Types
@@ -302,6 +308,38 @@ mod tests {
 		// -- Check
 		let run = RunBmc::get(&mm, id)?;
 		assert!(run.start.is_some());
+
+		Ok(())
+	}
+
+	#[tokio::test]
+	async fn test_model_run_bmc_ai_used() -> Result<()> {
+		// -- Fixture
+		let mm = ModelManager::new().await?;
+		let run_c = RunForCreate {
+			parent_id: None,
+			agent_name: Some("Test Run".to_string()),
+			agent_path: Some("test/path".to_string()),
+			has_task_stages: None,
+			has_prompt_parts: None,
+		};
+		let id = RunBmc::create(&mm, run_c)?;
+
+		// -- Exec
+		let run_before = RunBmc::get(&mm, id)?;
+		let run_u = RunForUpdate {
+			ai_used: Some(true),
+			..Default::default()
+		};
+		RunBmc::update(&mm, id, run_u)?;
+
+		// -- Check
+		assert_eq!(run_before.ai_used, None);
+		assert!(!run_before.has_ai_used());
+
+		let run_after = RunBmc::get(&mm, id)?;
+		assert_eq!(run_after.ai_used, Some(true));
+		assert!(run_after.has_ai_used());
 
 		Ok(())
 	}

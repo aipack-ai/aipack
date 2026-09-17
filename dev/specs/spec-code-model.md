@@ -33,9 +33,10 @@ Every entity has a corresponding BMC struct (e.g., `RunBmc`, `TaskBmc`, `WorkBmc
 
 ### Run (run.rs)
 Tracks the execution of an Agent.
-- **Key Fields**: `agent_name`, `agent_path`, `model`, `concurrency`, `total_cost`, `total_task_ms`.
+- **Key Fields**: `agent_name`, `agent_path`, `model`, `concurrency`, `total_cost`, `total_task_ms`, `ai_used`.
 - **Timestamps**: `start`, `ba_start`/`ba_end`, `tasks_start`/`tasks_end`, `aa_start`/`aa_end`, `end`.
 - **End State**: `end_state`, `end_err_id`, `end_skip_reason`.
+- **AI Usage**: `ai_used` is a run-level flag set only when a genai call has actually returned, across per-task, before-all, after-all, and auxiliary auto calls. The Group Dash Models and Agents subtabs filter on it, while the header totals and Top Runs do not.
 
 ### Task (task.rs)
 Tracks individual inputs/files within a run.

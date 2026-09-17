@@ -71,6 +71,8 @@ CREATE TABLE IF NOT EXISTS run (
 		agent_name  TEXT,
 		agent_path  TEXT,
 
+		ai_used     INTEGER,
+
 		model       TEXT,
 		concurrency INTEGER,
 
@@ -289,6 +291,29 @@ CREATE TABLE IF NOT EXISTS work (
 ) STRICT",
 );
 
+const RUN_MODEL_USAGE_TABLE: (&str, &str) = (
+	"run_model_usage",
+	"
+CREATE TABLE IF NOT EXISTS run_model_usage (
+		id                INTEGER PRIMARY KEY AUTOINCREMENT,
+		uid               BLOB NOT NULL,
+
+		ctime             INTEGER NOT NULL,
+		mtime             INTEGER NOT NULL,
+
+		run_id            INTEGER NOT NULL, -- The owning run
+		agent_name        TEXT,             -- The agent that performed the call
+
+		model_name        TEXT NOT NULL,    -- The per-call model actually used
+
+		call_count        INTEGER NOT NULL DEFAULT 0,
+
+		cost              REAL,
+		cost_cache_write  REAL,
+		cost_cache_saving REAL
+) STRICT",
+);
+
 const ALL_MAIN_TABLES: &[(&str, &str)] = &[
 	LOOP_TABLE,
 	RUN_TABLE,
@@ -299,6 +324,7 @@ const ALL_MAIN_TABLES: &[(&str, &str)] = &[
 	PIN_TABLE,
 	UCONTENT_TABLE,
 	WORK_TABLE,
+	RUN_MODEL_USAGE_TABLE,
 ];
 
 // endregion: --- Main Tables
@@ -383,6 +409,13 @@ CREATE INDEX IF NOT EXISTS idx_loop_first_run_id ON loop(first_run_id);
 	con.execute(
 		"
 CREATE INDEX IF NOT EXISTS idx_loop_last_run_id ON loop(last_run_id);
+		",
+		(),
+	)?;
+
+	con.execute(
+		"
+CREATE UNIQUE INDEX IF NOT EXISTS idx_run_model_usage_key ON run_model_usage(run_id, model_name);
 		",
 		(),
 	)?;

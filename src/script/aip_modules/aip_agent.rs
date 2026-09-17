@@ -152,6 +152,15 @@ pub async fn aip_agent_run(
 	let res = rx.recv().await;
 	let run_agent_response = res.map_err(|err| Error::custom(format!("rx.recv_async fail. Cause: {err}")))??;
 
+	// -- Rt Rec - Mark the calling run as having used AI
+	// Note: The genai call happens in the run of the called agent, so the calling run
+	//       must be flagged here, as it may have no task stage of its own.
+	// Note: Non-fatal, a bookkeeping failure must never fail the run.
+	let rt_model = runtime.rt_model();
+	if let Ok(Some(run_id)) = rt_ctx.get_run_id(runtime.mm()) {
+		let _ = rt_model.mark_run_ai_used(run_id).await;
+	}
+
 	run_agent_response.into_lua(lua)
 }
 
