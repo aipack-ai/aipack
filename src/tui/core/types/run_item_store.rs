@@ -723,7 +723,7 @@ mod tests {
 				start: Some(0.into()),
 				end: Some(1_000_000.into()),
 				total_task_ms: Some(800),
-					ai_used: Some(true),
+				ai_used: Some(true),
 				..Default::default()
 			},
 		)?;
@@ -739,7 +739,7 @@ mod tests {
 				start: Some(0.into()),
 				end: Some(500_000.into()),
 				total_task_ms: Some(400),
-					ai_used: Some(true),
+				ai_used: Some(true),
 				..Default::default()
 			},
 		)?;
