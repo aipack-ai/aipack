@@ -57,7 +57,7 @@ toml = "1"
 toml_edit = "0.25"
 serde_yaml_ng = "0.10"
 csv = "1"
-lopdf = "0.45"
+lopdf = {version = "0.45", features = ["time"]}
 # -- String pasers, matchers, ormatters
 logos = "0.16"
 aho-corasick = "1.1.3"
