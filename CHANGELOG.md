@@ -1,5 +1,17 @@
 `.` minor | `-` Fix | `+` Addition | `^` improvement | `!` Change | `*` important | `>` Refactor
 
+## 2026-09-22 [v0.8.35](https://github.com/aipack-ai/aipack/compare/v0.8.34...v0.8.35)
+
+- `.` 0.8.35
+- `.` models - price & aliases
+  - Sol-6, Luna-6, Opus 5.5, deepseek-flash (v4.1), fireworks update,  grok 4.7,
+- `-` gpt-6-astra - explicit by default
+- `-` muse support, and more fixes (0.7.0-beta.24)
+- `-` fix scroll issue on overview
+- `-` dash view - fix the models view always with default model
+- `.` gitignore template - add *-lock.yaml
+
+
 ## 2026-09-04 [v0.8.34](https://github.com/aipack-ai/aipack/compare/v0.8.33...v0.8.34)
 
 - `+` tui - loop dashboard view run status and duration, with tuned auto-select rules
