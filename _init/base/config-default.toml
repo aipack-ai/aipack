@@ -13,7 +13,7 @@
 # AIPACK detects the provider, or defaults to local Ollama.
 # Specify with namespacing, e.g., `fireworks::kimi-k2-instruct`.
 
-model = "gpt-5.6-luna"
+model = "gpt-6-luna"
 
 # Temperature (unset by default)
 # temperature = 0.0
