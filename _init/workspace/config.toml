@@ -7,9 +7,7 @@
 
 [options]
 
-# model       = "gpt-5.4"
-
-# temperature = 0.0
+# model       = "gpt-6-luna"
 
 # input_concurrency = 2
 
@@ -18,4 +16,4 @@
 #
 # See alias documentation at `~/.aipack-base/config-default.toml`
 [options.model_aliases]
-# my-model = "gpt-5.4-nano"
+# my-model = "gpt-6-luna"
