@@ -1,8 +1,17 @@
 `.` minor | `-` Fix | `+` Addition | `^` improvement | `!` Change | `*` important | `>` Refactor
 
+
+## 2026-10-07 [v0.8.35](https://github.com/aipack-ai/aipack/compare/v0.8.34...v0.8.35)
+
++ add mistral provider (with `mistral::...` namespace, and MISTRAL_API_KEY)
+- models - Price & Aliases
+  - haiku 5.5 (& fix reasoning effort, -max, ...)
+  - sol 6.1 
+  - sonnet 5.5
+. config default - default model to gpt-6-luna
+
 ## 2026-09-22 [v0.8.35](https://github.com/aipack-ai/aipack/compare/v0.8.34...v0.8.35)
 
-- `.` 0.8.35
 - `.` models - price & aliases
   - Sol-6, Luna-6, Opus 5.5, deepseek-flash (v4.1), fireworks update,  grok 4.7,
 - `-` gpt-6-astra - explicit by default
