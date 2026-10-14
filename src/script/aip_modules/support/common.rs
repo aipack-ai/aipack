@@ -14,7 +14,6 @@ use std::str::FromStr;
 // Check that if three is .., it ist still in a .aipack-base
 // TODO: Would probably need to check that it can only write in it's own support folder
 pub fn check_access_write(full_path: &SPath, wks_dir: &SPath) -> Result<()> {
-	tracing::debug!("->> check_access_write: full_path={full_path}, wks_dir={wks_dir}");
 	if let Some(rel_path) = full_path.diff(wks_dir)
 		&& rel_path.as_str().starts_with("..")
 	{
