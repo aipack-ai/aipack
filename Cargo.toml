@@ -42,8 +42,8 @@ udiffx = { version = "0.3.1", features = ["prompt"]}
 markex = { version = "0.3.0" }
 aicost = { version = "0.2.25" }
 # -- DB
-rusqlite = { version = "0.40.1", features = ["bundled", "uuid", "serde_json", "serialize"] }
-modql = { version = "0.5.0", features = ["with-rusqlite"]}
+rusqlite = { version = "0.40.2", features = ["bundled", "uuid", "serde_json", "serialize"] }
+modql = { version = "0.6.0", features = ["with-rusqlite"]}
 # -- Cli
 clap =  {version = "4.5.50", features = ["cargo", "derive"]}
 ratatui = {version = "0.30.0", features = ["scrolling-regions"] }
