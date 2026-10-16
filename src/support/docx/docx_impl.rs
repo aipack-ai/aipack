@@ -108,7 +108,10 @@ pub fn docx_convert(path: &Path) -> Result<String, Box<dyn std::error::Error>> {
 
 	for i in 0..archive.len() {
 		let mut file = archive.by_index(i)?;
-		if file.name() == "word/document.xml" {
+		let Ok(file_name) = file.name() else {
+			continue;
+		};
+		if file_name == "word/document.xml" {
 			file.read_to_string(&mut xml_content)?;
 			break;
 		}

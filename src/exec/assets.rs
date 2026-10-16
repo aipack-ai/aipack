@@ -37,6 +37,9 @@ pub fn list_file_paths_start_with(pre_path: &str, prefix: &str) -> Result<Vec<St
 	let mut paths = Vec::new();
 
 	for path in archive.file_names() {
+		let Ok(path) = path else {
+			continue;
+		};
 		if !path.ends_with('/') && path.starts_with(pre_path) {
 			let Some(path_sub) = path.strip_prefix(pre_path) else {
 				continue;
@@ -114,7 +117,11 @@ pub fn compute_assets_hash(pre_path: &str, prefix: &str) -> Result<blake3::Hash>
 		let file = archive
 			.by_index(i)
 			.map_err(|err| Error::custom(format!("Fail to read zip entry. Cause: {err}")))?;
-		let path = file.name();
+
+		let Ok(path) = file.name() else {
+			continue;
+		};
+
 		if !path.ends_with('/') && path.starts_with(pre_path) {
 			let Some(path_sub) = path.strip_prefix(pre_path) else {
 				continue;

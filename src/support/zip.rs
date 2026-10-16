@@ -242,7 +242,11 @@ pub fn unzip_file_with_entries_and_globs(
 			cause: format!("Fail to get item by_index {i}.\nCause: {err}"),
 		})?;
 
-		let entry_name = file.name().to_string();
+		let Ok(entry_name) = file.name() else {
+			continue;
+		};
+
+		let entry_name = entry_name.to_string();
 
 		// Reject unsafe archive entry paths
 		validate_zip_entry_name(&entry_name, src_zip)?;
@@ -253,7 +257,7 @@ pub fn unzip_file_with_entries_and_globs(
 
 		let outpath = dest_dir.join(&entry_name);
 
-		if file.name().ends_with('/') {
+		if entry_name.ends_with('/') {
 			// Create the directory if it doesn't exist.
 			fs::create_dir_all(outpath.as_std_path())?;
 		} else {
@@ -363,9 +367,13 @@ pub fn list_entries_with_globs(
 			zip_file: src_zip_path.name().to_string(),
 			cause: format!("Fail to get item by_index {i}.\nCause: {err}"),
 		})?;
-		let entry_name = file.name().to_string();
+
+		let Ok(entry_name) = file.name() else {
+			continue;
+		};
+
 		if matches_zip_globs(&entry_name, globs.as_ref())? {
-			entries.push(entry_name);
+			entries.push(entry_name.to_string());
 		}
 	}
 

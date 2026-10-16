@@ -15,12 +15,15 @@ pub fn parse_jsonc_to_serde_value(content: &str) -> Result<Option<serde_json::Va
 	static OPTIONS: ParseOptions = ParseOptions {
 		allow_comments: true,
 		allow_trailing_commas: true,
-		// this one is set to FALSE, for better IDE compatibility
 		allow_loose_object_property_names: true,
 		allow_single_quoted_strings: true,
 		allow_hexadecimal_numbers: true,
 		allow_unary_plus_numbers: true,
 		allow_missing_commas: true,
+		allow_bare_decimal_point_numbers: true,
+		allow_non_finite_numbers: true,
+		// -- for now, false, seems a little agressive for now
+		allow_extended_string_escapes: false,
 	};
 
 	let json_value = jsonc_parser::parse_to_serde_value(content, &OPTIONS).map_err(|err| {
