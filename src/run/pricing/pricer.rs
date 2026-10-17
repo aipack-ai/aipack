@@ -23,12 +23,13 @@ pub fn price_it(provider_type: &str, model_name: &str, usage: &Usage) -> Option<
 
 pub fn model_pricing(model_iden: &ModelIden) -> Option<ModelPricing> {
 	let pricing = aicost::model_pricing(model_iden)?;
+	let prices = pricing.prices;
 
 	Some(ModelPricing {
 		name: pricing.name,
-		input_cached: pricing.input_cached,
-		input_normal: pricing.input_normal,
-		output_normal: pricing.output_normal,
-		output_reasoning: pricing.output_reasoning,
+		input_cached: prices.input_cached,
+		input_normal: prices.input_normal,
+		output_normal: prices.output_normal,
+		output_reasoning: prices.output_reasoning,
 	})
 }

@@ -40,7 +40,7 @@ futures = "0.3.31"
 genai = { version = "0.7.0-rc.8"}
 udiffx = { version = "0.3.1", features = ["prompt"]}
 markex = { version = "0.3.0" }
-aicost = { version = "0.2.25" }
+aicost = { version = "0.3.0-rc.2" }
 # -- DB
 rusqlite = { version = "0.40.2", features = ["bundled", "uuid", "serde_json", "serialize"] }
 modql = { version = "0.6.0", features = ["with-rusqlite"]}
