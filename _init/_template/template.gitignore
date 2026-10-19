@@ -90,6 +90,7 @@ cdk.out/
 *.sketch
 *.psd
 *.af
+*.af~lock~
 
 
 # Videos
