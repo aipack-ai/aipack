@@ -79,7 +79,7 @@ handlebars = "6"
 simple-fs = { version = "0.12.3", features = ["with-json"]}
 zip = "9"
 walkdir = "2.5"
-size = "0.5.0"
+size = "0.6.0"
 trash = "5.2.5"
 # -- Hash
 blake3 = "1.8.2"
