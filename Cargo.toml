@@ -37,10 +37,10 @@ flume = "0.12"
 futures-timer = "3.0.3"
 futures = "0.3.31"
 # -- AI
-genai = { version = "0.7.0"}
+genai = { version = "0.7.1"}
 udiffx = { version = "0.3.1", features = ["prompt"]}
 markex = { version = "0.3.0" }
-aicost = { version = "0.3.0" }
+aicost = { version = "0.3.2" }
 # -- DB
 rusqlite = { version = "0.40.2", features = ["bundled", "uuid", "serde_json", "serialize"] }
 modql = { version = "0.6.0", features = ["with-rusqlite"]}

@@ -52,13 +52,13 @@ dpro          = "deepseek-v4-pro"
 glm           = "zai::glm-5.3"
 glm-flash     = "zai::glm-5.3-flash"
 # -- kimi
-kimi          = "kimi::kimi-k3"
-kimi-fast     = "kimi::kimi-k2.7-code-highspeed"
+kimi          = "kimi-k3.1-pro"
+kimi-fast     = "kimi-k3.1-pro-highspeed"
 # -- Qwen
 qwen          = "qwen_cloud::qwen3.8-max"
 # -- minimax
-minimax       = "MiniMax-M3"
-minimax-speed = "MiniMax-M2.7-highspeed"
+minimax       = "minimax-m3.1-flash"
+minimax-speed = "minimax-m3.1-flash"
 # -- mimo
 mimo          = "mimo::mimo-v2.5"
 mimo-pro      = "mimo::mimo-v2.5-pro"
