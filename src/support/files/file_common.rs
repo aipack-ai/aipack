@@ -15,6 +15,7 @@ pub const SPECIAL_DEFAULT_FOLDER_EXCLUDES: &[&str] = &[
 	"target/",
 	"node_modules/",
 	".build/",
+	".tmp/",
 	"__pycache__/",
 ];
 
@@ -25,6 +26,7 @@ const SPECIAL_DEFAULT_FOLDER_EXCLUDE_GLOBS: &[&str] = &[
 	"**/node_modules/**",
 	"**/.build/**",
 	"**/__pycache__/**",
+	"**/.tmp/**",
 ];
 
 pub const GLOBS_TO_ALWAYS_EXLUDES: &[&str] = &["**/.DS_Store", ".DS_Store", "**/Thumbs.db", "**/*.swp"];
