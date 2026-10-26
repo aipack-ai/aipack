@@ -1,1 +1,0 @@
-Some support content - ..@..$base/extra/test.txt
