@@ -27,7 +27,7 @@ path = "src/main.rs"
 # genai = {  git = "https://github.com/jeremychone/rust-genai" }
 # udiffx = { path = ".../rust-udiffx" }
 # markex = { path = ".../rust-markex" }
-aicost = { git = "https://github.com/zcoder-run/rust-aicost.git"}
+# aicost = { git = "https://github.com/zcoder-run/rust-aicost.git"}
 
 [dependencies]
 # -- Async
@@ -41,7 +41,7 @@ futures = "0.3.31"
 genai = { version = "0.7.1"}
 udiffx = { version = "0.3.1", features = ["prompt"]}
 markex = { version = "0.3.0" }
-aicost = { version = "0.3" }
+aicost = { version = "0.3.3" }
 # -- DB
 rusqlite = { version = "0.40.2", features = ["bundled", "uuid", "serde_json", "serialize"] }
 modql = { version = "0.6.0", features = ["with-rusqlite"]}

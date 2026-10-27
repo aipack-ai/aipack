@@ -39,7 +39,7 @@ astra         = "gpt-6-astra"
 sol           = "gpt-6.1-sol"
 gpt           = "gpt-6.1-sol"
 luna          = "gpt-6-luna"
-terra         = "gpt-6.1-sol" # no point to use old terra, same price
+terra         = "gpt-6.1-terra"
 # -- Google
 argon         = "gemini-4-argon"
 gpro          = "gemini-4-argon"
