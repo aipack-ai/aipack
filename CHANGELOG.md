@@ -1,7 +1,20 @@
 `.` minor | `-` Fix | `+` Addition | `^` improvement | `!` Change | `*` important | `>` Refactor
 
 
-## 2026-10-07 [v0.8.35](https://github.com/aipack-ai/aipack/compare/v0.8.34...v0.8.35)
+## 2026-10-27 [v0.8.37](https://github.com/aipack-ai/aipack/compare/v0.8.36...v0.8.37)
+
+- `^` Model Pricing & Aliases
+  - openai terra 6.1
+  - kimi 3.1 pro, 
+  - minimax 3.1
+  - haiku 5.5 with 100k pricing tier 
+  - gemini-4-argon
+- `^` aip.file.list - add '.tmp/' as speical default exclude
+- `.` template gitignore, add .af~lock~
+- `.` models - remove legacy flash 3.x legacy aliases
+
+
+## 2026-10-07 [v0.8.36](https://github.com/aipack-ai/aipack/compare/v0.8.35...v0.8.36)
 
 + add mistral provider (with `mistral::...` namespace, and MISTRAL_API_KEY)
 - models - Price & Aliases
