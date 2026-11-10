@@ -28,7 +28,7 @@ path = "src/main.rs"
 # udiffx = { path = ".../rust-udiffx" }
 # markex = { path = ".../rust-markex" }
 # aicost = { git = "https://github.com/zcoder-run/rust-aicost.git" }
-modql = { git = "https://github.com/jeremychone/rust-modql.git" }
+# modql = { git = "https://github.com/jeremychone/rust-modql.git" }
 
 [dependencies]
 # -- Async
