@@ -1,4 +1,5 @@
 use crate::Result;
+use crate::error::Error;
 use sysinfo::{Pid, ProcessRefreshKind, ProcessesToUpdate, System, UpdateKind, get_current_pid};
 
 pub struct SysState {
@@ -10,7 +11,7 @@ pub struct SysState {
 impl SysState {
 	pub fn new() -> Result<Self> {
 		let pid = get_current_pid().map_err(|err| format!("Fail to get current process id.\nCause: {err}"))?;
-		let sys = System::new();
+		let sys = System::new().map_err(Error::custom)?;
 		Ok(SysState { pid, sys })
 	}
 
