@@ -24,7 +24,7 @@ path = "src/main.rs"
 
 # For dev
 [patch.crates-io]
-# genai = { git = "https://github.com/jeremychone/rust-genai" }
+# genai = { path = "/Users/jeremychone/_jeremy/_rust/utils/genai/rust-genai" }
 # udiffx = { path = ".../rust-udiffx" }
 # markex = { path = ".../rust-markex" }
 # aicost = { git = "https://github.com/zcoder-run/rust-aicost.git" }
@@ -42,7 +42,7 @@ futures = "0.3.31"
 genai = { version = "0.7.4" }
 udiffx = { version = "0.3.1", features = ["prompt"] }
 markex = { version = "0.3.0" }
-aicost = { version = "0.3.5" }
+aicost = { version = "0.3.7" }
 # -- DB
 rusqlite = { version = "0.42", features = ["bundled", "uuid", "serde_json", "serialize"] }
 modql = { version = "0.8.0", features = ["with-rusqlite"] }

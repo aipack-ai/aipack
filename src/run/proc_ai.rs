@@ -7,6 +7,7 @@ use crate::run::{AiResponse, Attachments, DryMode, RunBaseOptions};
 use crate::runtime::Runtime;
 use crate::support::hbs::hbs_render;
 use crate::support::text::{self, format_duration, format_usage};
+use genai::adapter::AdapterKind;
 use genai::chat::{CacheControl, ChatMessage, ChatOptions, ChatRequest, ChatResponse, ContentPart};
 use genai::{ModelIden, ModelName};
 use serde_json::Value;
@@ -236,7 +237,20 @@ async fn process_send_to_genai(
 	hub.publish(format!("-> Sending rendered instruction to {model_resolved} ..."))
 		.await;
 
-	if let Ok(service_target) = client.resolve_service_target(model_resolved).await
+	let service_target = client.resolve_service_target(model_resolved).await.ok();
+
+	// set the eventual mox option
+	let mut max_output_token: Option<u32> = None;
+
+	// For GeminiIX we set higher max token (default seems to be 32k)
+	if let Some(service_target) = service_target.as_ref()
+		&& matches!(service_target.model.adapter_kind, AdapterKind::GeminiIx)
+	{
+		max_output_token = Some(128 * 1024);
+	}
+
+	// set the model pricing
+	if let Some(service_target) = service_target.as_ref()
 		&& let Some(pricing) = model_pricing(&service_target.model)
 	{
 		// If error, that's fine. Might want to trace it.
@@ -247,9 +261,18 @@ async fn process_send_to_genai(
 
 	// compute the cache options with the eventual cache key
 	// Note: For now, we use the runtime session as the key. Later, we will allow payload to provide it
-	let c_chat_options: Cow<ChatOptions> = if has_cache_control {
-		let opts = agent.genai_chat_options().clone();
-		Cow::Owned(opts.with_prompt_cache_key(runtime.session_str().to_string()))
+	let c_chat_options: Cow<ChatOptions> = if has_cache_control || max_output_token.is_some() {
+		let mut opts = agent.genai_chat_options().clone();
+
+		// set cache key if needed
+		opts = opts.with_prompt_cache_key(runtime.session_str().to_string());
+
+		// set max output token if present
+		if let Some(max_output_token) = max_output_token {
+			opts = opts.with_max_tokens(max_output_token);
+		}
+
+		Cow::Owned(opts)
 	} else {
 		Cow::Borrowed(agent.genai_chat_options())
 	};
