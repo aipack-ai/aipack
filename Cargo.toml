@@ -30,6 +30,10 @@ path = "src/main.rs"
 # aicost = { git = "https://github.com/zcoder-run/rust-aicost.git" }
 # modql = { git = "https://github.com/jeremychone/rust-modql.git" }
 
+[features]
+# Retry transient AI provider failures (429 / 5xx) with exponential backoff and jitter.
+llm-retry = ["dep:tokio-prompt-orchestrator"]
+
 [dependencies]
 # -- Async
 tokio = { version = "1", features = ["process"]}
@@ -40,6 +44,7 @@ futures-timer = "3.0.3"
 futures = "0.3.31"
 # -- AI
 genai = { version = "0.7.4" }
+tokio-prompt-orchestrator = { version = "2.2", optional = true }
 udiffx = { version = "0.3.1", features = ["prompt"] }
 markex = { version = "0.3.0" }
 aicost = { version = "0.3.7" }
