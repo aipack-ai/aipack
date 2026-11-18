@@ -277,9 +277,7 @@ async fn process_send_to_genai(
 		Cow::Borrowed(agent.genai_chat_options())
 	};
 
-	let chat_res = client
-		.exec_chat(model_resolved, chat_req, Some(c_chat_options.as_ref()))
-		.await?;
+	let chat_res = exec_chat(client, model_resolved, chat_req, c_chat_options.as_ref()).await?;
 	let duration = start.elapsed();
 
 	// -- Rt Rec - Mark the run as having used AI
@@ -386,6 +384,93 @@ async fn process_send_to_genai(
 
 // region:    --- Support
 
+#[cfg(not(feature = "llm-retry"))]
+async fn exec_chat(
+	client: &genai::Client,
+	model_resolved: &ModelName,
+	chat_req: ChatRequest,
+	chat_options: &ChatOptions,
+) -> genai::Result<ChatResponse> {
+	client.exec_chat(model_resolved, chat_req, Some(chat_options)).await
+}
+
+/// Same as `client.exec_chat(..)`, but retries transient provider failures
+/// (HTTP 429 and 5xx) with exponential backoff and jitter.
+/// Any other error (auth, bad request, parsing, ...) is returned on the first attempt.
+#[cfg(feature = "llm-retry")]
+async fn exec_chat(
+	client: &genai::Client,
+	model_resolved: &ModelName,
+	chat_req: ChatRequest,
+	chat_options: &ChatOptions,
+) -> genai::Result<ChatResponse> {
+	use tokio_prompt_orchestrator::retry_policy::{JitterMode, RetryPolicy, RetryState, RetryStrategy};
+
+	let policy = RetryPolicy {
+		strategy: RetryStrategy::ExponentialBackoff {
+			initial_ms: 1_000,
+			multiplier: 2.0,
+			max_ms: 20_000,
+		},
+		jitter: JitterMode::Equal,
+		max_attempts: 4,
+		retryable_errors: Vec::new(),
+	};
+
+	let mut state = RetryState::new();
+	// First attempt (no delay).
+	let _ = state.next_delay(&policy);
+
+	loop {
+		let err = match client.exec_chat(model_resolved, chat_req.clone(), Some(chat_options)).await {
+			Ok(chat_res) => return Ok(chat_res),
+			Err(err) => err,
+		};
+
+		if !is_transient_genai_error(&err) {
+			return Err(err);
+		}
+		let Some(delay_ms) = state.next_delay(&policy) else {
+			return Err(err);
+		};
+
+		get_hub()
+			.publish(format!(
+				"-! AI call to {model_resolved} failed (attempt {attempt}/{max}), retrying in {delay_ms}ms. Cause: {status}",
+				attempt = state.attempt - 1,
+				max = policy.max_attempts,
+				status = transient_status(&err).unwrap_or_default(),
+			))
+			.await;
+
+		tokio::time::sleep(std::time::Duration::from_millis(delay_ms)).await;
+	}
+}
+
+#[cfg(feature = "llm-retry")]
+fn transient_status(err: &genai::Error) -> Option<u16> {
+	use genai::webc;
+
+	let status = match err {
+		genai::Error::HttpError { status, .. } => status.as_u16(),
+		genai::Error::WebModelCall { webc_error, .. } | genai::Error::WebAdapterCall { webc_error, .. } => {
+			match webc_error {
+				webc::Error::ResponseFailedStatus { status, .. } => status.as_u16(),
+				webc::Error::Reqwest(reqwest_err) => reqwest_err.status()?.as_u16(),
+				_ => return None,
+			}
+		}
+		_ => return None,
+	};
+
+	(status == 429 || (500..600).contains(&status)).then_some(status)
+}
+
+#[cfg(feature = "llm-retry")]
+fn is_transient_genai_error(err: &genai::Error) -> bool {
+	transient_status(err).is_some()
+}
+
 fn get_price(chat_res: &ChatResponse) -> Option<AiPrice> {
 	let provider = chat_res.model_iden.adapter_kind.as_lower_str();
 	let model_name = &*chat_res.model_iden.model_name;
@@ -430,3 +515,35 @@ fn format_model(
 }
 
 // endregion: --- Support
+
+// region:    --- Tests
+
+#[cfg(all(test, feature = "llm-retry"))]
+mod tests {
+	use super::*;
+	use reqwest::StatusCode;
+
+	fn http_error(status: u16) -> genai::Error {
+		genai::Error::HttpError {
+			status: StatusCode::from_u16(status).unwrap(),
+			canonical_reason: String::new(),
+			body: String::new(),
+			headers: Box::default(),
+		}
+	}
+
+	#[test]
+	fn test_proc_ai_transient_genai_error() {
+		// -- Check
+		assert!(is_transient_genai_error(&http_error(429)));
+		assert!(is_transient_genai_error(&http_error(500)));
+		assert!(is_transient_genai_error(&http_error(503)));
+		assert!(is_transient_genai_error(&http_error(529)));
+		assert!(!is_transient_genai_error(&http_error(400)));
+		assert!(!is_transient_genai_error(&http_error(401)));
+		assert!(!is_transient_genai_error(&http_error(404)));
+		assert!(!is_transient_genai_error(&genai::Error::Internal("boom".to_string())));
+	}
+}
+
+// endregion: --- Tests
