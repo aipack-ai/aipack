@@ -35,9 +35,9 @@ claude        = "claude-sonnet-5-5"
 sonnet        = "claude-sonnet-5-5"
 haiku         = "claude-haiku-5-5"
 # -- OpenAI
-astra         = "gpt-6-astra"
-sol           = "gpt-6.1-sol"
-gpt           = "gpt-6.1-sol"
+astra         = "gpt-6.2-astra"
+sol           = "gpt-6.2-sol"
+gpt           = "gpt-6.2-sol"
 luna          = "gpt-6-luna"
 terra         = "gpt-6.1-terra"
 # -- Google

@@ -42,7 +42,7 @@ futures = "0.3.31"
 genai = { version = "0.7.4" }
 udiffx = { version = "0.3.1", features = ["prompt"] }
 markex = { version = "0.3.0" }
-aicost = { version = "0.3.7" }
+aicost = { version = "0.3.8" }
 # -- DB
 rusqlite = { version = "0.42", features = ["bundled", "uuid", "serde_json", "serialize"] }
 modql = { version = "0.8.0", features = ["with-rusqlite"] }
@@ -96,7 +96,6 @@ sysinfo = "0.40"
 # -- Macro uttils
 paste = "1.0"
 macro_rules_attribute = "0.2.2"
-extend = "1.2.0"
 # -- Tracing
 tracing = "0.1"
 tracing-subscriber = {version = "0.3", features = ["env-filter"]}
@@ -115,6 +114,5 @@ dashmap = "6.1.0"
 arc-swap = "1.7.1"
 
 [build-dependencies]
-simple-fs = { version = "0.12.2", features = ["with-json"]}
 zip = "9"
 walkdir = "2.5"
