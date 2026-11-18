@@ -17,7 +17,10 @@ pub fn new_genai_client() -> Result<genai::Client> {
 			};
 
 			// -- Try to get it from the env variable
-			let key_from_env = std::env::var(key_name).ok();
+			let key_from_env = std::env::var(key_name).ok().or_else(|| match key_name {
+				"BEDROCK_API_KEY" => std::env::var("AWS_BEARER_TOKEN_BEDROCK").ok(),
+				_ => None,
+			});
 
 			if let Some(key) = key_from_env {
 				Ok(Some(AuthData::from_single(key)))
