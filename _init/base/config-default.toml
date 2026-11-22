@@ -41,6 +41,7 @@ gpt           = "gpt-6.2-sol"
 luna          = "gpt-6-luna"
 terra         = "gpt-6.1-terra"
 # -- Google
+neon          = "gemini-4-neon"
 carbon        = "gemini-4-carbon"
 argon         = "gemini-4-argon"
 hydrogen      = "gemini-4-hydrogen"
